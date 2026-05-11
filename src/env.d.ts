@@ -1,4 +1,24 @@
 /// <reference types="astro/client" />
+/// <reference path="../node_modules/astro/astro-jsx.d.ts" />
+
+// Bridge Astro's HTML element types to the global JSX namespace.
+// @types/react v19 removed global JSX.IntrinsicElements; the Astro language
+// server (v2.16+) injects astro-jsx.d.ts but no longer bridges astroHTML.JSX
+// to the global JSX namespace. Without this, every HTML element in .astro
+// templates produces: "JSX element implicitly has type 'any'".
+declare namespace JSX {
+  interface IntrinsicElements extends astroHTML.JSX.IntrinsicElements {}
+  interface IntrinsicAttributes extends astroHTML.JSX.IntrinsicAttributes {}
+}
+
+interface Window {
+  netlifyIdentity?: {
+    on(event: 'init', cb: (user: import('netlify-identity-widget').User | null) => void): void;
+    on(event: 'login', cb: (user: import('netlify-identity-widget').User) => void): void;
+    on(event: 'logout' | 'open' | 'close', cb: () => void): void;
+    on(event: 'error', cb: (err: Error) => void): void;
+  };
+}
 
 interface ImportMetaEnv {
   readonly MONGODB_URI: string;

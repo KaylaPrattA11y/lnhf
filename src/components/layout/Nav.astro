@@ -1,5 +1,6 @@
 ---
 // Nav.astro
+
 ---
 
 <header class="nav" role="banner">
@@ -30,19 +31,7 @@
     <!-- Right actions -->
     <div class="nav__actions">
       <!-- Pagefind search toggle -->
-      <button
-        class="nav__search-btn"
-        id="search-open"
-        aria-label="Open site search"
-        aria-controls="search-dialog"
-        aria-expanded="false"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <span class="sr-only">Search</span>
-      </button>
-
+       <!-- <Search /> -->
       <!-- Book Now CTA -->
       <a href="/booking" class="btn btn--primary btn--sm">Book a Tour</a>
 
@@ -114,59 +103,6 @@
       menuToggle?.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
     });
-  });
-
-  // ── Pagefind search dialog ──────────────────────────────────────
-  const searchOpen    = document.getElementById('search-open') as HTMLButtonElement;
-  const searchClose   = document.getElementById('search-close') as HTMLButtonElement;
-  const searchDialog  = document.getElementById('search-dialog') as HTMLDivElement;
-  const searchBackdrop = document.getElementById('search-backdrop') as HTMLDivElement;
-
-  let pagefindInitialized = false;
-
-  async function openSearch() {
-    searchDialog.hidden = false;
-    searchOpen?.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-
-    if (!pagefindInitialized) {
-      pagefindInitialized = true;
-      try {
-        // @ts-ignore — pagefind is injected post-build
-        const { PagefindUI } = await import('/pagefind/pagefind-ui.js');
-        new PagefindUI({
-          element: '#search-container',
-          showImages: false,
-          resetStyles: false,
-          translations: { placeholder: 'Search the site…' },
-        });
-      } catch {
-        // Pagefind only available after `npm run build`; gracefully fail in dev
-        const container = document.getElementById('search-container');
-        if (container) {
-          container.innerHTML = '<p style="padding:1rem;color:var(--color-text-muted)">Search is available in the built site.</p>';
-        }
-      }
-    }
-
-    // Focus first input
-    const input = searchDialog.querySelector('input') as HTMLInputElement;
-    setTimeout(() => input?.focus(), 50);
-  }
-
-  function closeSearch() {
-    searchDialog.hidden = true;
-    searchOpen?.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-    searchOpen?.focus();
-  }
-
-  searchOpen?.addEventListener('click', openSearch);
-  searchClose?.addEventListener('click', closeSearch);
-  searchBackdrop?.addEventListener('click', closeSearch);
-
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !searchDialog.hidden) closeSearch();
   });
 
   // ── Highlight active nav link ───────────────────────────────────
