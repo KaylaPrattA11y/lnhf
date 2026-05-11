@@ -1,0 +1,105 @@
+/* ============================================================
+   LNHF Design Tokens — derived from logo.svg color palette
+   Primary: #254aaf (Royal Blue)
+   Accent:  #e2a120 (Gold/Amber)
+   ============================================================ */
+
+:root {
+  /* Brand colors */
+  --color-primary:        #254aaf;
+  --color-primary-dark:   #1a3578;
+  --color-primary-light:  #3a62c8;
+  --color-accent:         #e2a120;
+  --color-accent-dark:    #c48b10;
+  --color-accent-light:   #f0c94a;
+
+  /* Neutrals */
+  --color-cream:          #f9f5ef;
+  --color-white:          #ffffff;
+  --color-gray-100:       #f4f1ec;
+  --color-gray-200:       #e8e3d9;
+  --color-gray-300:       #d8d8d8;
+  --color-gray-400:       #b0a99e;
+  --color-gray-500:       #888070;
+  --color-gray-700:       #4a4540;
+  --color-gray-900:       #1e1a16;
+
+  /* Semantic */
+  --color-text:           #1e1a16;
+  --color-text-muted:     #6b6560;
+  --color-border:         #ddd8ce;
+  --color-bg:             #f9f5ef;
+  --color-bg-alt:         #ffffff;
+
+  /* Booking status */
+  --color-available:      #2d7a40;
+  --color-available-bg:   #e8f5ec;
+  --color-booked:         #888070;
+  --color-booked-bg:      #f0ede8;
+
+  /* Typography */
+  --font-heading:         'Playfair Display', 'Georgia', serif;
+  --font-body:            'Lato', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:            'Fira Code', 'Consolas', monospace;
+
+  /* Font sizes (fluid) */
+  --text-xs:    0.75rem;
+  --text-sm:    0.875rem;
+  --text-base:  1rem;
+  --text-lg:    1.125rem;
+  --text-xl:    1.25rem;
+  --text-2xl:   1.5rem;
+  --text-3xl:   clamp(1.5rem, 3vw, 2rem);
+  --text-4xl:   clamp(2rem, 4vw, 2.75rem);
+  --text-5xl:   clamp(2.5rem, 5vw, 3.75rem);
+  --text-hero:  clamp(2.75rem, 6vw, 5rem);
+
+  /* Line heights */
+  --leading-tight:  1.25;
+  --leading-snug:   1.375;
+  --leading-normal: 1.6;
+  --leading-relaxed:1.75;
+
+  /* Spacing scale */
+  --space-1:   0.25rem;
+  --space-2:   0.5rem;
+  --space-3:   0.75rem;
+  --space-4:   1rem;
+  --space-5:   1.25rem;
+  --space-6:   1.5rem;
+  --space-8:   2rem;
+  --space-10:  2.5rem;
+  --space-12:  3rem;
+  --space-16:  4rem;
+  --space-20:  5rem;
+  --space-24:  6rem;
+  --space-32:  8rem;
+
+  /* Layout */
+  --container-sm:   640px;
+  --container-md:   768px;
+  --container-lg:   1024px;
+  --container-xl:   1280px;
+  --container-2xl:  1440px;
+
+  /* Borders & Radius */
+  --radius-sm:  0.25rem;
+  --radius-md:  0.5rem;
+  --radius-lg:  0.75rem;
+  --radius-xl:  1rem;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(30,26,22,0.08), 0 1px 2px rgba(30,26,22,0.06);
+  --shadow-md:  0 4px 12px rgba(30,26,22,0.10), 0 2px 4px rgba(30,26,22,0.06);
+  --shadow-lg:  0 10px 30px rgba(30,26,22,0.12), 0 4px 8px rgba(30,26,22,0.06);
+  --shadow-xl:  0 20px 50px rgba(30,26,22,0.15);
+
+  /* Transitions */
+  --transition-fast:    150ms ease;
+  --transition-base:    250ms ease;
+  --transition-slow:    400ms ease;
+
+  /* Nav height */
+  --nav-height: 4.5rem;
+}

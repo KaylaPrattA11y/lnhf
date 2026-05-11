@@ -1,0 +1,424 @@
+---
+// Nav.astro
+---
+
+<header class="nav" role="banner">
+  <div class="nav__container container">
+
+    <!-- Logo -->
+    <a href="/" class="nav__logo" aria-label="Lower Notley Hall Farm — Home">
+      <img src="/logo.svg" alt="Lower Notley Hall Farm crest" width="52" height="58" loading="eager" />
+      <span class="nav__logo-text">
+        <span class="nav__logo-name">Lower Notley Hall Farm</span>
+        <span class="nav__logo-tagline">Southern Maryland Waterfront Weddings</span>
+      </span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <nav class="nav__links" aria-label="Primary navigation">
+      <ul role="list">
+        <li><a href="/" class="nav__link">Home</a></li>
+        <li><a href="/about" class="nav__link">About</a></li>
+        <li><a href="/pricing" class="nav__link">Pricing</a></li>
+        <li><a href="/faqs" class="nav__link">FAQs</a></li>
+        <li><a href="/blog" class="nav__link">Blog</a></li>
+        <li><a href="/vendors" class="nav__link">Vendors</a></li>
+        <li><a href="/contact" class="nav__link">Contact</a></li>
+      </ul>
+    </nav>
+
+    <!-- Right actions -->
+    <div class="nav__actions">
+      <!-- Pagefind search toggle -->
+      <button
+        class="nav__search-btn"
+        id="search-open"
+        aria-label="Open site search"
+        aria-controls="search-dialog"
+        aria-expanded="false"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <span class="sr-only">Search</span>
+      </button>
+
+      <!-- Book Now CTA -->
+      <a href="/booking" class="btn btn--primary btn--sm">Book a Tour</a>
+
+      <!-- Mobile hamburger -->
+      <button
+        class="nav__hamburger"
+        id="menu-toggle"
+        aria-label="Open navigation menu"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+      >
+        <span class="nav__hamburger-bar"></span>
+        <span class="nav__hamburger-bar"></span>
+        <span class="nav__hamburger-bar"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div class="nav__mobile" id="mobile-menu" role="dialog" aria-label="Navigation menu" hidden>
+    <nav aria-label="Mobile navigation">
+      <ul role="list">
+        <li><a href="/" class="nav__mobile-link">Home</a></li>
+        <li><a href="/about" class="nav__mobile-link">About</a></li>
+        <li><a href="/booking" class="nav__mobile-link">Book a Tour</a></li>
+        <li><a href="/pricing" class="nav__mobile-link">Pricing</a></li>
+        <li><a href="/faqs" class="nav__mobile-link">FAQs</a></li>
+        <li><a href="/blog" class="nav__mobile-link">Blog</a></li>
+        <li><a href="/vendors" class="nav__mobile-link">Vendors</a></li>
+        <li><a href="/contact" class="nav__mobile-link">Contact</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<!-- Search dialog -->
+<div class="search-dialog" id="search-dialog" role="dialog" aria-label="Site search" aria-modal="true" hidden>
+  <div class="search-dialog__backdrop" id="search-backdrop"></div>
+  <div class="search-dialog__panel">
+    <div class="search-dialog__header">
+      <h2 class="search-dialog__title">Search</h2>
+      <button class="search-dialog__close" id="search-close" aria-label="Close search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="search-container"></div>
+  </div>
+</div>
+
+<script>
+  // ── Mobile menu toggle ──────────────────────────────────────────
+  const menuToggle = document.getElementById('menu-toggle') as HTMLButtonElement;
+  const mobileMenu = document.getElementById('mobile-menu') as HTMLDivElement;
+
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = !mobileMenu.hidden;
+    mobileMenu.hidden = isOpen;
+    menuToggle.setAttribute('aria-expanded', String(!isOpen));
+    menuToggle.setAttribute('aria-label', isOpen ? 'Open navigation menu' : 'Close navigation menu');
+    document.body.style.overflow = isOpen ? '' : 'hidden';
+  });
+
+  // Close mobile menu on link click
+  mobileMenu?.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      mobileMenu.hidden = true;
+      menuToggle?.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // ── Pagefind search dialog ──────────────────────────────────────
+  const searchOpen    = document.getElementById('search-open') as HTMLButtonElement;
+  const searchClose   = document.getElementById('search-close') as HTMLButtonElement;
+  const searchDialog  = document.getElementById('search-dialog') as HTMLDivElement;
+  const searchBackdrop = document.getElementById('search-backdrop') as HTMLDivElement;
+
+  let pagefindInitialized = false;
+
+  async function openSearch() {
+    searchDialog.hidden = false;
+    searchOpen?.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+
+    if (!pagefindInitialized) {
+      pagefindInitialized = true;
+      try {
+        // @ts-ignore — pagefind is injected post-build
+        const { PagefindUI } = await import('/pagefind/pagefind-ui.js');
+        new PagefindUI({
+          element: '#search-container',
+          showImages: false,
+          resetStyles: false,
+          translations: { placeholder: 'Search the site…' },
+        });
+      } catch {
+        // Pagefind only available after `npm run build`; gracefully fail in dev
+        const container = document.getElementById('search-container');
+        if (container) {
+          container.innerHTML = '<p style="padding:1rem;color:var(--color-text-muted)">Search is available in the built site.</p>';
+        }
+      }
+    }
+
+    // Focus first input
+    const input = searchDialog.querySelector('input') as HTMLInputElement;
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  function closeSearch() {
+    searchDialog.hidden = true;
+    searchOpen?.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    searchOpen?.focus();
+  }
+
+  searchOpen?.addEventListener('click', openSearch);
+  searchClose?.addEventListener('click', closeSearch);
+  searchBackdrop?.addEventListener('click', closeSearch);
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !searchDialog.hidden) closeSearch();
+  });
+
+  // ── Highlight active nav link ───────────────────────────────────
+  const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+  document.querySelectorAll<HTMLAnchorElement>('.nav__link, .nav__mobile-link').forEach(link => {
+    const href = new URL(link.href).pathname.replace(/\/$/, '') || '/';
+    if (href === currentPath || (href !== '/' && currentPath.startsWith(href))) {
+      link.setAttribute('aria-current', 'page');
+      link.classList.add('is-active');
+    }
+  });
+</script>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-md);
+  }
+
+  .nav__container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    height: var(--nav-height);
+  }
+
+  /* Logo */
+  .nav__logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .nav__logo img {
+    height: 42px;
+    width: auto;
+    filter: brightness(0) invert(1);
+  }
+
+  .nav__logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav__logo-name {
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-white);
+    line-height: 1.2;
+  }
+
+  .nav__logo-tagline {
+    font-size: var(--text-xs);
+    color: var(--color-accent-light);
+    letter-spacing: 0.03em;
+  }
+
+  /* Desktop links */
+  .nav__links {
+    display: none;
+  }
+
+  .nav__links ul {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: var(--space-1);
+  }
+
+  .nav__link {
+    display: inline-block;
+    padding: var(--space-2) var(--space-3);
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .nav__link:hover,
+  .nav__link.is-active,
+  .nav__link[aria-current="page"] {
+    color: var(--color-accent-light);
+    background: rgba(255,255,255,0.07);
+  }
+
+  /* Right actions */
+  .nav__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .nav__search-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .nav__search-btn:hover {
+    color: var(--color-accent-light);
+    background: rgba(255,255,255,0.07);
+  }
+
+  /* Hamburger */
+  .nav__hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .nav__hamburger-bar {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: rgba(255,255,255,0.85);
+    border-radius: 2px;
+    transition: background var(--transition-fast);
+  }
+
+  .nav__hamburger:hover .nav__hamburger-bar {
+    background: var(--color-accent-light);
+  }
+
+  /* Mobile menu */
+  .nav__mobile {
+    background: var(--color-primary-dark);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: var(--space-6) var(--space-6) var(--space-8);
+  }
+
+  .nav__mobile ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .nav__mobile-link {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    color: rgba(255,255,255,0.9);
+    text-decoration: none;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+
+  .nav__mobile-link:hover,
+  .nav__mobile-link.is-active {
+    background: rgba(255,255,255,0.1);
+    color: var(--color-accent-light);
+  }
+
+  /* Search dialog */
+  .search-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: var(--space-16);
+  }
+
+  .search-dialog[hidden] { display: none; }
+
+  .search-dialog__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(26,53,120,0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .search-dialog__panel {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin-inline: var(--space-4);
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+  }
+
+  .search-dialog__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .search-dialog__title {
+    font-size: var(--text-lg);
+    color: var(--color-primary-dark);
+  }
+
+  .search-dialog__close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    display: flex;
+    transition: color var(--transition-fast);
+  }
+
+  .search-dialog__close:hover { color: var(--color-primary); }
+
+  #search-container {
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  /* ── Responsive ─── */
+  @media (min-width: 1024px) {
+    .nav__links { display: block; }
+    .nav__hamburger { display: none; }
+
+    .nav__logo-name { font-size: var(--text-lg); }
+  }
+
+  @media (min-width: 768px) {
+    .nav__logo-text { display: flex; }
+  }
+</style>

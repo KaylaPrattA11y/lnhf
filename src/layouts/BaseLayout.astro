@@ -1,0 +1,91 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+}
+
+const {
+  title,
+  description,
+  ogImage = '/images/og-default.jpg',
+  canonicalUrl = Astro.url.href,
+} = Astro.props;
+
+const siteTitle = 'Lower Notley Hall Farm';
+const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Primary Meta -->
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content={canonicalUrl} />
+    <meta property="og:title"       content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image"       content={new URL(ogImage, Astro.site).href} />
+    <meta property="og:site_name"   content={siteTitle} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image"       content={new URL(ogImage, Astro.site).href} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+    <!-- Sitemap -->
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <!-- Pagefind CSS (only active after build) -->
+    <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  </head>
+
+  <body>
+    <!-- Skip to main content (accessibility) -->
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <slot name="above-nav" />
+
+    <slot name="nav">
+      <!-- Default nav is injected by individual pages -->
+    </slot>
+
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+
+    <slot name="footer">
+      <!-- Default footer is injected by individual pages -->
+    </slot>
+
+    <!-- Netlify Identity widget — required for admin auth -->
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script>
+      // Redirect after login/signup — prevents staying on netlify's modal page
+      if (window.netlifyIdentity) {
+        window.netlifyIdentity.on('init', (user: unknown) => {
+          if (!user) {
+            window.netlifyIdentity.on('login', () => {
+              document.location.href = '/admin/bookings';
+            });
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,71 @@
+---
+// StatsBar.astro
+const stats = [
+  { value: '50 miles', label: 'South of Washington, DC' },
+  { value: 'Up to 150', label: 'Guests Accommodated' },
+  { value: 'Top 3', label: 'Southern MD Venue — BusinessRate 2026 ★' },
+];
+---
+
+<div class="stats-bar" aria-label="Venue highlights">
+  <div class="stats-bar__inner container">
+    {stats.map((stat) => (
+      <div class="stats-bar__item">
+        <span class="stats-bar__value">{stat.value}</span>
+        <span class="stats-bar__label">{stat.label}</span>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .stats-bar {
+    background-color: var(--color-accent);
+    color: var(--color-primary-dark);
+  }
+
+  .stats-bar__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding-block: var(--space-6);
+    gap: var(--space-6);
+  }
+
+  .stats-bar__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4);
+  }
+
+  .stats-bar__value {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .stats-bar__label {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  @media (min-width: 640px) {
+    .stats-bar__inner {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+
+    .stats-bar__item {
+      border-right: 1px solid rgba(26,53,120,0.2);
+    }
+
+    .stats-bar__item:last-child {
+      border-right: none;
+    }
+  }
+</style>

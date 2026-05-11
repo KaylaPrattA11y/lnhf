@@ -1,0 +1,384 @@
+import { useState, useCallback } from 'react';
+
+interface BookingModalProps {
+  slot: { _id: string; date: string; startTime: string; endTime: string } | null;
+  onClose: () => void;
+  onSuccess: (slotId: string) => void;
+}
+
+function formatTime(t: string): string {
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hr = h % 12 || 12;
+  return `${hr}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+function formatDate(d: string): string {
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+}
+
+export default function BookingModal({ slot, onClose, onSuccess }: BookingModalProps) {
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '', partySize: '', message: '', botField: '',
+  });
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!slot) return;
+
+    // Honeypot check
+    if (form.botField) return;
+
+    setStatus('loading');
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/.netlify/functions/create-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slotId: slot._id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone || undefined,
+          partySize: form.partySize ? parseInt(form.partySize, 10) : undefined,
+          message: form.message || undefined,
+        }),
+      });
+
+      if (res.status === 409) {
+        setStatus('error');
+        setErrorMsg('This time slot was just booked by someone else. Please select another time.');
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Booking failed');
+      }
+
+      // Also notify via Netlify Forms
+      const formData = new URLSearchParams({
+        'form-name': 'booking-notification',
+        'guest-name': form.name,
+        'guest-email': form.email,
+        'guest-phone': form.phone,
+        'slot-date': formatDate(slot.date),
+        'slot-time': `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`,
+        'party-size': form.partySize,
+        'message': form.message,
+      });
+      fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
+        .catch(() => { /* non-critical */ });
+
+      setStatus('success');
+      onSuccess(slot._id as string);
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+    }
+  }, [slot, form, onSuccess]);
+
+  if (!slot) return null;
+
+  return (
+    <div
+      className="booking-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div className="booking-modal__backdrop" onClick={onClose} />
+
+      <div className="booking-modal__panel">
+        <button className="booking-modal__close" onClick={onClose} aria-label="Close booking form">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+
+        {status === 'success' ? (
+          <div className="booking-modal__success" role="status">
+            <div className="booking-modal__success-icon" aria-hidden="true">✓</div>
+            <h2 className="booking-modal__success-title">You're Booked!</h2>
+            <p>
+              Your tour is requested for <strong>{formatDate(slot.date)}</strong> at{' '}
+              <strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong>.
+            </p>
+            <p>We'll follow up at <strong>{form.email}</strong> to confirm. See you soon!</p>
+            <button className="btn btn--primary" onClick={onClose}>Done</button>
+          </div>
+        ) : (
+          <>
+            <div className="booking-modal__header">
+              <h2 className="booking-modal__title" id="modal-title">Book Your Tour</h2>
+              <p className="booking-modal__slot-info">
+                <strong>{formatDate(slot.date)}</strong>
+                <br />
+                {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
+              </p>
+            </div>
+
+            <form
+              className="booking-modal__form"
+              onSubmit={handleSubmit}
+              noValidate
+              aria-label="Tour booking form"
+            >
+              {/* Honeypot */}
+              <div style={{ position: 'absolute', left: '-9999px', opacity: 0 }} aria-hidden="true">
+                <input
+                  type="text"
+                  name="botField"
+                  value={form.botField}
+                  onChange={handleChange}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="booking-modal__grid">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="bm-name">
+                    Full Name <span className="required" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    id="bm-name"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                    autoComplete="name"
+                    aria-required="true"
+                    placeholder="Your full name"
+                    disabled={status === 'loading'}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="bm-email">
+                    Email Address <span className="required" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    id="bm-email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    autoComplete="email"
+                    aria-required="true"
+                    placeholder="your@email.com"
+                    disabled={status === 'loading'}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="bm-phone">Phone Number</label>
+                  <input
+                    className="form-input"
+                    type="tel"
+                    id="bm-phone"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    autoComplete="tel"
+                    placeholder="(301) 555-0100"
+                    disabled={status === 'loading'}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="bm-party">Estimated Party Size</label>
+                  <select
+                    className="form-select"
+                    id="bm-party"
+                    name="partySize"
+                    value={form.partySize}
+                    onChange={handleChange}
+                    disabled={status === 'loading'}
+                    aria-label="Estimated number of guests"
+                  >
+                    <option value="">Select size</option>
+                    <option value="1">Just browsing</option>
+                    <option value="25">Under 25</option>
+                    <option value="50">25 – 50</option>
+                    <option value="100">50 – 100</option>
+                    <option value="150">100 – 150</option>
+                  </select>
+                </div>
+
+                <div className="form-group booking-modal__full">
+                  <label className="form-label" htmlFor="bm-message">Message or Questions</label>
+                  <textarea
+                    className="form-textarea"
+                    id="bm-message"
+                    name="message"
+                    value={form.message}
+                    onChange={handleChange}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Tell us about your vision or ask any questions…"
+                    disabled={status === 'loading'}
+                  />
+                </div>
+              </div>
+
+              {status === 'error' && (
+                <div className="booking-modal__error" role="alert">
+                  <strong>Error: </strong>{errorMsg}
+                </div>
+              )}
+
+              <div className="booking-modal__actions">
+                <button
+                  type="submit"
+                  className="btn btn--primary"
+                  disabled={status === 'loading'}
+                  aria-busy={status === 'loading'}
+                >
+                  {status === 'loading' ? 'Booking…' : 'Confirm Booking'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={onClose}
+                  disabled={status === 'loading'}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+
+      <style>{`
+        .booking-modal {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-4);
+        }
+        .booking-modal__backdrop {
+          position: absolute;
+          inset: 0;
+          background: rgba(10,20,50,0.7);
+          backdrop-filter: blur(3px);
+        }
+        .booking-modal__panel {
+          position: relative;
+          z-index: 1;
+          background: var(--color-white);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-xl);
+          width: 100%;
+          max-width: 560px;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding: var(--space-8);
+        }
+        .booking-modal__close {
+          position: absolute;
+          top: var(--space-4);
+          right: var(--space-4);
+          background: var(--color-gray-100);
+          border: none;
+          border-radius: var(--radius-full);
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--color-text-muted);
+          transition: background var(--transition-fast);
+        }
+        .booking-modal__close:hover { background: var(--color-gray-200); }
+        .booking-modal__header {
+          margin-bottom: var(--space-6);
+          padding-right: var(--space-8);
+        }
+        .booking-modal__title {
+          font-size: var(--text-2xl);
+          color: var(--color-primary-dark);
+          margin-bottom: var(--space-2);
+        }
+        .booking-modal__slot-info {
+          color: var(--color-primary);
+          font-size: var(--text-base);
+          margin: 0;
+          background: var(--color-cream);
+          padding: var(--space-3) var(--space-4);
+          border-radius: var(--radius-md);
+          border-left: 4px solid var(--color-accent);
+        }
+        .booking-modal__grid {
+          display: grid;
+          gap: var(--space-4);
+          grid-template-columns: 1fr 1fr;
+          margin-bottom: var(--space-4);
+        }
+        .booking-modal__full { grid-column: 1 / -1; }
+        .booking-modal__error {
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+          border-radius: var(--radius-md);
+          padding: var(--space-3) var(--space-4);
+          margin-bottom: var(--space-4);
+          font-size: var(--text-sm);
+        }
+        .booking-modal__actions {
+          display: flex;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+        }
+        /* Success state */
+        .booking-modal__success {
+          text-align: center;
+          padding: var(--space-8) var(--space-4);
+        }
+        .booking-modal__success-icon {
+          width: 64px;
+          height: 64px;
+          background: var(--color-available);
+          color: white;
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          margin: 0 auto var(--space-6);
+        }
+        .booking-modal__success-title {
+          font-size: var(--text-3xl);
+          color: var(--color-primary-dark);
+          margin-bottom: var(--space-4);
+        }
+        .booking-modal__success p {
+          color: var(--color-text-muted);
+          margin-bottom: var(--space-3);
+        }
+        @media (max-width: 480px) {
+          .booking-modal__grid { grid-template-columns: 1fr; }
+          .booking-modal__panel { padding: var(--space-6) var(--space-4); }
+        }
+      `}</style>
+    </div>
+  );
+}

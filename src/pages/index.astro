@@ -1,0 +1,33 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import Hero from '@components/home/Hero.astro';
+import StatsBar from '@components/home/StatsBar.astro';
+import Blockquote from '@components/home/Blockquote.astro';
+import TheSetting from '@components/home/TheSetting.astro';
+import LatestPosts from '@components/home/LatestPosts.astro';
+import Testimonials from '@components/home/Testimonials';
+import TourForm from '@components/home/TourForm.astro';
+
+const description =
+  'Lower Notley Hall Farm is a historic Southern Maryland waterfront wedding venue in Chaptico, MD—50 miles from Washington, DC. Manor house, reception barn, and Wicomico River views for up to 150 guests.';
+---
+
+<BaseLayout
+  title="Southern Maryland Waterfront Weddings"
+  description={description}
+  ogImage="/images/og-home.jpg"
+>
+  <Nav slot="nav" />
+
+  <Hero />
+  <StatsBar />
+  <Blockquote />
+  <TheSetting />
+  <Testimonials client:load />
+  <LatestPosts />
+  <TourForm />
+
+  <Footer slot="footer" />
+</BaseLayout>

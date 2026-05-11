@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Block admin area from indexing
+Disallow: /admin/
+
+Sitemap: https://lowernotleyhallfarm.com/sitemap-index.xml

@@ -1,0 +1,26 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import BookingAdmin from '@components/admin/BookingAdmin';
+---
+
+<BaseLayout
+  title="Booking Admin"
+  description="Manage tour slot availability and bookings."
+>
+  <Nav slot="nav" />
+
+  <main class="admin-page">
+    <BookingAdmin client:only="react" />
+  </main>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .admin-page {
+    min-height: calc(100vh - var(--nav-height));
+    background: var(--color-gray-100);
+  }
+</style>

@@ -1,0 +1,39 @@
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Staging context — deploy staging branch to preview URL
+[context.staging]
+  command = "npm run build"
+  publish = "dist"
+
+# Development settings (used by `netlify dev`)
+[dev]
+  command = "npm run dev:cms"
+  port    = 3000
+
+# Security headers on all routes
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options              = "SAMEORIGIN"
+    X-Content-Type-Options       = "nosniff"
+    Referrer-Policy              = "strict-origin-when-cross-origin"
+    Permissions-Policy           = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security    = "max-age=63072000; includeSubDomains; preload"
+
+# Immutable cache for hashed assets
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache pagefind index files
+[[headers]]
+  for = "/pagefind/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

@@ -1,0 +1,105 @@
+---
+// BlogCard.astro
+interface Props {
+  title: string;
+  date: Date;
+  author?: string;
+  excerpt?: string;
+  featuredImage?: string;
+  slug: string;
+}
+
+const { title, date, author, excerpt, featuredImage, slug } = Astro.props;
+const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+
+<article class="blog-card card">
+  {featuredImage ? (
+    <a href={`/blog/${slug}`} tabindex="-1" aria-hidden="true">
+      <img
+        src={featuredImage}
+        alt=""
+        class="card__image blog-card__image"
+        loading="lazy"
+        width="640"
+        height="400"
+      />
+    </a>
+  ) : (
+    <div class="blog-card__placeholder" aria-hidden="true"></div>
+  )}
+
+  <div class="card__body">
+    <p class="blog-card__meta">
+      <time datetime={date.toISOString()}>{formattedDate}</time>
+      {author && <span> · {author}</span>}
+    </p>
+    <h3 class="blog-card__title">
+      <a href={`/blog/${slug}`}>{title}</a>
+    </h3>
+    {excerpt && <p class="blog-card__excerpt">{excerpt}</p>}
+    <a href={`/blog/${slug}`} class="blog-card__read-more" aria-label={`Read more: ${title}`}>
+      Read More <span aria-hidden="true">→</span>
+    </a>
+  </div>
+</article>
+
+<style>
+  .blog-card__image {
+    aspect-ratio: 16 / 9;
+    transition: transform var(--transition-slow);
+  }
+
+  .blog-card:hover .blog-card__image {
+    transform: scale(1.03);
+  }
+
+  .blog-card__placeholder {
+    height: 180px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  }
+
+  .blog-card__meta {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-2);
+  }
+
+  .blog-card__title {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-3);
+    line-height: var(--leading-snug);
+  }
+
+  .blog-card__title a {
+    color: var(--color-primary-dark);
+    text-decoration: none;
+  }
+
+  .blog-card__title a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .blog-card__excerpt {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+    line-height: var(--leading-normal);
+  }
+
+  .blog-card__read-more {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .blog-card__read-more:hover {
+    color: var(--color-accent-dark);
+  }
+</style>

@@ -1,0 +1,196 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+
+const vendors = [
+  {
+    category: 'Photography',
+    items: [
+      {
+        name: 'Candace Nicole Photography',
+        url: 'https://candacenicolephotography.com',
+        desc: 'Our in-house preferred photographer. Candace captures the light of Southern Maryland like no one else.',
+        featured: true,
+      },
+    ],
+  },
+  {
+    category: 'Catering',
+    items: [
+      { name: 'Local Catering Partners', url: null, desc: 'We partner with a curated list of Southern Maryland caterers. Contact us for current recommendations.' },
+    ],
+  },
+  {
+    category: 'Music & Entertainment',
+    items: [
+      { name: 'DJs & Live Bands', url: null, desc: 'We can recommend DJs and live ensembles that have performed beautifully in our barn. Ask us for names.' },
+    ],
+  },
+  {
+    category: 'Florists',
+    items: [
+      { name: 'Local Florists', url: null, desc: 'Several talented florists in the St. Mary\'s County area work regularly with us. Reach out for referrals.' },
+    ],
+  },
+  {
+    category: 'Officiants',
+    items: [
+      { name: 'Wedding Officiants', url: null, desc: 'We maintain a list of local officiants — from religious to secular ceremonies. Contact us for details.' },
+    ],
+  },
+  {
+    category: 'Transportation',
+    items: [
+      { name: 'Shuttle & Limo Services', url: null, desc: 'Our remote location makes shuttle service popular. We can suggest trusted local providers.' },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="Preferred Vendors"
+  description="Our recommended wedding vendors for Lower Notley Hall Farm — photographers, caterers, florists, officiants, and more in Southern Maryland."
+>
+  <Nav slot="nav" />
+
+  <section class="vendors-hero section section--sm" aria-label="Vendors hero">
+    <div class="container" style="text-align: center; max-width: 700px;">
+      <span class="section-header__eyebrow">Our Trusted Partners</span>
+      <h1 class="vendors-hero__title">Preferred Vendors</h1>
+      <hr class="divider" aria-hidden="true" />
+      <p class="vendors-hero__lead">
+        We've built relationships with exceptional vendors who know our property, share our values,
+        and will make your wedding day extraordinary. For our most current recommendations,
+        please <a href="/contact">contact Jack and Cindy</a> directly.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section--cream" aria-label="Vendor list">
+    <div class="container vendors-container">
+      {vendors.map(group => (
+        <div class="vendor-group">
+          <h2 class="vendor-group__title">{group.category}</h2>
+          <div class="vendor-cards">
+            {group.items.map(vendor => (
+              <article class={`vendor-card${vendor.featured ? ' vendor-card--featured' : ''}`}>
+                {vendor.featured && (
+                  <span class="vendor-card__badge">Preferred Partner</span>
+                )}
+                <h3 class="vendor-card__name">
+                  {vendor.url ? (
+                    <a href={vendor.url} target="_blank" rel="noopener noreferrer">
+                      {vendor.name}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                    </a>
+                  ) : vendor.name}
+                </h3>
+                <p class="vendor-card__desc">{vendor.desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div class="vendors-note">
+        <p>
+          <strong>Note:</strong> Our preferred vendor list is updated regularly.
+          Always confirm availability directly with the vendor, and{' '}
+          <a href="/contact">let us know</a> if you'd like our latest recommendations.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .vendors-hero { background: var(--color-primary-dark); color: var(--color-white); }
+  .vendors-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+  .vendors-hero__lead {
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-relaxed);
+  }
+  .vendors-hero__lead a { color: var(--color-accent); font-weight: 700; }
+  .vendors-hero .section-header__eyebrow { color: var(--color-accent); }
+  .vendors-hero .divider { border-color: rgba(255,255,255,0.2); }
+
+  .vendors-container { max-width: 900px; }
+
+  .vendor-group { margin-bottom: var(--space-10); }
+  .vendor-group__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid var(--color-accent);
+    display: inline-block;
+  }
+  .vendor-cards {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) {
+    .vendor-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  }
+  .vendor-card {
+    background: var(--color-white);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  .vendor-card--featured {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(226,161,32,0.2);
+  }
+  .vendor-card__badge {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    background: var(--color-accent);
+    color: var(--color-primary-dark);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+  }
+  .vendor-card__name {
+    font-size: var(--text-lg);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-3);
+  }
+  .vendor-card__name a { color: var(--color-primary); }
+  .vendor-card__name a:hover { color: var(--color-accent); }
+  .vendor-card__desc {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: var(--leading-relaxed);
+    margin: 0;
+  }
+
+  .vendors-note {
+    background: var(--color-cream);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-6);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .vendors-note a { color: var(--color-primary); font-weight: 700; }
+</style>

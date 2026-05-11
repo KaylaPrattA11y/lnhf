@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build outputs
+dist/
+.astro/
+
+# TinaCMS generated files
+.tina/__generated__/
+tina/__generated__/
+
+# environment variables — NEVER commit real secrets
+.env
+.env.local
+.env.production
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Netlify
+.netlify/
+
+# logs
+npm-debug.log*
+
+node_modules

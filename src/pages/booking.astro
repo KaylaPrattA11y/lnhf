@@ -1,0 +1,116 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import BookingCalendar from '@components/booking/BookingCalendar';
+---
+
+<BaseLayout
+  title="Book a Private Tour"
+  description="Schedule a Sunday tour of Lower Notley Hall Farm. Slots are available on Sundays — choose a time and book directly online."
+>
+  <Nav slot="nav" />
+
+  <section class="booking-hero section section--sm" aria-label="Booking page intro">
+    <div class="container" style="max-width: 780px; text-align: center;">
+      <span class="section-header__eyebrow">Private Tours</span>
+      <h1 class="booking-hero__title">Book Your Visit</h1>
+      <hr class="divider" aria-hidden="true" />
+      <p class="booking-hero__lead">
+        Tours are held on <strong>Sundays</strong> and last approximately one hour.
+        Select an available Sunday below, choose a time, and complete the short form.
+        Please give us <strong>48 hours notice</strong> to cancel.
+      </p>
+
+      <!-- Full-slots notice (requirement #2) -->
+      <div class="booking-notice" role="note">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>
+          <strong>All slots full?</strong> Please{' '}
+          <a href="/contact">contact us</a> and we will work towards a solution that meets your needs.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--cream booking-calendar-section" aria-label="Tour booking calendar">
+    <div class="container booking-calendar-wrap">
+      <BookingCalendar client:load />
+    </div>
+  </section>
+
+  <!-- Hidden Netlify form for email notifications triggered by BookingModal -->
+  <form
+    name="booking-notification"
+    data-netlify="true"
+    netlify-honeypot="bot-field"
+    hidden
+    aria-hidden="true"
+  >
+    <input type="hidden" name="form-name" value="booking-notification" />
+    <input name="bot-field" />
+    <input name="guest-name" />
+    <input name="guest-email" />
+    <input name="guest-phone" />
+    <input name="slot-date" />
+    <input name="slot-time" />
+    <input name="party-size" />
+    <textarea name="message"></textarea>
+  </form>
+
+  <!-- Trouble booking -->
+  <section class="section section--sm booking-help" aria-label="Booking help">
+    <div class="container" style="text-align: center; max-width: 600px;">
+      <p class="booking-help__text">
+        Having trouble booking?{' '}
+        <a href="/contact">Send us a message</a> or call{' '}
+        <a href="tel:3017692030">(301) 769-2030</a>.
+      </p>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .booking-hero { background: var(--color-primary-dark); color: var(--color-white); }
+  .booking-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+  .booking-hero__lead {
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-6);
+  }
+  .booking-hero .section-header__eyebrow { color: var(--color-accent); }
+  .booking-hero .divider { border-color: rgba(255,255,255,0.2); }
+
+  .booking-notice {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    background: rgba(226,161,32,0.15);
+    border: 1.5px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
+    color: var(--color-accent);
+    font-size: var(--text-base);
+    text-align: left;
+    max-width: 560px;
+  }
+  .booking-notice a { color: var(--color-accent); font-weight: 700; text-decoration: underline; }
+  .booking-notice svg { flex-shrink: 0; margin-top: 2px; }
+
+  .booking-calendar-wrap { max-width: 760px; }
+  .booking-help { background: var(--color-white); }
+  .booking-help__text {
+    color: var(--color-text-muted);
+    font-size: var(--text-base);
+  }
+</style>

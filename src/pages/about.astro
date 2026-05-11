@@ -1,0 +1,387 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import LightboxGallery from '@components/about/LightboxGallery';
+
+// Placeholder gallery images — replace src paths with real photos in public/images/gallery/
+const galleryImages = [
+  { src: '/images/gallery/manor-exterior.jpg',   alt: 'Manor house exterior', caption: 'The Manor House' },
+  { src: '/images/gallery/barn-reception.jpg',    alt: 'Reception barn interior', caption: 'The Reception Barn' },
+  { src: '/images/gallery/waterfront-sunset.jpg', alt: 'Wicomico River at sunset', caption: 'The Wicomico Waterfront' },
+  { src: '/images/gallery/ceremony-lawn.jpg',     alt: 'Outdoor ceremony lawn', caption: 'The Ceremony Lawn' },
+  { src: '/images/gallery/bridal-suite.jpg',      alt: 'Bridal suite', caption: 'The Bridal Suite' },
+  { src: '/images/gallery/guest-cottage.jpg',     alt: 'Guest cottage', caption: 'Guest Cottage' },
+  { src: '/images/gallery/barn-exterior.jpg',     alt: 'Barn exterior at dusk', caption: 'Barn at Dusk' },
+  { src: '/images/gallery/table-setting.jpg',     alt: 'Elegant reception table setting', caption: 'Table Setting' },
+  { src: '/images/gallery/aerial.jpg',            alt: 'Aerial view of the property', caption: 'The Property' },
+];
+---
+
+<BaseLayout
+  title="About the Venue"
+  description="Discover the history, grounds, and unique character of Lower Notley Hall Farm — a historic waterfront estate in Chaptico, Southern Maryland."
+>
+  <Nav slot="nav" />
+
+  <!-- Page Hero -->
+  <section class="about-hero section" aria-label="About page hero">
+    <div class="container about-hero__inner">
+      <span class="section-header__eyebrow">Chaptico, Maryland</span>
+      <h1 class="about-hero__title">A Venue With a Story</h1>
+      <hr class="divider" aria-hidden="true" />
+      <p class="about-hero__lead">
+        Set on the shores of the Wicomico River in Southern Maryland, Lower Notley Hall Farm is a place
+        where history breathes through every timber and every view. It's 50 miles from Washington, DC —
+        yet a world away.
+      </p>
+    </div>
+  </section>
+
+  <!-- Location & Setting -->
+  <section class="section section--cream" aria-labelledby="location-title">
+    <div class="container about-split">
+      <div class="about-split__text">
+        <span class="section-header__eyebrow">Where We Are</span>
+        <h2 class="about-split__title" id="location-title">Southern Maryland's Hidden Gem</h2>
+        <hr class="divider" aria-hidden="true" />
+        <p>
+          Tucked away in Chaptico, MD, our estate borders the tidal Wicomico River — offering panoramic
+          water views that transform with every season. We're surrounded by rolling farmland and a
+          thriving Amish community that has kept the pace of life gentle and unhurried.
+        </p>
+        <p>
+          The property sits at the end of a private lane, giving your guests a true sense of arrival —
+          the moment the trees part and the manor comes into view is one our couples remember forever.
+        </p>
+        <div class="about-split__facts">
+          <div class="about-fact">
+            <strong class="about-fact__num">50 mi</strong>
+            <span class="about-fact__label">South of Washington, DC</span>
+          </div>
+          <div class="about-fact">
+            <strong class="about-fact__num">150</strong>
+            <span class="about-fact__label">Guests accommodated</span>
+          </div>
+          <div class="about-fact">
+            <strong class="about-fact__num">5 acres</strong>
+            <span class="about-fact__label">Of private waterfront grounds</span>
+          </div>
+        </div>
+      </div>
+      <div class="about-split__media">
+        <div class="about-split__img-wrap">
+          <!-- PHOTO PLACEHOLDER: replace with actual image -->
+          <img
+            src="/images/about-location.jpg"
+            alt="Aerial view of the farm and Wicomico River"
+            class="about-split__img"
+            width="600"
+            height="450"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="section" aria-labelledby="history-title">
+    <div class="container about-split about-split--reverse">
+      <div class="about-split__text">
+        <span class="section-header__eyebrow">400 Years of History</span>
+        <h2 class="about-split__title" id="history-title">From Native Lands to Family Legacy</h2>
+        <hr class="divider" aria-hidden="true" />
+        <p>
+          Long before European settlement, the land along the Wicomico was home to the Piscataway
+          people. In the 17th century it passed to Thomas Notley, one of Maryland's early colonial
+          governors, whose name it still bears today.
+        </p>
+        <p>
+          The manor itself became the boyhood home of <strong>Robert E. T. Pogue</strong>, whose family
+          shaped much of the surrounding community. Today, Jack and Cindy carry that legacy forward —
+          welcoming families and couples to celebrate life's most meaningful moments on land that has
+          been cherished for centuries.
+        </p>
+      </div>
+      <div class="about-split__media">
+        <div class="about-split__img-wrap">
+          <!-- PHOTO PLACEHOLDER: replace with actual image -->
+          <img
+            src="/images/about-history.jpg"
+            alt="Historic manor house"
+            class="about-split__img"
+            width="600"
+            height="450"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The Crest -->
+  <section class="section section--cream" aria-labelledby="crest-title">
+    <div class="container about-crest">
+      <div class="about-crest__logo-wrap" aria-hidden="true">
+        <img src="/logo.svg" alt="Lower Notley Hall Farm crest" class="about-crest__logo" width="160" height="160" />
+      </div>
+      <div class="about-crest__content">
+        <span class="section-header__eyebrow">Our Crest</span>
+        <h2 class="about-crest__title" id="crest-title">Symbols of the Farm's Soul</h2>
+        <hr class="divider" aria-hidden="true" />
+        <ul class="about-crest__list">
+          <li>
+            <strong>Laurel wreath</strong> — peace, serenity, and the triumph of love.
+          </li>
+          <li>
+            <strong>Dagger</strong> — the courage to protect heritage and the bonds of family.
+          </li>
+          <li>
+            <strong>Dragonfly</strong> — a symbol of transformation, adaptability, and deep family loyalty,
+            drawn from the farm's natural wetland habitat.
+          </li>
+        </ul>
+        <p>
+          Together they embody Lower Notley Hall Farm: a place that honors the past while welcoming
+          the future.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spaces -->
+  <section class="section" aria-labelledby="spaces-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-header__eyebrow">The Spaces</span>
+        <h2 class="section-header__title" id="spaces-title">Four Distinct Vistas</h2>
+        <hr class="divider" aria-hidden="true" />
+      </div>
+      <div class="spaces-grid">
+        <article class="space-card">
+          <h3 class="space-card__title">The Manor House</h3>
+          <p class="space-card__desc">
+            A stately historic home that serves as your private retreat. Bridal suites, a groom's lounge,
+            and gathering rooms are yours for the weekend. Modern amenities, period character.
+          </p>
+        </article>
+        <article class="space-card">
+          <h3 class="space-card__title">The Reception Barn</h3>
+          <p class="space-card__desc">
+            Soaring timber ceilings, warm Edison lighting, and room for up to 150 guests create an
+            atmosphere that's simultaneously rustic and refined. The dance floor awaits.
+          </p>
+        </article>
+        <article class="space-card">
+          <h3 class="space-card__title">The Wicomico Waterfront</h3>
+          <p class="space-card__desc">
+            Your ceremony backdrop: the broad, shimmering Wicomico River. Exchange vows at the water's edge
+            as the tide moves gently beneath a sky full of possibilities.
+          </p>
+        </article>
+        <article class="space-card">
+          <h3 class="space-card__title">The Grounds &amp; Gardens</h3>
+          <p class="space-card__desc">
+            Acres of manicured lawn, wildflower borders, and ancient oaks frame the estate. Every corner
+            is a natural photo opportunity — no filter required.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Photo Gallery -->
+  <section class="section section--cream" aria-labelledby="gallery-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-header__eyebrow">Photo Gallery</span>
+        <h2 class="section-header__title" id="gallery-title">See It for Yourself</h2>
+        <hr class="divider" aria-hidden="true" />
+        <p class="section-header__subtitle">
+          Click any photo to view full size. Photos by{' '}
+          <a href="https://candacenicolephotography.com" target="_blank" rel="noopener noreferrer">
+            Candace Nicole Photography
+          </a>.
+        </p>
+      </div>
+      <LightboxGallery client:load images={galleryImages} columns={3} />
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section about-cta" aria-labelledby="about-cta-title">
+    <div class="container about-cta__inner">
+      <h2 class="about-cta__title" id="about-cta-title">Ready to See It in Person?</h2>
+      <p class="about-cta__sub">Schedule a private Sunday tour with Jack and Cindy.</p>
+      <div class="about-cta__btns">
+        <a href="/booking" class="btn btn--primary btn--lg">Book a Tour</a>
+        <a href="/pricing" class="btn btn--secondary btn--lg">See Pricing</a>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .about-hero { background: var(--color-primary-dark); color: var(--color-white); text-align: center; }
+  .about-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+  .about-hero__lead {
+    font-size: var(--text-xl);
+    max-width: 700px;
+    margin: 0 auto;
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-relaxed);
+  }
+  .about-hero .section-header__eyebrow { color: var(--color-accent); }
+  .about-hero .divider { border-color: rgba(255,255,255,0.2); }
+
+  /* Split layout */
+  .about-split {
+    display: grid;
+    gap: var(--space-12);
+    align-items: center;
+  }
+  @media (min-width: 1024px) {
+    .about-split { grid-template-columns: 1fr 1fr; }
+    .about-split--reverse .about-split__text { order: 2; }
+    .about-split--reverse .about-split__media { order: 1; }
+  }
+  .about-split__title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-5);
+  }
+  .about-split__text p {
+    color: var(--color-text);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-4);
+  }
+  .about-split__facts {
+    display: flex;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+    margin-top: var(--space-6);
+  }
+  .about-fact__num {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: var(--text-4xl);
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+  .about-fact__label {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .about-split__img-wrap {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+    aspect-ratio: 4/3;
+    background: var(--color-gray-200);
+  }
+  .about-split__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Crest */
+  .about-crest {
+    display: grid;
+    gap: var(--space-10);
+    align-items: center;
+  }
+  @media (min-width: 768px) {
+    .about-crest { grid-template-columns: 200px 1fr; }
+  }
+  .about-crest__logo-wrap {
+    display: flex;
+    justify-content: center;
+  }
+  .about-crest__logo { width: 160px; height: auto; }
+  .about-crest__title {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-5);
+  }
+  .about-crest__list {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-5);
+  }
+  .about-crest__list li {
+    margin-bottom: var(--space-3);
+    color: var(--color-text);
+    line-height: var(--leading-relaxed);
+  }
+
+  /* Spaces */
+  .spaces-grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px)  { .spaces-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .spaces-grid { grid-template-columns: repeat(4, 1fr); } }
+  .space-card {
+    background: var(--color-white);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
+  }
+  .space-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+  .space-card__title {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-3);
+  }
+  .space-card__title::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: var(--color-accent);
+    margin-bottom: var(--space-3);
+    border-radius: var(--radius-full);
+  }
+  .space-card__desc {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    margin: 0;
+  }
+
+  /* CTA */
+  .about-cta { background: var(--color-primary-dark); color: white; text-align: center; }
+  .about-cta__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: white;
+    margin-bottom: var(--space-4);
+  }
+  .about-cta__sub {
+    color: rgba(255,255,255,0.8);
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-8);
+  }
+  .about-cta__btns {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+</style>

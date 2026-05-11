@@ -1,0 +1,109 @@
+---
+// TheSetting.astro
+const spaces = [
+  {
+    name: 'The Manor House',
+    description:
+      'Float down a beautiful grand staircase, wander through historic double parlors, and explore rooms that have witnessed generations of Maryland history since the 17th century.',
+    icon: '🏛️',
+    link: '/about#manor-house',
+  },
+  {
+    name: 'The Reception Barn',
+    description:
+      'Built by the local Amish community, this spacious rustic board-and-batten barn sparkles with chandeliers and twinkling Edison lights just steps from the Wicomico River.',
+    icon: '🌾',
+    link: '/about#reception-barn',
+  },
+  {
+    name: 'The Wicomico Waterfront',
+    description:
+      'Wide open skies, cool river breezes, unimaginable sunsets, and the calls of herons, osprey, and eagles — the river is the soul of every celebration at LNHF.',
+    icon: '🌊',
+    link: '/about#waterfront',
+  },
+];
+---
+
+<section class="setting section section--cream" aria-labelledby="setting-title">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-header__eyebrow">The Venue</span>
+      <h2 class="section-header__title" id="setting-title">The Setting</h2>
+      <hr class="divider" aria-hidden="true" />
+      <p class="section-header__subtitle">
+        Lower Notley Hall Farm is an award-winning, family-owned historic waterfront
+        wedding venue with reception barn, located in Southern Maryland just 50 miles
+        south of Washington, DC.
+      </p>
+    </div>
+
+    <div class="setting__grid">
+      {spaces.map((space) => (
+        <article class="setting__card card">
+          <div class="setting__card-icon" aria-hidden="true">{space.icon}</div>
+          <div class="card__body">
+            <h3 class="setting__card-title">{space.name}</h3>
+            <p>{space.description}</p>
+            <a href={space.link} class="setting__card-link">
+              Learn more <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <div class="setting__cta">
+      <a href="/about" class="btn btn--secondary">Explore the Full Venue</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .setting__grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    margin-bottom: var(--space-12);
+  }
+
+  .setting__card {
+    text-align: center;
+  }
+
+  .setting__card-icon {
+    font-size: 3rem;
+    padding: var(--space-6) var(--space-6) var(--space-2);
+  }
+
+  .setting__card-title {
+    font-size: var(--text-xl);
+    color: var(--color-primary-dark);
+    margin-bottom: var(--space-3);
+  }
+
+  .setting__card-link {
+    display: inline-block;
+    margin-top: var(--space-4);
+    font-weight: 700;
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .setting__card-link:hover {
+    color: var(--color-accent-dark);
+  }
+
+  .setting__cta {
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .setting__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

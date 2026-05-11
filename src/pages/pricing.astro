@@ -1,0 +1,60 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import PricingTable from '@components/pricing/PricingTable';
+---
+
+<BaseLayout
+  title="Wedding Pricing"
+  description="Transparent wedding pricing for Lower Notley Hall Farm. Use our interactive estimator to build your package. Starting at $7,500."
+>
+  <Nav slot="nav" />
+
+  <section class="pricing-hero section section--sm" aria-label="Pricing hero">
+    <div class="container" style="text-align: center; max-width: 760px;">
+      <span class="section-header__eyebrow">Transparent Pricing</span>
+      <h1 class="pricing-hero__title">Wedding Package Estimator</h1>
+      <hr class="divider" aria-hidden="true" />
+      <p class="pricing-hero__lead">
+        Check or uncheck the options below to build your custom estimate. All packages are subject to
+        a separate refundable damage deposit and a non-refundable retaining fee to hold your date.
+      </p>
+      <p class="pricing-hero__note">
+        Prices reflect current rates and may be updated. Contact us to confirm your quote.
+      </p>
+    </div>
+  </section>
+
+  <section class="section pricing-tool-section" aria-label="Pricing estimator">
+    <div class="container" style="max-width: 960px;">
+      <PricingTable client:load />
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .pricing-hero { background: var(--color-primary-dark); color: var(--color-white); }
+  .pricing-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+  .pricing-hero__lead {
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-3);
+  }
+  .pricing-hero__note {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+  }
+  .pricing-hero .section-header__eyebrow { color: var(--color-accent); }
+  .pricing-hero .divider { border-color: rgba(255,255,255,0.2); }
+  .pricing-tool-section { background: var(--color-gray-100); }
+</style>

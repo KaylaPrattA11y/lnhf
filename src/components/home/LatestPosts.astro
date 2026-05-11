@@ -1,0 +1,64 @@
+---
+// LatestPosts.astro — shows posts with showOnHomepage=true OR published in last 3 months
+import { getCollection } from 'astro:content';
+import BlogCard from '../blog/BlogCard.astro';
+
+const threeMonthsAgo = new Date();
+threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+const allPosts = await getCollection('blog');
+const latestPosts = allPosts
+  .filter(post => post.data.showOnHomepage || post.data.date >= threeMonthsAgo)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+---
+
+{latestPosts.length > 0 && (
+  <section class="latest-posts section" aria-labelledby="blog-section-title">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-header__eyebrow">From Our Blog</span>
+        <h2 class="section-header__title" id="blog-section-title">Latest Updates</h2>
+        <hr class="divider" aria-hidden="true" />
+      </div>
+
+      <div class="latest-posts__grid">
+        {latestPosts.map(post => (
+          <BlogCard
+            title={post.data.title}
+            date={post.data.date}
+            author={post.data.author}
+            excerpt={post.data.excerpt}
+            featuredImage={post.data.featuredImage}
+            slug={post.slug}
+          />
+        ))}
+      </div>
+
+      <div class="latest-posts__all">
+        <a href="/blog" class="btn btn--secondary">All Blog Posts</a>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .latest-posts__grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    margin-bottom: var(--space-10);
+  }
+
+  .latest-posts__all {
+    text-align: center;
+  }
+
+  @media (min-width: 640px) {
+    .latest-posts__grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (min-width: 1024px) {
+    .latest-posts__grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
