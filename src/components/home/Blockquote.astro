@@ -6,9 +6,9 @@
   <div class="container">
     <blockquote class="venue-quote">
       <p class="venue-quote__text">
-        &ldquo;Step back in time&hellip; to a place where the past meets the present
-        and your future begins. Imagine string quartets, or fiddles firing up bluegrass
-        on the covered porch — sunsets more intoxicating than champagne or fine wine.&rdquo;
+        &ldquo;Standing aside the banks of the serene Wicomico River, you may enjoy cool river
+        breezes and unimaginable sunsets with gulls, heron and osprey.
+        An eagle sighting is not uncommon.&rdquo;
       </p>
       <footer class="venue-quote__footer">
         <hr class="divider" aria-hidden="true" />
@@ -20,23 +20,32 @@
 
 <style>
   .blockquote-section {
-    background:
-      linear-gradient(
-        rgba(26,53,120,0.88),
-        rgba(26,53,120,0.88)
-      ),
-      /*
-       * PHOTO PLACEHOLDER
-       * Replace with a moody river/sunset photo:
-       *   url('/images/blockquote-bg.jpg') center/cover fixed
-       */
-      linear-gradient(135deg, #1a3578, #254aaf, #1a3050);
-    background-attachment: fixed;
-    background-size: cover;
+    background-color: var(--color-river-deep);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* PHOTO PLACEHOLDER
+   * Replace with a moody river/sunset photo:
+   *   url('/images/blockquote-bg.jpg') center/cover fixed
+   */
+  .blockquote-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=60')
+      center/cover;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  .blockquote-section > .container {
+    position: relative;
+    z-index: 1;
   }
 
   .venue-quote {
-    max-width: 780px;
+    max-width: 720px;
     margin-inline: auto;
     text-align: center;
     border: none;
@@ -45,12 +54,12 @@
 
   .venue-quote__text {
     font-family: var(--font-heading);
-    font-size: clamp(1.4rem, 3vw, 2.1rem);
+    font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+    font-weight: 300;
     font-style: italic;
-    line-height: var(--leading-relaxed);
-    color: var(--color-white);
+    line-height: 1.5;
+    color: rgba(245, 240, 232, 0.90);
     margin-bottom: var(--space-8);
-    max-width: 100%;
   }
 
   .venue-quote__footer {
@@ -61,11 +70,12 @@
   }
 
   .venue-quote__footer cite {
+    font-family: var(--font-body);
     font-style: normal;
-    font-size: var(--text-sm);
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-weight: 300;
+    font-size: 0.65rem;
+    letter-spacing: 0.28em;
     text-transform: uppercase;
-    color: var(--color-accent-light);
+    color: var(--color-gold-light);
   }
 </style>

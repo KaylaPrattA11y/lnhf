@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
@@ -26,13 +26,13 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
     </div>
   </section>
 
-  <section class="section section--cream" aria-label="FAQ accordion">
+  <section class="section bg-arabesque" aria-label="FAQ accordion">
     <div class="container faqs-container">
       <div class="faq-list" role="list">
         {sorted.map(async entry => {
-          const { Content } = await entry.render();
-          const btnId   = `faq-btn-${entry.slug}`;
-          const panelId = `faq-panel-${entry.slug}`;
+          const { Content } = await render(entry);
+          const btnId   = `faq-btn-${entry.id}`;
+          const panelId = `faq-panel-${entry.id}`;
           return (
             <div class="faq-item" role="listitem">
               <h2 class="faq-item__heading">

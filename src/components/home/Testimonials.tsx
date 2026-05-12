@@ -52,7 +52,7 @@ export default function Testimonials() {
   const t = testimonials[current];
 
   return (
-    <section className="testimonials" aria-label="Guest testimonials" aria-live="polite">
+    <section className="testimonials bg-outline-circles" aria-label="Guest testimonials" aria-live="polite">
       <div className="testimonials__inner">
         <div className={`testimonials__slide${isAnimating ? ' is-animating' : ''}`}>
           <blockquote className="testimonials__quote">
@@ -102,7 +102,6 @@ export default function Testimonials() {
 
       <style>{`
         .testimonials {
-          background-color: var(--color-primary-dark);
           padding-block: var(--space-20);
         }
         .testimonials__inner {
@@ -112,7 +111,12 @@ export default function Testimonials() {
           text-align: center;
         }
         .testimonials__slide {
+          background: var(--color-bark-deep);
           transition: opacity 0.3s ease;
+          border-radius: var(--space-5);
+          corner-shape: bevel;
+          color: white;
+          padding: var(--space-10) var(--space-5) var(--space-5) var(--space-5);
         }
         .testimonials__slide.is-animating {
           opacity: 0;
@@ -164,7 +168,7 @@ export default function Testimonials() {
           gap: var(--space-6);
         }
         .testimonials__arrow {
-          background: rgba(255,255,255,0.1);
+          background: var(--color-accent-dark);
           border: 1px solid rgba(255,255,255,0.2);
           color: rgba(255,255,255,0.8);
           border-radius: var(--radius-full);
@@ -189,7 +193,7 @@ export default function Testimonials() {
           width: 10px;
           height: 10px;
           border-radius: var(--radius-full);
-          background: rgba(255,255,255,0.3);
+          background: #fff;
           border: none;
           cursor: pointer;
           padding: 0;
@@ -197,7 +201,7 @@ export default function Testimonials() {
         }
         .testimonials__dot.is-active,
         .testimonials__dot[aria-selected="true"] {
-          background: var(--color-accent);
+          background: var(--color-river-deep);
           transform: scale(1.3);
         }
       `}</style>

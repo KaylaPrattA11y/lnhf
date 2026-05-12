@@ -1,8 +1,22 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import PricingTable from '@components/pricing/PricingTable';
+
+const rawEntries = await getCollection('pricingTableEntries');
+const entries = rawEntries
+  .map(e => ({ id: e.id, ...e.data }))
+  // sort by sortOrder, with a default of 99 if not set, so that entries appear in the intended order
+  .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+  // also sort by feeType, with static fees first, since those are the ones that should be added together for the base package
+  .sort((a, b) => {
+    if (a.feeType === b.feeType) {
+      return (a.sortOrder ?? 99) - (b.sortOrder ?? 99);
+    }
+    return a.feeType === 'static' ? -1 : 1;
+  });
 ---
 
 <BaseLayout
@@ -28,7 +42,7 @@ import PricingTable from '@components/pricing/PricingTable';
 
   <section class="section pricing-tool-section" aria-label="Pricing estimator">
     <div class="container" style="max-width: 960px;">
-      <PricingTable client:load />
+      <PricingTable entries={entries} client:only="react" />
     </div>
   </section>
 

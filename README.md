@@ -444,8 +444,8 @@ The site uses **vanilla CSS** with no CSS framework. Design tokens are defined a
 
 ### Typography
 
-- **Headings:** Playfair Display (Google Fonts, serif)
-- **Body:** Lato (Google Fonts, sans-serif)
+- **Headings:** Cormorant Garamond
+- **Body:** Jost
 - Font sizes use `clamp()` for fluid scaling between mobile and desktop.
 
 ### Breakpoints

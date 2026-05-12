@@ -30,7 +30,7 @@ const latestPosts = allPosts
             author={post.data.author}
             excerpt={post.data.excerpt}
             featuredImage={post.data.featuredImage}
-            slug={post.slug}
+            slug={post.id.replace(/\.mdx?$/, '')}
           />
         ))}
       </div>

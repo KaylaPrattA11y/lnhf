@@ -1,129 +1,244 @@
 ---
 // Hero.astro
 ---
+
 <section class="hero" aria-label="Welcome to Lower Notley Hall Farm">
-  <div class="hero__bg" aria-hidden="true"></div>
 
-  <div class="hero__content container">
-    <p class="hero__eyebrow">Southern Maryland Waterfront Weddings</p>
-    <h1 class="hero__title">Step Back in Time</h1>
-    <p class="hero__subtitle">
-      A place where the past meets the present — and your future begins.<br />
-      Historic Victorian Manor. Rustic Reception Barn. Wicomico Riverfront.
-    </p>
-
-    <div class="hero__ctas">
-      <a href="/booking" class="btn btn--primary btn--lg">Book a Private Tour</a>
-      <a href="/about"   class="btn btn--outline-white btn--lg">Discover the Venue</a>
+  <!-- LEFT — dark photo panel -->
+  <div class="hero__left">
+    <div class="hero__left-bg" aria-hidden="true"></div>
+    <div class="hero__left-content">
+      <p class="hero__eyebrow">Chaptico, Maryland · On the Wicomico River</p>
+      <h1 class="hero__title">Where time<br>stands <em>still</em></h1>
+      <p class="hero__subtitle">
+        Sunsets more intoxicating than champagne. River breezes through ancient oaks.
+        A place where your story becomes the one people talk about for years.
+      </p>
+      <div class="hero__ctas">
+        <a href="/booking" class="btn btn--primary btn--lg">Book a Tour</a>
+        <a href="/about"   class="btn btn--outline-white btn--lg">Explore the Farm</a>
+      </div>
     </div>
   </div>
 
-  <div class="hero__scroll-hint" aria-hidden="true">
-    <span></span>
+  <!-- RIGHT — cream stats panel -->
+  <div class="hero__right">
+    <div class="hero__stat-grid">
+      <div class="hero__stat">
+        <span class="hero__stat-number">50</span>
+        <span class="hero__stat-label">Miles south of Washington, DC</span>
+      </div>
+      <div class="hero__stat">
+        <span class="hero__stat-number">~150</span>
+        <span class="hero__stat-label">Guest capacity</span>
+      </div>
+      <div class="hero__stat">
+        <span class="hero__stat-number">1</span>
+        <span class="hero__stat-label">Wedding at a time — yours</span>
+      </div>
+      <div class="hero__stat">
+        <span class="hero__stat-number">★ 5</span>
+        <span class="hero__stat-label">Stars across 30+ reviews</span>
+      </div>
+    </div>
+
+    <div class="hero__location">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+      <div>
+        <strong>36290 Notley Manor Lane, Chaptico MD</strong>
+        15 miles west of Leonardtown · (301) 769-2030
+      </div>
+    </div>
   </div>
+
 </section>
 
 <style>
   .hero {
-    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
     min-height: calc(100vh - var(--nav-height));
-    display: flex;
-    align-items: center;
-    overflow: hidden;
   }
 
-  /* Background — replace with actual photo via CSS custom property or inline style */
-  .hero__bg {
+  /* ── Left panel — dark photo ──────────────────────── */
+  .hero__left {
+    background-color: var(--color-bark);
+    display: flex;
+    align-items: center;
+    padding: 5rem 3rem 5rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 60vh;
+  }
+
+  /* PHOTO PLACEHOLDER
+   * Replace the gradient background-image below with your hero photo:
+   *   url('/images/hero-waterfront.jpg') center/cover no-repeat
+   */
+  .hero__left-bg {
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(
-        160deg,
-        rgba(26,53,120,0.82) 0%,
-        rgba(26,53,120,0.55) 60%,
-        rgba(37,74,175,0.45) 100%
-      ),
-      /*
-       * PHOTO PLACEHOLDER
-       * Replace this gradient with your hero photograph:
-       *   url('/images/hero-waterfront.jpg') center/cover no-repeat
-       */
-      linear-gradient(135deg, #1a3578 0%, #254aaf 40%, #2d5580 70%, #1a3050 100%);
+      linear-gradient(160deg, rgba(61,46,30,0.78) 0%, rgba(61,46,30,0.50) 100%),
+      linear-gradient(135deg, #3d2e1e 0%, #2d5563 60%, #261c10 100%);
     background-size: cover;
-    background-position: center;
   }
 
-  .hero__content {
+  .hero__left-content {
     position: relative;
     z-index: 1;
-    padding-block: var(--space-20);
-    max-width: 800px;
+    animation: fadeUp 0.9s ease 0.2s both;
   }
 
   .hero__eyebrow {
-    font-size: var(--text-sm);
-    font-weight: 700;
-    letter-spacing: 0.14em;
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: 300;
+    letter-spacing: 0.30em;
     text-transform: uppercase;
-    color: var(--color-accent-light);
-    margin-bottom: var(--space-4);
+    color: var(--color-gold-light);
+    margin-bottom: 1.5rem;
   }
 
   .hero__title {
+    font-family: var(--font-heading);
+    font-weight: 300;
     font-size: var(--text-hero);
-    color: var(--color-white);
-    line-height: 1.1;
-    margin-bottom: var(--space-6);
+    line-height: 1.05;
+    color: var(--color-cream);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero__title em {
     font-style: italic;
+    color: var(--color-gold-light);
   }
 
   .hero__subtitle {
-    font-size: var(--text-xl);
-    color: rgba(255,255,255,0.88);
-    line-height: var(--leading-relaxed);
-    margin-bottom: var(--space-10);
-    max-width: 58ch;
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 0.92rem;
+    line-height: 1.85;
+    color: rgba(245, 240, 232, 0.70);
+    max-width: 400px;
+    margin-bottom: 3rem;
   }
 
   .hero__ctas {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-4);
+    gap: 1rem;
   }
 
-  /* Animated scroll hint */
-  .hero__scroll-hint {
-    position: absolute;
-    bottom: var(--space-8);
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .hero__scroll-hint span {
-    display: block;
-    width: 26px;
-    height: 40px;
-    border: 2px solid rgba(255,255,255,0.4);
-    border-radius: 13px;
+  /* ── Right panel — cream stats ────────────────────── */
+  .hero__right {
+    background-color: var(--color-cream);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem 3rem;
     position: relative;
   }
 
-  .hero__scroll-hint span::before {
+  /* Subtle watermark on cream panel */
+  .hero__right::before {
     content: '';
     position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 8px;
-    background: rgba(255,255,255,0.7);
-    border-radius: 2px;
-    animation: scroll-hint 1.8s ease-in-out infinite;
+    inset: 0;
+    background: url('https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=60')
+      center/cover no-repeat;
+    opacity: 0.06;
+    pointer-events: none;
   }
 
-  @keyframes scroll-hint {
-    0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    80%  { opacity: 0; transform: translateX(-50%) translateY(14px); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  .hero__stat-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3.5rem;
+    animation: fadeUp 0.9s ease 0.3s both;
+  }
+
+  .hero__stat {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-mist);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .hero__stat-number {
+    font-family: var(--font-heading);
+    font-weight: 300;
+    font-size: 2.8rem;
+    color: var(--color-gold);
+    line-height: 1;
+  }
+
+  .hero__stat-label {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .hero__location {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-warm-white);
+    border-left: 2px solid var(--color-gold);
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+    animation: fadeUp 0.9s ease 0.45s both;
+  }
+
+  .hero__location svg { color: var(--color-gold); flex-shrink: 0; margin-top: 2px; }
+
+  .hero__location strong {
+    display: block;
+    color: var(--color-bark);
+    font-weight: 500;
+    font-size: 0.88rem;
+    margin-bottom: 2px;
+  }
+
+  /* ── Animation ────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Responsive ───────────────────────────────────── */
+  @media (min-width: 900px) {
+    .hero {
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    .hero__left {
+      min-height: unset;
+      padding: 7rem 4rem 6rem 5rem;
+    }
+
+    .hero__right {
+      padding: 6rem 4rem 6rem 5rem;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .hero__left  { padding: 7rem 5rem 7rem 6rem; }
+    .hero__right { padding: 6rem 5rem 6rem 6rem; }
   }
 </style>

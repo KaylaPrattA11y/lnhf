@@ -1,28 +1,45 @@
 import { useState } from 'react';
-import { BASE_PRICE, DAMAGE_DEPOSIT, RETAINING_FEE, ADJUSTMENTS, NOTES } from '../../data/pricing';
+import { NOTES } from '../../data/pricing';
 
-export default function PricingTable() {
+interface PricingTableEntry {
+  id: string;
+  name: string;
+  feeType: 'static' | 'dynamic';
+  adjustment: number;
+  perUnit: boolean;
+  sortOrder: number;
+  description?: string;
+  maxUnits?: number; // only used if perUnit is true
+}
+
+interface PricingTableProps {
+  entries: PricingTableEntry[];
+}
+
+export default function PricingTable({ entries }: PricingTableProps) {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  const toggle = (id: string) => {
-    setChecked(prev => ({ ...prev, [id]: !prev[id] }));
-    if (!checked[id] && !quantities[id]) {
-      setQuantities(prev => ({ ...prev, [id]: 1 }));
+  const estimatedTotal = entries.reduce((sum, ent) => {
+    if (ent.feeType === 'static') return sum + ent.adjustment;
+    if (ent.feeType === 'dynamic' && checked[ent.name]) {
+      const qty = ent.perUnit ? (quantities[ent.name] ?? 1) : 1;
+      return sum + ent.adjustment * qty;
+    }
+    return sum;
+  }, 0);
+
+  const toggle = (entry: PricingTableEntry) => {
+    setChecked(prev => ({ ...prev, [entry.name]: !prev[entry.name] }));
+    if (!checked[entry.name] && !quantities[entry.name]) {
+      setQuantities(prev => ({ ...prev, [entry.name]: 1 }));
     }
   };
 
-  const setQty = (id: string, qty: number) => {
-    setQuantities(prev => ({ ...prev, [id]: Math.max(1, qty) }));
+  const setQty = (name: string, qty: number, max?: number) => {
+    const clamped = Math.min(Math.max(1, qty), max ?? Infinity);
+    setQuantities(prev => ({ ...prev, [name]: clamped }));
   };
-
-  const adjustmentTotal = ADJUSTMENTS.reduce((sum, adj) => {
-    if (!checked[adj.id]) return sum;
-    const qty = adj.perUnit ? (quantities[adj.id] ?? 1) : 1;
-    return sum + adj.amount * qty;
-  }, 0);
-
-  const estimatedTotal = Math.max(0, BASE_PRICE + adjustmentTotal);
 
   const fmt = (n: number) =>
     n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
@@ -44,78 +61,53 @@ export default function PricingTable() {
             </tr>
           </thead>
           <tbody>
-            {/* Base price row */}
-            <tr className="pricing-table__row pricing-table__row--base">
-              <td className="pricing-table__label">
-                <strong>Base Package</strong>
-                <span className="pricing-table__desc">
-                  Full weekend use of the property (see notes below)
-                </span>
-              </td>
-              <td className="pricing-table__amount">{fmt(BASE_PRICE)}</td>
-              <td></td>
-            </tr>
-
             {/* Adjustable rows */}
-            {ADJUSTMENTS.map(adj => (
+            {entries.map(ent => (
               <tr
-                key={adj.id}
-                className={`pricing-table__row${checked[adj.id] ? ' is-checked' : ''}`}
+                key={ent.name}
+                className={`pricing-table__row${checked[ent.name] ? ' is-checked' : ''}${ent.feeType === 'static' ? ' is-static' : ''}`}
               >
                 <td className="pricing-table__label">
+                  {ent.feeType === 'static' ? (
+                    <span className="pricing-table__check-label">{ent.name}</span>
+                  ) : (
                   <label className="pricing-table__check-label">
                     <input
                       type="checkbox"
                       className="pricing-table__checkbox"
-                      checked={checked[adj.id] ?? false}
-                      onChange={() => toggle(adj.id)}
-                      aria-describedby={adj.description ? `desc-${adj.id}` : undefined}
+                      value={ent.adjustment}
+                      checked={checked[ent.name] ?? false}
+                      onChange={() => toggle(ent)}
+                      aria-describedby={ent.description ? `desc-${ent.name}` : undefined}
                     />
-                    <span className="pricing-table__check-text">{adj.label}</span>
+                    <span className="pricing-table__check-text">{ent.name}</span>
                   </label>
-                  {adj.description && (
-                    <span id={`desc-${adj.id}`} className="pricing-table__desc">{adj.description}</span>
+                  )}
+                  {ent.description && (
+                    <span id={`desc-${ent.name}`} className="pricing-table__desc">{ent.description}</span>
                   )}
                 </td>
                 <td className="pricing-table__amount" aria-live="polite">
-                  <span className={adj.amount < 0 ? 'is-discount' : 'is-surcharge'}>
-                    {adj.amount < 0 ? '−' : '+'}{fmt(Math.abs(adj.amount))}
-                    {adj.perUnit && checked[adj.id] && ` × ${quantities[adj.id] ?? 1}`}
+                  <span className={ent.adjustment < 0 ? 'is-discount' : 'is-surcharge'}>
+                    {ent.adjustment < 0 ? '−' : '+'}{fmt(Math.abs(ent.adjustment))}
+                    {ent.perUnit && checked[ent.name] && ` × ${quantities[ent.name] ?? 1}`}
                   </span>
                 </td>
                 <td className="pricing-table__qty">
-                  {adj.perUnit && checked[adj.id] && (
+                  {ent.perUnit && checked[ent.name] && (
                     <input
                       type="number"
                       className="pricing-table__qty-input"
                       min="1"
-                      max="10"
-                      value={quantities[adj.id] ?? 1}
-                      onChange={e => setQty(adj.id, parseInt(e.target.value, 10))}
-                      aria-label={`Quantity for ${adj.label}`}
+                      max={ent.maxUnits}
+                      value={quantities[ent.name] ?? 1}
+                      onChange={e => setQty(ent.name, parseInt(e.target.value, 10), ent.maxUnits)}
+                      aria-label={`Quantity for ${ent.name}`}
                     />
                   )}
                 </td>
               </tr>
             ))}
-
-            {/* Fixed fees */}
-            <tr className="pricing-table__row pricing-table__row--fixed">
-              <td className="pricing-table__label">
-                <strong>Damage Deposit</strong>
-                <span className="pricing-table__desc">Refundable; not included in package estimate</span>
-              </td>
-              <td className="pricing-table__amount">{fmt(DAMAGE_DEPOSIT)}</td>
-              <td></td>
-            </tr>
-            <tr className="pricing-table__row pricing-table__row--fixed">
-              <td className="pricing-table__label">
-                <strong>Retaining Fee</strong>
-                <span className="pricing-table__desc">Applied toward final balance; not included in estimate</span>
-              </td>
-              <td className="pricing-table__amount">{fmt(RETAINING_FEE)}</td>
-              <td></td>
-            </tr>
           </tbody>
           <tfoot>
             <tr className="pricing-table__row pricing-table__row--total">
@@ -172,6 +164,7 @@ export default function PricingTable() {
       <style>{`
         .pricing-tool {
           font-size: var(--text-base);
+          container: pricing-table / inline-size;
         }
         .pricing-tool__table-wrap {
           overflow-x: auto;
@@ -196,11 +189,6 @@ export default function PricingTable() {
           letter-spacing: 0.06em;
           text-transform: uppercase;
         }
-        .pricing-table__col--amount,
-        .pricing-table__col--qty {
-          text-align: right;
-          white-space: nowrap;
-        }
         .pricing-table__row td {
           padding: var(--space-4) var(--space-5);
           border-bottom: 1px solid var(--color-border);
@@ -212,11 +200,7 @@ export default function PricingTable() {
         .pricing-table__row--total { background: var(--color-primary-dark); color: var(--color-white); }
         .pricing-table__row--total td { border: none; padding: var(--space-5); }
         .pricing-table__row.is-checked { background: var(--color-available-bg); }
-        .pricing-table__amount {
-          text-align: right;
-          font-variant-numeric: tabular-nums;
-          white-space: nowrap;
-        }
+        
         .pricing-table__total { font-size: var(--text-xl); }
         .is-discount { color: var(--color-available); font-weight: 700; }
         .is-surcharge { color: var(--color-accent-dark); font-weight: 700; }
@@ -225,14 +209,14 @@ export default function PricingTable() {
           display: flex;
           align-items: center;
           gap: var(--space-3);
-          cursor: pointer;
           font-weight: 700;
+          line-height: var(--leading-snug);
         }
         .pricing-table__checkbox {
           width: 18px;
           height: 18px;
           flex-shrink: 0;
-          accent-color: var(--color-primary);
+          accent-color: var(--color-river);
           cursor: pointer;
         }
         .pricing-table__desc {
@@ -285,6 +269,31 @@ export default function PricingTable() {
           color: var(--color-text-muted);
           margin-bottom: var(--space-3);
           line-height: var(--leading-relaxed);
+        }
+        @container pricing-table (width < 600px) {
+        .pricing-table thead th:not(:first-child) { display: none; }
+          .pricing-table__row td {
+            display: block;
+            padding: var(--space-1) var(--space-4);
+          }
+          .pricing-table__row td:empty {
+            padding: 0;
+          }
+          .pricing-table__row td:not(:last-child) {
+            border: 0;
+          }
+        }
+        @container pricing-table (width >= 600px) {
+          .pricing-table__col--amount,
+          .pricing-table__col--qty {
+            text-align: right;
+            white-space: nowrap;
+          }
+          .pricing-table__amount {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+          }
         }
         /* Print styles */
         @media print {

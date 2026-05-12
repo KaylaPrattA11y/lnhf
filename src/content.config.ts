@@ -7,7 +7,7 @@ const blog = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
-    showOnHomepage: z.boolean().optional(),
+    showOnHomepage: z.boolean().optional().default(false),
     author: z.string().optional(),
     excerpt: z.string().optional(),
     featuredImage: z.string().optional(),
@@ -44,6 +44,7 @@ const vendors = defineCollection({
     website: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
+    sortOrder: z.number().optional(),
   }),
 });
 
@@ -54,7 +55,23 @@ const pricingTableEntries = defineCollection({
     description: z.string().optional(),
     feeType: z.enum(['static', 'dynamic']).default('static'),
     adjustment: z.number().optional(),
+    perUnit: z.boolean().optional().default(false),
+    maxUnits: z.number().optional(), // only used if perUnit is true
+    sortOrder: z.number().optional().default(99),
   }),
 });
 
-export const collections = { blog, gallery, faqs, vendors, pricingTableEntries };
+
+const testimonials = defineCollection({
+  loader: glob({ base: './src/content/testimonials', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    names: z.string(),
+    testimonial: z.string(),
+    date: z.string().optional(),
+    photo: z.string().optional(),
+    showOnHomepage: z.boolean().optional().default(false),
+    sortOrder: z.number().optional().default(99),
+  }),
+});
+
+export const collections = { blog, gallery, faqs, vendors, pricingTableEntries, testimonials };

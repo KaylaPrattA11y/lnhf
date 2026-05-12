@@ -27,7 +27,7 @@ const posts = (await getCollection('blog'))
     </div>
   </section>
 
-  <section class="section section--cream" aria-label="Blog post list">
+  <section class="section bg-arabesque" aria-label="Blog post list">
     <div class="container blog-container">
       {posts.length === 0 ? (
         <div class="blog-empty">
@@ -44,7 +44,7 @@ const posts = (await getCollection('blog'))
                 author={post.data.author}
                 excerpt={post.data.excerpt}
                 featuredImage={post.data.featuredImage}
-                slug={post.slug}
+                slug={post.id.replace(/\.mdx?$/, '')}
               />
             </div>
           ))}

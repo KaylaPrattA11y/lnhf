@@ -1,6 +1,7 @@
 ---
 // Footer.astro
 const currentYear = new Date().getFullYear();
+import Waves from '../Waves.astro';
 ---
 
 <footer class="footer" role="contentinfo">
@@ -87,6 +88,7 @@ const currentYear = new Date().getFullYear();
 
   <!-- Bottom bar -->
   <div class="footer__bottom">
+    <Waves />
     <div class="container footer__bottom-inner">
       <p class="footer__copyright">
         &copy; {currentYear} Lower Notley Hall Farm, LLC. All rights reserved.
@@ -113,9 +115,10 @@ const currentYear = new Date().getFullYear();
 
 <style>
   .footer {
-    background-color: var(--color-primary-dark);
-    color: rgba(255,255,255,0.85);
+    background-color: var(--color-warm-white);
+    color: var(--color-text-muted);
     margin-top: auto;
+    border-top: 1px solid var(--color-mist);
   }
 
   /* Map band */
@@ -148,28 +151,30 @@ const currentYear = new Date().getFullYear();
 
   .footer__heading {
     font-family: var(--font-heading);
-    font-size: var(--text-lg);
-    color: var(--color-accent-light);
+    font-size: var(--text-2xl);
+    color: var(--color-bark);
     margin-bottom: var(--space-4);
-    font-weight: 600;
+    font-weight: 300;
+    letter-spacing: 0.03em;
   }
 
   address {
     font-style: normal;
     line-height: var(--leading-relaxed);
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
   }
 
   address a,
   .footer__link-list a {
-    color: rgba(255,255,255,0.8);
+    color: var(--color-text-muted);
     text-decoration: none;
     transition: color var(--transition-fast);
   }
 
   address a:hover,
   .footer__link-list a:hover {
-    color: var(--color-accent-light);
-    text-decoration: underline;
+    color: var(--color-gold);
   }
 
   .footer__link-list {
@@ -179,6 +184,7 @@ const currentYear = new Date().getFullYear();
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    font-size: var(--text-base);
   }
 
   .footer__cta {
@@ -187,7 +193,8 @@ const currentYear = new Date().getFullYear();
 
   /* Bottom bar */
   .footer__bottom {
-    border-top: 1px solid rgba(255,255,255,0.12);
+    position: relative;
+    border-top: 1px solid var(--color-mist);
     padding-block: var(--space-6);
   }
 
@@ -196,18 +203,24 @@ const currentYear = new Date().getFullYear();
     flex-direction: column;
     gap: var(--space-2);
     text-align: center;
-    font-size: var(--text-sm);
-    color: rgba(255,255,255,0.55);
+    font-size: 0.70rem;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-400);
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer__bottom-inner p {
+    margin: 0;
   }
 
   .footer__bottom-inner a {
-    color: rgba(255,255,255,0.65);
+    color: var(--color-text-muted);
     text-decoration: none;
   }
 
   .footer__bottom-inner a:hover {
-    color: var(--color-accent-light);
-    text-decoration: underline;
+    color: var(--color-gold);
   }
 
   /* ── Responsive ─────────────────────────────── */

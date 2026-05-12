@@ -15,7 +15,7 @@ export default defineConfig({
     outputFolder: 'admin',
     publicFolder: 'public',
   },
- media: {
+  media: {
     tina: {
       mediaRoot: "uploads",
       publicFolder: "public",
@@ -30,6 +30,7 @@ export default defineConfig({
         format: 'mdx',
         defaultItem: () => ({
           date: new Date().toISOString(),
+          showOnHomepage: false,
         }),
         ui: {
           filename: {
@@ -171,6 +172,9 @@ export default defineConfig({
         label: 'FAQs',
         path: 'src/content/faqs',
         format: 'mdx',
+        defaultItem: () => ({
+          sortOrder: 99,
+        }),
         ui: {
           allowedActions: {
             create: true,
@@ -206,6 +210,9 @@ export default defineConfig({
         label: 'Vendors',
         path: 'src/content/vendors',
         format: 'mdx',
+        defaultItem: () => ({
+          sortOrder: 99,
+        }),
         ui: {
           allowedActions: {
             create: true,
@@ -241,6 +248,14 @@ export default defineConfig({
             label: 'Email Address',
             type: 'string',
           },
+          {
+            name: 'sortOrder',
+            label: 'Sort Order',
+            type: 'number',
+            ui: {
+              description: 'Lower numbers appear first. Default: 99.',
+            },
+          },
         ],
       },
       {
@@ -250,6 +265,8 @@ export default defineConfig({
         format: 'mdx',
         defaultItem: () => ({
           feeType: 'static',
+          sortOrder: 99,
+          perUnit: false,
         }),
         ui: {
           allowedActions: {
@@ -269,6 +286,9 @@ export default defineConfig({
             name: 'description',
             label: 'Description',
             type: 'string',
+            ui: {
+              component: 'textarea',
+            },
           },
           {
             name: 'feeType',
@@ -286,9 +306,87 @@ export default defineConfig({
             label: 'Adjustment',
             type: 'number',
             description: 'For static fees, enter the fixed amount. For dynamic fees, this can added/subtracted by the user as part of their custom quote. Negative values are discounts, positive values are surcharges.',
+          },
+          {
+            name: 'perUnit',
+            label: 'Per Unit',
+            type: 'boolean',
+            description: 'If true, show a quantity input for this fee when generating a custom quote. The total adjustment will be the value entered here multiplied by the quantity.',
+          },
+          {
+            name: 'maxUnits',
+            label: 'Max Units (for per-unit fees)',
+            type: 'number',
+            description: 'If this is a per-unit fee, you can optionally enter the maximum number of units here. This will limit the quantity input when generating a custom quote.',
+          },
+          {
+            name: 'sortOrder',
+            label: 'Sort Order',
+            type: 'number',
+            ui: {
+              description: 'Lower numbers appear first. Default: 99.',
+            },
           }
         ],
-      }
+      },
+      {
+        name: 'testimonials',
+        label: 'Testimonials',
+        path: 'src/content/testimonials',
+        format: 'mdx',
+        defaultItem: () => ({
+          sortOrder: 99,
+          showOnHomepage: false,
+        }),
+        ui: {
+          allowedActions: {
+            create: true,
+            delete: true,
+          },
+        },
+        fields: [
+          {
+            name: 'names',
+            label: 'Guest Name(s)',
+            type: 'string',
+            required: true,
+            isTitle: true,
+          },
+          {
+            name: 'testimonial',
+            label: 'Testimonial Text',
+            type: 'string',
+            ui: {
+              component: 'textarea',
+            },
+            required: true,
+          },
+          {
+            name: 'date',
+            label: 'Date',
+            type: 'string',
+          },
+          {
+            name: 'photo',
+            label: 'Photo',
+            type: 'image',
+          },
+          {
+            name: 'showOnHomepage',
+            label: 'Show on Homepage',
+            type: 'boolean',
+            description: 'If true, this testimonial will be featured on the homepage.',
+          },
+          {
+            name: 'sortOrder',
+            label: 'Sort Order',
+            type: 'number',
+            ui: {
+              description: 'Lower numbers appear first. Default: 99.',
+            },
+          },
+        ],
+      },
     ],
   },
 });
