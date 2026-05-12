@@ -1,10 +1,9 @@
-/// <reference types="node" />
 import { defineConfig } from 'tinacms';
 
 export default defineConfig({
   branch: process.env.HEAD || process.env.BRANCH || "main",
-  clientId: process.env.TINA_PUBLIC_CLIENT_ID ?? '',
-  token: process.env.TINA_TOKEN ?? '',
+  clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID,
+  token: process.env.TINA_TOKEN,
   search: {
     tina: {
       indexerToken: process.env.TINA_SEARCH_TOKEN,
@@ -12,8 +11,8 @@ export default defineConfig({
     },
   },
   build: {
-    outputFolder: 'admin',
-    publicFolder: 'public',
+    outputFolder: "admin",
+    publicFolder: "public",
   },
   media: {
     tina: {
