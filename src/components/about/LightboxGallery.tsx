@@ -126,7 +126,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         .lightbox-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 0.75rem;
+          gap: 0.25rem;
         }
         @media (min-width: 640px) {
           .lightbox-grid {
@@ -136,12 +136,13 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         .lightbox-thumb {
           position: relative;
           overflow: hidden;
-          border-radius: var(--radius-md);
+          border-radius: 0.75rem;
           cursor: pointer;
           background: none;
           border: none;
           padding: 0;
           aspect-ratio: 4/3;
+          corner-shape: bevel;
         }
         .lightbox-thumb__img {
           width: 100%;
@@ -189,7 +190,6 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
           z-index: 1;
           width: 100%;
           max-width: 1100px;
-          padding: var(--space-4);
           display: flex;
           align-items: center;
           gap: var(--space-4);
@@ -201,6 +201,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         .lightbox__img {
           max-height: 80vh;
           max-width: 100%;
+          margin-inline: auto;
           object-fit: contain;
           border-radius: var(--radius-md);
           animation: fade-in 0.2s ease;
@@ -211,7 +212,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         }
         .lightbox__caption {
           color: rgba(255,255,255,0.7);
-          font-size: var(--text-sm);
+          font-size: var(--text-lg);
           margin-top: var(--space-3);
           font-style: italic;
         }
@@ -250,9 +251,9 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         .lightbox__nav:hover { background: var(--color-accent); color: var(--color-primary-dark); }
         .lightbox__counter {
           position: absolute;
-          bottom: var(--space-4);
+          bottom: 0;
           left: 50%;
-          transform: translateX(-50%);
+          translate: -50% 50%;
           color: rgba(255,255,255,0.6);
           font-size: var(--text-sm);
         }

@@ -40,7 +40,7 @@ const entries = rawEntries
     </div>
   </section>
 
-  <section class="section pricing-tool-section" aria-label="Pricing estimator">
+  <section class="section pricing-tool-section bg-arabesque" aria-label="Pricing estimator">
     <div class="container" style="max-width: 960px;">
       <PricingTable entries={entries} client:only="react" />
     </div>
@@ -64,11 +64,11 @@ const entries = rawEntries
     margin-bottom: var(--space-3);
   }
   .pricing-hero__note {
+    text-align: center;
     font-size: var(--text-sm);
     color: rgba(255,255,255,0.55);
     margin: 0;
   }
   .pricing-hero .section-header__eyebrow { color: var(--color-accent); }
   .pricing-hero .divider { border-color: rgba(255,255,255,0.2); }
-  .pricing-tool-section { background: var(--color-gray-100); }
 </style>

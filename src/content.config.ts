@@ -40,7 +40,8 @@ const vendors = defineCollection({
   loader: glob({ base: './src/content/vendors', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
     name: z.string(),
-    vendorType: z.string().optional(),
+    vendorType: z.enum(['Bartending', 'Catering', 'Decor','DJs and Entertainment', 'Florist', 'Photography', 'Transportation', 'Wedding Coordination', 'Other']).optional(),
+    isPreferred: z.boolean().optional().default(false),
     website: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),
@@ -57,6 +58,7 @@ const pricingTableEntries = defineCollection({
     adjustment: z.number().optional(),
     perUnit: z.boolean().optional().default(false),
     maxUnits: z.number().optional(), // only used if perUnit is true
+    omitFromTotal: z.boolean().optional().default(false), // for line items like damage deposit that aren't included in the running total
     sortOrder: z.number().optional().default(99),
   }),
 });

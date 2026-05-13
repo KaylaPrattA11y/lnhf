@@ -231,6 +231,23 @@ export default defineConfig({
             label: 'Vendor Type',
             type: 'string',
             description: 'The category or type of vendor (e.g., "Florist", "Caterer").',
+            options: [
+              { label: 'Bartending', value: 'Bartending' },
+              { label: 'Catering', value: 'Catering' },
+              { label: 'Decor', value: 'Decor' },
+              { label: 'DJs and Entertainment', value: 'DJs and Entertainment' },
+              { label: 'Florist', value: 'Florist' },
+              { label: 'Photography', value: 'Photography' },
+              { label: 'Transportation', value: 'Transportation' },
+              { label: 'Wedding Coordination', value: 'Wedding Coordination' },
+              { label: 'Other', value: 'Other' },
+            ],
+          },
+          {
+            name: 'isPreferred',
+            label: 'Preferred Vendor',
+            type: 'boolean',
+            description: 'If true, this vendor will be highlighted as a preferred vendor.',
           },
           {
             name: 'website',
@@ -266,6 +283,7 @@ export default defineConfig({
           feeType: 'static',
           sortOrder: 99,
           perUnit: false,
+          omitFromTotal: false,
         }),
         ui: {
           allowedActions: {
@@ -317,6 +335,12 @@ export default defineConfig({
             label: 'Max Units (for per-unit fees)',
             type: 'number',
             description: 'If this is a per-unit fee, you can optionally enter the maximum number of units here. This will limit the quantity input when generating a custom quote.',
+          },
+          { 
+            name: 'omitFromTotal',
+            label: 'Omit from Total',
+            type: 'boolean',
+            description: 'If true, this fee will not be included in the running total when generating a custom quote. This is useful for line items like the damage deposit that are collected separately and not included in the venue fee total.',
           },
           {
             name: 'sortOrder',

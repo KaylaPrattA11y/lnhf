@@ -1,8 +1,19 @@
 ---
 // Blockquote.astro
+import { Image } from 'astro:assets';
+import aerialLnhf from '../../assets/images/aerial-lnhf.jpg';
 ---
 
 <section class="blockquote-section section section--dark" aria-label="About the venue">
+  <div class="hero-img-wrapper">
+    <Image
+      src={aerialLnhf}
+      alt="Aerial view of the reception barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery."
+      width="1400"
+      height="933"
+      loading="eager"
+    />
+  </div>
   <div class="container">
     <blockquote class="venue-quote">
       <p class="venue-quote__text">
@@ -19,24 +30,26 @@
 </section>
 
 <style>
+  .hero-img-wrapper {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    block-size: 100%;
+    inline-size: 100%;
+  }
+  .hero-img-wrapper img {
+    display: block;
+    block-size: 100%;
+    inline-size: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.1;
+  }
+
   .blockquote-section {
     background-color: var(--color-river-deep);
     position: relative;
     overflow: hidden;
-  }
-
-  /* PHOTO PLACEHOLDER
-   * Replace with a moody river/sunset photo:
-   *   url('/images/blockquote-bg.jpg') center/cover fixed
-   */
-  .blockquote-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=60')
-      center/cover;
-    opacity: 0.18;
-    pointer-events: none;
   }
 
   .blockquote-section > .container {
@@ -72,8 +85,8 @@
   .venue-quote__footer cite {
     font-family: var(--font-body);
     font-style: normal;
-    font-weight: 300;
-    font-size: 0.65rem;
+    font-weight: 700;
+    font-size: 0.85rem;
     letter-spacing: 0.28em;
     text-transform: uppercase;
     color: var(--color-gold-light);

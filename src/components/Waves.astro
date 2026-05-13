@@ -18,6 +18,8 @@
 <style>
   .waves {
     position: absolute;
+    inset: auto auto 0 0;
+    overflow: hidden;
     inline-size: 100%;
     block-size: 8vh;
     min-block-size: 100px;
@@ -28,7 +30,7 @@
   }
   .parallax > use:nth-child(1) {
     animation-delay: -4s;
-    animation-duration: 714s;
+    animation-duration: 14s;
   }
   .parallax > use:nth-child(2) {
     animation-delay: -6s;
@@ -48,13 +50,6 @@
     }
     100% { 
       transform: translate3d(85px,0,0);
-    }
-  }
-  /*Shrinking for mobile*/
-  @media (max-width: 768px) {
-    .waves {
-      height:40px;
-      min-height:40px;
     }
   }
 </style>

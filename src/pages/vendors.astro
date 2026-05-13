@@ -1,51 +1,34 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 
-const vendors = [
-  {
-    category: 'Photography',
-    items: [
-      {
-        name: 'Candace Nicole Photography',
-        url: 'https://candacenicolephotography.com',
-        desc: 'Our in-house preferred photographer. Candace captures the light of Southern Maryland like no one else.',
-        featured: true,
-      },
-    ],
-  },
-  {
-    category: 'Catering',
-    items: [
-      { name: 'Local Catering Partners', url: null, desc: 'We partner with a curated list of Southern Maryland caterers. Contact us for current recommendations.', featured: false },
-    ],
-  },
-  {
-    category: 'Music & Entertainment',
-    items: [
-      { name: 'DJs & Live Bands', url: null, desc: 'We can recommend DJs and live ensembles that have performed beautifully in our barn. Ask us for names.', featured: false },
-    ],
-  },
-  {
-    category: 'Florists',
-    items: [
-      { name: 'Local Florists', url: null, desc: 'Several talented florists in the St. Mary\'s County area work regularly with us. Reach out for referrals.', featured: false },
-    ],
-  },
-  {
-    category: 'Officiants',
-    items: [
-      { name: 'Wedding Officiants', url: null, desc: 'We maintain a list of local officiants — from religious to secular ceremonies. Contact us for details.', featured: false },
-    ],
-  },
-  {
-    category: 'Transportation',
-    items: [
-      { name: 'Shuttle & Limo Services', url: null, desc: 'Our remote location makes shuttle service popular. We can suggest trusted local providers.', featured: false },
-    ],
-  },
-];
+const vendors = await getCollection('vendors');
+// Sort by category, then preferred partners first, then alphabetically by name, then by sortOrder if provided (with a default of 99 to push unsorted items to the end)
+const vendorsSorted = vendors
+  .map(v => ({ id: v.id, ...v.data }))
+  .sort((a, b) => {
+    if (a.vendorType === b.vendorType) {
+      if (a.isPreferred === b.isPreferred) {
+        if (a.name === b.name) {
+          return (a.sortOrder ?? 99) - (b.sortOrder ?? 99);
+        }
+        return a.name.localeCompare(b.name);
+      }
+      return a.isPreferred ? -1 : 1;
+    }
+    return a.vendorType.localeCompare(b.vendorType);
+  })
+  // Group by category
+  .reduce((groups, vendor) => {
+    const category = vendor.vendorType || 'Other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(vendor);
+    return groups;
+  }, {});
 ---
 
 <BaseLayout
@@ -69,26 +52,47 @@ const vendors = [
 
   <section class="section bg-arabesque" aria-label="Vendor list">
     <div class="container vendors-container">
-      {vendors.map(group => (
+      <p>Below is a list of pre-approved and highly recommended Southern Maryland Wedding Venue vendors.</p>
+      <p>All other vendors must be approved by Lower Notley Hall Farm and must present licensing and proof of insurance, including photographers as applicable. If your vendor is not approved by Lower Notley Hall Farm, they will not be allowed to work at the venue.</p>
+      <p><em>Approval of any vendor not listed below must be approved by Lower Notley Hall Farm, LLC in writing.</em></p>
+      {Object.entries(vendorsSorted).map(([category, items]) => (
         <div class="vendor-group">
-          <h2 class="vendor-group__title">{group.category}</h2>
+          <h2 class="vendor-group__title">{category}</h2>
           <div class="vendor-cards">
-            {group.items.map(vendor => (
-              <article class={`vendor-card${vendor.featured ? ' vendor-card--featured' : ''}`}>
-                {vendor.featured && (
-                  <span class="vendor-card__badge">Preferred Partner</span>
+            {items.map(v => (
+              <article class={`vendor-card${v.isPreferred ? ' vendor-card--featured' : ''}`}>
+                <div class="vendor-card__header">
+                  <div>
+                    <h3 class="vendor-card__name">
+                    {v.website ? (
+                      <a href={v.website} target="_blank" rel="noopener noreferrer">
+                        {v.name}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
+                      </a>
+                    ) : v.name}
+                    </h3>
+                  </div>
+                  <div>
+                    {v.isPreferred && (
+                      <span class="vendor-card__badge">Preferred Partner</span>
+                    )}
+                  </div>
+                </div>
+                
+                {v.email && (
+                  <p class="vendor-card__desc">
+                    <strong>Email:</strong>{' '}
+                    <a href={`mailto:${v.email.trim()}`}>{v.email.trim()}</a>
+                  </p>
                 )}
-                <h3 class="vendor-card__name">
-                  {vendor.url ? (
-                    <a href={vendor.url} target="_blank" rel="noopener noreferrer">
-                      {vendor.name}
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                    </a>
-                  ) : vendor.name}
-                </h3>
-                <p class="vendor-card__desc">{vendor.desc}</p>
+                {v.phone && (
+                  <p class="vendor-card__desc">
+                    <strong>Phone:</strong>{' '}
+                    <a href={`tel:${v.phone.replace(/\D/g, '').trim()}`}>{v.phone.trim()}</a>
+                  </p>
+                )}
               </article>
             ))}
           </div>
@@ -101,6 +105,8 @@ const vendors = [
           Always confirm availability directly with the vendor, and{' '}
           <a href="/contact">let us know</a> if you'd like our latest recommendations.
         </p>
+        <p><strong>General Business Requirements (All Vendors):</strong> Almost every vendor operating in Maryland must obtain a Trader’s License (often called a Business License) from the Clerk of the Circuit Court in the county where the business is located. The cost varies by county (typically $100+ annually). Out-of-State: If you live outside Maryland but work within the state, you may need a non-resident license or to register your business with the Maryland Department of Assessments and Taxation.</p>
+        <p><strong>Insurance:</strong> LNHF, just as many other venues, requires the vendors below to carry General Liability Insurance ($1M–$2M coverage) and name the LNHF venue as an “additional insured”. LNHF contracts always require General Liability Insurance. Vendors without insurance will not be allowed to operate at LNHF.</p>
       </div>
     </div>
   </section>
@@ -146,6 +152,7 @@ const vendors = [
     .vendor-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   }
   .vendor-card {
+    container: vendor-card / inline-size;
     background: var(--color-white);
     border: 1.5px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -153,14 +160,20 @@ const vendors = [
     box-shadow: var(--shadow-sm);
     position: relative;
   }
+  .vendor-card__header {
+    display: grid;
+    gap: var(--space-1) var(--space-5);
+    @container vendor-card (width >= 300px) {
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+    }
+    margin-block-end: var(--space-3);
+  }
   .vendor-card--featured {
     border-color: var(--color-accent);
     box-shadow: 0 0 0 2px rgba(226,161,32,0.2);
   }
   .vendor-card__badge {
-    position: absolute;
-    top: var(--space-4);
-    right: var(--space-4);
     background: var(--color-accent);
     color: var(--color-primary-dark);
     font-size: 11px;
@@ -173,9 +186,11 @@ const vendors = [
   .vendor-card__name {
     font-size: var(--text-lg);
     color: var(--color-primary-dark);
-    margin-bottom: var(--space-3);
+    margin: 0;
   }
-  .vendor-card__name a { color: var(--color-primary); }
+  .vendor-card__name a { 
+    color: var(--color-primary);
+  }
   .vendor-card__name a:hover { color: var(--color-accent); }
   .vendor-card__desc {
     font-size: var(--text-sm);
@@ -192,5 +207,5 @@ const vendors = [
     font-size: var(--text-sm);
     color: var(--color-text-muted);
   }
-  .vendors-note a { color: var(--color-primary); font-weight: 700; }
+  .vendors-note a { color: var(--color-primary); font-weight: 700; word-wrap: break-word; }
 </style>

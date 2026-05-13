@@ -1,12 +1,25 @@
 ---
 // Hero.astro
+import { Image } from 'astro:assets';
+import receptionBarnInteriorRiverside from '../../assets/images/reception-barn-interior-riverside.jpg';
+import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
 ---
 
 <section class="hero" aria-label="Welcome to Lower Notley Hall Farm">
 
   <!-- LEFT — dark photo panel -->
   <div class="hero__left">
-    <div class="hero__left-bg" aria-hidden="true"></div>
+    <div class="hero__left-bg" aria-hidden="true">
+      <div class="hero-img-wrapper">
+        <Image
+          src={aerialReceptionBarn}
+          alt="Aerial view of the reception barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery."
+          width="1400"
+          height="933"
+          loading="eager"
+        />
+      </div>
+    </div>
     <div class="hero__left-content">
       <p class="hero__eyebrow">Chaptico, Maryland · On the Wicomico River</p>
       <h1 class="hero__title">Where time<br>stands <em>still</em></h1>
@@ -23,6 +36,15 @@
 
   <!-- RIGHT — cream stats panel -->
   <div class="hero__right">
+    <div class="hero-img-wrapper">
+      <Image
+        src={receptionBarnInteriorRiverside}
+        alt="Interior view of the reception barn at Lower Notley Hall Farm, with riverside views and elegant decor."
+        width="1400"
+        height="933"
+        loading="eager"
+      />
+    </div>
     <div class="hero__stat-grid">
       <div class="hero__stat">
         <span class="hero__stat-number">50</span>
@@ -72,6 +94,22 @@
     position: relative;
     overflow: hidden;
     min-height: 60vh;
+  }
+
+  .hero-img-wrapper {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    block-size: 100%;
+    inline-size: 100%;
+  }
+  .hero-img-wrapper img {
+    display: block;
+    block-size: 100%;
+    inline-size: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.1;
   }
 
   /* PHOTO PLACEHOLDER
@@ -141,17 +179,6 @@
     justify-content: center;
     padding: 4rem 3rem;
     position: relative;
-  }
-
-  /* Subtle watermark on cream panel */
-  .hero__right::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: url('https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=60')
-      center/cover no-repeat;
-    opacity: 0.06;
-    pointer-events: none;
   }
 
   .hero__stat-grid {

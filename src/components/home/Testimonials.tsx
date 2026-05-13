@@ -1,33 +1,13 @@
 import { useState, useEffect } from 'react';
 
 interface Testimonial {
-  quote: string;
-  author: string;
-  date: string;
-}
+  testimonial: string;
+  names: string;
+  photo?: string;
+  date?: string;
+};
 
-const testimonials: Testimonial[] = [
-  {
-    quote:
-      'Lower Notley Hall Farm — A Southern Maryland venue is the ultimate hidden gem when it comes to barn venues with an elegant twist. I am in love with this venue! …the perfect place for Meghan and Nick\'s wedding day!',
-    author: 'Nick & Meghan',
-    date: 'October 2020',
-  },
-  {
-    quote:
-      'Jack and Cindy curated a venue that offers so much more than just a beautiful location. They provide great hospitality, vast knowledge and continuous support through every step of the process. The venue speaks for itself with its amazing scenery, but Jack and Cindy were equally as amazing in helping make our time that much more special.',
-    author: 'Tyler & Alexi',
-    date: 'May 2024',
-  },
-  {
-    quote:
-      'From the Manor to the Waterfront, every inch of Lower Notley Hall Farm feels like a dream. We could not have chosen a more magical place to begin our lives together.',
-    author: 'A Happy Couple',
-    date: '2023',
-  },
-];
-
-export default function Testimonials() {
+export default function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
   const [current, setCurrent] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const total = testimonials.length;
@@ -56,10 +36,19 @@ export default function Testimonials() {
       <div className="testimonials__inner">
         <div className={`testimonials__slide${isAnimating ? ' is-animating' : ''}`}>
           <blockquote className="testimonials__quote">
-            <p className="testimonials__text">&ldquo;{t.quote}&rdquo;</p>
+            {t.photo && (
+              <img
+                src={t.photo}
+                alt={`Photo of ${t.names.split(',')[0].trim()}${t.names.includes(',') ? ' and others' : ''}, who provided a testimonial about their experience at Lower Notley Hall Farm.`}
+                className="testimonials__photo"
+                width={175}
+                height={125}
+              />
+            )}
+            <p className="testimonials__text">&ldquo;{t.testimonial}&rdquo;</p>
             <footer className="testimonials__attribution">
-              <cite className="testimonials__author">{t.author}</cite>
-              <span className="testimonials__date">{t.date}</span>
+              <cite className="testimonials__author">{t.names}</cite>
+              {t.date && <span className="testimonials__date">{t.date}</span>}
             </footer>
           </blockquote>
         </div>
@@ -111,6 +100,7 @@ export default function Testimonials() {
           text-align: center;
         }
         .testimonials__slide {
+          container: testimonial / inline-size;
           background: var(--color-bark-deep);
           transition: opacity 0.3s ease;
           border-radius: var(--space-5);
@@ -125,6 +115,16 @@ export default function Testimonials() {
           border: none;
           padding: 0;
           margin: 0 0 var(--space-8);
+        }
+        .testimonials__quote img {
+        margin: var(--space-2) auto;
+        corner-shape: scoop;
+        border-radius: 10px;
+        @container testimonial (width >= 300px) {
+            margin: var(--space-2) var(--space-2) var(--space-2) 0;
+            float: left;
+            clear: both;
+          }
         }
         .testimonials__text {
           font-family: var(--font-heading);

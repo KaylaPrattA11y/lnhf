@@ -10,6 +10,7 @@ interface PricingTableEntry {
   sortOrder: number;
   description?: string;
   maxUnits?: number; // only used if perUnit is true
+  omitFromTotal?: boolean; // for line items like damage deposit that aren't included in the running total
 }
 
 interface PricingTableProps {
@@ -21,7 +22,9 @@ export default function PricingTable({ entries }: PricingTableProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const estimatedTotal = entries.reduce((sum, ent) => {
-    if (ent.feeType === 'static') return sum + ent.adjustment;
+    if (ent.omitFromTotal) return sum; // Skip entries that shouldn't be included in the total
+    if (ent.feeType === 'static') return sum + ent.adjustment; // Static fees are always included if checked
+    // For dynamic fees, only include if checked, and multiply by quantity if perUnit
     if (ent.feeType === 'dynamic' && checked[ent.name]) {
       const qty = ent.perUnit ? (quantities[ent.name] ?? 1) : 1;
       return sum + ent.adjustment * qty;

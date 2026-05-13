@@ -9,6 +9,14 @@ import TheSetting from '@components/home/TheSetting.astro';
 import LatestPosts from '@components/home/LatestPosts.astro';
 import Testimonials from '@components/home/Testimonials';
 import TourForm from '@components/home/TourForm.astro';
+import { getCollection } from 'astro:content';
+
+const testimonials = await getCollection('testimonials');
+// filter to homepage only, then sort by sortOrder (default to 99 if not set) so that entries without a sortOrder appear at the end
+const sortedTestimonials = testimonials
+  .filter(t => t.data.showOnHomepage)
+  .sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99))
+  .map(t => ({ id: t.id, ...t.data }));
 
 const description =
   'Lower Notley Hall Farm is a historic Southern Maryland waterfront wedding venue in Chaptico, MD—50 miles from Washington, DC. Manor house, reception barn, and Wicomico River views for up to 150 guests.';
@@ -25,7 +33,7 @@ const description =
   <StatsBar />
   <Blockquote />
   <TheSetting />
-  <Testimonials client:load />
+  <Testimonials testimonials={sortedTestimonials} client:load />
   <LatestPosts />
   <TourForm />
 

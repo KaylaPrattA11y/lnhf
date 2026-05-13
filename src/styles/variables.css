@@ -122,4 +122,6 @@
 
   /* ── Nav height ─────────────────────────────────────────── */
   --nav-height: 5rem;
+
+  interpolate-size: allow-keywords; /* Enable interpolation of keywords like 'auto' and 'max-content' in size properties */
 }

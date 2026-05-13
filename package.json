@@ -4,8 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "dev:cms": "tinacms dev -c \"astro dev\"",
+    "dev": "tinacms dev -c \"astro dev\"",
     "build": "tinacms build && astro build",
     "postbuild": "pagefind --site dist --glob \"**/*.html\"",
     "preview": "astro preview",

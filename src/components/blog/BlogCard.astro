@@ -26,7 +26,7 @@ const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month:
       />
     </a>
   ) : (
-    <div class="blog-card__placeholder" aria-hidden="true"></div>
+    <div class="blog-card__placeholder bg-citrus" aria-hidden="true"></div>
   )}
 
   <div class="card__body">
@@ -56,7 +56,6 @@ const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month:
 
   .blog-card__placeholder {
     height: 180px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   }
 
   .blog-card__meta {

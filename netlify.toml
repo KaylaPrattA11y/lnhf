@@ -1,20 +1,37 @@
+# BUILD SETTINGS ---------
+# Runs the Astro build and deploys the "dist" output folder
 [build]
-  command   = "npm run build"
-  publish   = "dist"
-  functions = "netlify/functions"
-
-[build.environment]
-  NODE_VERSION = "22"
-
-# Staging context — deploy staging branch to preview URL
-[context.staging]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
-# Development settings (used by `netlify dev`)
+# LOCAL DEV SETTINGS ------
+# Runs the Astro dev server on port 4321
 [dev]
-  command = "npm run dev:cms"
-  port    = 3000
+  command = "npm run dev"
+  targetPort = 4321
+
+# REDIRECTS ---------------
+# Redirect /sitemap.xml to /sitemap-index.xml (Astro's default sitemap name)
+# so bots looking for the common path still find it
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap-index.xml"
+  status = 301
+
+# HEADERS -----------------
+# Cache Astro's hashed static assets (JS, CSS, fonts) for 1 year
+# "immutable" tells browsers these files will never change (the hash changes instead)
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache images for 1 year
+[[headers]]
+  for = "images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
 
 # Security headers on all routes
 [[headers]]
@@ -25,15 +42,3 @@
     Referrer-Policy              = "strict-origin-when-cross-origin"
     Permissions-Policy           = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security    = "max-age=63072000; includeSubDomains; preload"
-
-# Immutable cache for hashed assets
-[[headers]]
-  for = "/_astro/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Cache pagefind index files
-[[headers]]
-  for = "/pagefind/*"
-  [headers.values]
-    Cache-Control = "public, max-age=86400"
