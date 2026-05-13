@@ -21,11 +21,10 @@ The official website for **Lower Notley Hall Farm**, a historic waterfront weddi
 9. [Netlify Functions API](#netlify-functions-api)
 10. [Admin Panel](#admin-panel)
 11. [Forms (Netlify Forms)](#forms-netlify-forms)
-12. [Search (Pagefind)](#search-pagefind)
-13. [Styling](#styling)
-14. [Deployment](#deployment)
-15. [Security Notes](#security-notes)
-16. [Contributing](#contributing)
+12. [Styling](#styling)
+13. [Deployment](#deployment)
+14. [Security Notes](#security-notes)
+15. [Contributing](#contributing)
 
 ---
 
@@ -39,7 +38,6 @@ The official website for **Lower Notley Hall Farm**, a historic waterfront weddi
 | Database | [MongoDB Atlas](https://www.mongodb.com/atlas) M0 (free tier) | Driver 6.14 |
 | Deployment | [Netlify](https://netlify.com) | — |
 | Auth | [Netlify Identity](https://docs.netlify.com/security/secure-access-to-sites/identity/) | Widget 1.9.2 |
-| Search | [Pagefind](https://pagefind.app) | 1.3.0 |
 | Styling | Vanilla CSS (custom properties) | — |
 | Language | TypeScript (strict) | 5.8.3 |
 | Node | v22 | — |
@@ -187,7 +185,6 @@ On Netlify, set these under **Site configuration → Environment variables**. `N
 | `npm run dev` | Start Astro dev server only (no TinaCMS) |
 | `npm run dev:cms` | Start TinaCMS local mode + Astro dev server |
 | `npm run build` | Run `tinacms build` then `astro build` |
-| `npm run postbuild` | Auto-runs after build — indexes HTML with Pagefind |
 | `npm run preview` | Serve the production `dist/` folder locally |
 
 > **Tip:** When using TinaCMS local mode (`dev:cms`), content is read/written directly from your local filesystem. No cloud credentials are needed for local editing. The `/admin` TinaCMS UI is available at http://localhost:4321/admin.
@@ -413,22 +410,6 @@ All forms use `data-netlify="true"` and include a hidden honeypot field (`bot-fi
 
 ---
 
-## Search (Pagefind)
-
-Full-text search is powered by [Pagefind](https://pagefind.app), a static search library that indexes the built HTML.
-
-- **Index is built** automatically after `astro build` via the `postbuild` npm script: `pagefind --site dist --glob "**/*.html"`.
-- **Index is served** from `/pagefind/` (committed to `dist/` at build time; cached with a 24-hour `Cache-Control` header in production).
-- **UI** is loaded dynamically in the Nav search dialog. In development (`npm run dev`), the index doesn't exist yet so the search dialog gracefully shows nothing.
-
-To test search locally, run a full build first:
-
-```bash
-npm run build && npm run preview
-```
-
----
-
 ## Styling
 
 The site uses **vanilla CSS** with no CSS framework. Design tokens are defined as custom properties in `src/styles/variables.css` and consumed everywhere.
@@ -488,7 +469,6 @@ The site deploys automatically to Netlify on push to `main`.
 npm run build
   └─ tinacms build         # generates /public/admin TinaCMS UI
   └─ astro build           # outputs static HTML/CSS/JS to dist/
-     └─ npm run postbuild  # pagefind indexes dist/ HTML
 ```
 
 ### Netlify configuration highlights (`netlify.toml`)
@@ -497,7 +477,6 @@ npm run build
 - **Functions directory:** `netlify/functions`
 - **Security headers** on all routes: `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, HSTS with 2-year max-age + preload
 - **Immutable cache** on `/_astro/*` (hashed filenames, 1 year)
-- **24-hour cache** on `/pagefind/*`
 
 ### Required Netlify settings
 

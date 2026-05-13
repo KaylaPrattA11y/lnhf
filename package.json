@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "tinacms dev -c \"astro dev\"",
     "build": "tinacms build && astro build",
-    "postbuild": "pagefind --site dist --glob \"**/*.html\"",
     "preview": "astro preview",
     "astro": "astro",
     "clean:content": "rm -rf node_modules/.astro && astro sync"
