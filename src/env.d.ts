@@ -13,6 +13,11 @@ declare namespace JSX {
 
 interface Window {
   netlifyIdentity?: {
+    init(options?: { APIUrl?: string }): void;
+    open(modal?: 'login' | 'signup'): void;
+    close(): void;
+    logout(): void;
+    currentUser(): import('netlify-identity-widget').User | null;
     on(event: 'init', cb: (user: import('netlify-identity-widget').User | null) => void): void;
     on(event: 'login', cb: (user: import('netlify-identity-widget').User) => void): void;
     on(event: 'logout' | 'open' | 'close', cb: () => void): void;

@@ -53,6 +53,8 @@ const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
 
     <!-- Sitemap -->
     <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <slot name="head" />
   </head>
 
   <body>

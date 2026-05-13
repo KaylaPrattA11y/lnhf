@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './BookingAdmin.css';
 
-import netlifyIdentity from 'netlify-identity-widget';
+const netlifyIdentity = window.netlifyIdentity!;
 
 interface Slot {
   _id: string;
@@ -44,7 +44,7 @@ export default function BookingAdmin() {
 
   // Auth
   useEffect(() => {
-    netlifyIdentity.init();
+    netlifyIdentity.init({ APIUrl: 'https://lowernotleyhallfarm.netlify.app/.netlify/identity' });
     const current = netlifyIdentity.currentUser();
     setUser(current);
     netlifyIdentity.on('login', (u: unknown) => { setUser(u); netlifyIdentity.close(); });
