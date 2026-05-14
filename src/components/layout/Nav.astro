@@ -6,7 +6,7 @@ import LogoShieldOnly from '/logo-shield-only.svg';
 const currentPath = Astro.url.pathname;
 ---
 
-<header class="nav" role="banner" id="nav">
+<header class="nav is-stuck" role="banner" id="nav">
   <div class="nav--container container">
     <a href="/" class="nav--logo" aria-label="Lower Notley Hall Farm — Home">
       <div class="nav--logo-svg">
@@ -101,8 +101,9 @@ const currentPath = Astro.url.pathname;
     justify-items: end;
     grid-template-columns: auto 1fr auto;
     gap: 0 var(--space-5);
+    padding-block: var(--space-3);
     height: auto;
-    transition: padding var(--transition-slow), height var(--transition-slow);
+    transition: height var(--transition-slow);
   }
   .nav--logo-lg { display: block; }
   .nav--logo-sm { display: none; }
@@ -110,7 +111,6 @@ const currentPath = Astro.url.pathname;
     height: 150px; 
     width: auto;
     transition: height var(--transition-slow), width var(--transition-slow), padding var(--transition-slow);
-    padding-block: var(--space-3);
   }
   .nav--logo-svg svg {
     width: 100%;
@@ -174,7 +174,6 @@ const currentPath = Astro.url.pathname;
   }
   .nav.is-stuck {
     .nav--container {
-      height: var(--nav-height);
       gap: 0 var(--space-2);
     }
     .nav--logo-lg { display: none; }
@@ -191,15 +190,25 @@ const currentPath = Astro.url.pathname;
     .nav--logo-tagline span { display: none; }
     .nav--container { padding-inline: var(--space-2); }
     .nav--actions { display: none; }
+    .nav--links.is-expanded ul {
+      flex-direction: column;
+      gap: var(--space-4);
+      background: var(--color-white);
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      padding: var(--space-6);
+      box-shadow: var(--shadow-lg);
+    }
   }
   @container nav (width < 900px) {
     .nav--container {
-      height: var(--nav-height);
       gap: 0 var(--space-2);
     }
     .nav--logo-lg { display: none; }
     .nav--logo-sm { display: block; }
-    .nav--logo-svg { height: 45px; }
+    .nav--logo-svg { height: 45px; padding-block: 0; }
     .nav--links:not(.is-expanded) { display: none; }
     .nav--logo-name {
       font-size: 1.05rem;

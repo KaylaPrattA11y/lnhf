@@ -439,7 +439,7 @@ export default function BookingCalendar() {
           color: var(--color-text-muted);
           margin: 0;
         }
-        @container root (width < 600px) {
+        @container main (width < 600px) {
           .booking-calendar-wrap {
             --padding-x: 0;
           }

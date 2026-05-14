@@ -78,6 +78,11 @@ const posts = (await getCollection('blog'))
     gap: var(--space-8);
     grid-template-columns: 1fr;
   }
+  @container main (width < 600px) {
+    .blog-container {
+      --padding-x: 0;
+    }
+  }
   @media (min-width: 640px)  { .blog-grid { grid-template-columns: 1fr 1fr; } }
   @media (min-width: 1024px) { .blog-grid { grid-template-columns: repeat(3, 1fr); } }
 
