@@ -1,7 +1,20 @@
 import { useState, useEffect } from 'react';
 import './BookingAdmin.css';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  createColumnHelper,
+  flexRender,
+  type SortingState,
+  type ColumnFiltersState,
+  type FilterFn,
+} from '@tanstack/react-table';
 
 const netlifyIdentity = window.netlifyIdentity!;
+const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
 
 interface Slot {
   _id: string;
@@ -29,6 +42,20 @@ function fmtTime(t: string) {
   return `${h % 12 || 12}:00 ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
+const columnHelper = createColumnHelper<Slot>();
+
+const globalFilterFn: FilterFn<Slot> = (row, _columnId, filterValue: string) => {
+  const s = filterValue.toLowerCase();
+  const slot = row.original;
+  return (
+    fmt(slot.date).toLowerCase().includes(s) ||
+    fmtTime(slot.startTime).toLowerCase().includes(s) ||
+    slot.status.toLowerCase().includes(s) ||
+    (slot.booking?.name ?? '').toLowerCase().includes(s) ||
+    (slot.booking?.email ?? '').toLowerCase().includes(s)
+  );
+};
+
 export default function BookingAdmin() {
   const [user, setUser] = useState<unknown>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -38,9 +65,16 @@ export default function BookingAdmin() {
 
   // Add-slot form
   const [newDate, setNewDate] = useState('');
-  const [newStart, setNewStart] = useState('10:00');
+  const [newStart, setNewStart] = useState('13:00');
   const [newStatus, setNewStatus] = useState<'available' | 'blocked'>('available');
   const [adding, setAdding] = useState(false);
+
+  // Table state
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
 
   // Auth
   useEffect(() => {
@@ -60,7 +94,7 @@ export default function BookingAdmin() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/.netlify/functions/admin-bookings', {
+      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-bookings`, {
         headers: authHeader() as HeadersInit,
       });
       if (!res.ok) throw new Error('Could not load bookings');
@@ -80,7 +114,7 @@ export default function BookingAdmin() {
   const flash = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3500); };
 
   const updateSlot = async (id: string, body: Record<string, unknown>) => {
-    const res = await fetch('/.netlify/functions/admin-slot', {
+    const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id, ...body }),
@@ -91,7 +125,7 @@ export default function BookingAdmin() {
 
   const deleteSlot = async (id: string) => {
     if (!confirm('Delete this slot permanently?')) return;
-    const res = await fetch('/.netlify/functions/admin-slot', {
+    const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id }),
@@ -107,7 +141,7 @@ export default function BookingAdmin() {
     try {
       const endHour = parseInt(newStart.split(':')[0], 10) + 1;
       const endTime = `${String(endHour).padStart(2, '0')}:00`;
-      const res = await fetch('/.netlify/functions/admin-slot', {
+      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
         body: JSON.stringify({ date: newDate, startTime: newStart, endTime, status: newStatus }),
@@ -122,6 +156,116 @@ export default function BookingAdmin() {
       setAdding(false);
     }
   };
+
+  // Sync status dropdown → column filter and reset to page 1
+  useEffect(() => {
+    setColumnFilters(statusFilter ? [{ id: 'status', value: statusFilter }] : []);
+    setPagination(p => ({ ...p, pageIndex: 0 }));
+  }, [statusFilter]);
+
+  useEffect(() => {
+    setPagination(p => ({ ...p, pageIndex: 0 }));
+  }, [globalFilter]);
+
+  const columns = [
+    columnHelper.accessor('date', {
+      header: 'Date',
+      cell: info => fmt(info.getValue()),
+      sortingFn: 'alphanumeric',
+    }),
+    columnHelper.accessor(row => row.startTime, {
+      id: 'time',
+      header: 'Time',
+      cell: info => {
+        const slot = info.row.original;
+        return `${fmtTime(slot.startTime)} – ${fmtTime(slot.endTime)}`;
+      },
+      sortingFn: (rowA, rowB) =>
+        rowA.original.startTime.localeCompare(rowB.original.startTime),
+    }),
+    columnHelper.accessor('status', {
+      header: 'Status',
+      cell: info => (
+        <span className={`admin-badge admin-badge--${info.getValue()}`}>
+          {info.getValue()}
+        </span>
+      ),
+      filterFn: 'equals',
+    }),
+    columnHelper.accessor(row => row.booking?.name ?? '', {
+      id: 'guest',
+      header: 'Guest',
+      cell: info => {
+        const slot = info.row.original;
+        if (!slot.booking) return '—';
+        return (
+          <details>
+            <summary>{slot.booking.name}</summary>
+            <ul className="admin-guest-details">
+              <li><strong>Email:</strong> {slot.booking.email}</li>
+              {slot.booking.phone && <li><strong>Phone:</strong> {slot.booking.phone}</li>}
+              {slot.booking.partySize && <li><strong>Party:</strong> {slot.booking.partySize}</li>}
+              {slot.booking.message && <li><strong>Message:</strong> {slot.booking.message}</li>}
+              <li><strong>Booked:</strong> {new Date(slot.booking.bookedAt).toLocaleString()}</li>
+            </ul>
+          </details>
+        );
+      },
+    }),
+    columnHelper.display({
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      cell: info => {
+        const slot = info.row.original;
+        return (
+          <div className="admin-td-actions">
+            {slot.status === 'available' && (
+              <button
+                className="admin-btn admin-btn--block"
+                onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Slot blocked'))}
+              >Block</button>
+            )}
+            {slot.status === 'blocked' && (
+              <button
+                className="admin-btn admin-btn--unblock"
+                onClick={() => updateSlot(slot._id, { status: 'available' }).then(() => flash('Slot unblocked'))}
+              >Unblock</button>
+            )}
+            {slot.status === 'booked' && (
+              <button
+                className="admin-btn admin-btn--unbook"
+                onClick={() => updateSlot(slot._id, { unbook: true }).then(() => flash('Booking cancelled'))}
+              >Unbook</button>
+            )}
+            <button
+              className="admin-btn admin-btn--delete"
+              onClick={() => deleteSlot(slot._id)}
+            >Delete</button>
+          </div>
+        );
+      },
+    }),
+  ];
+
+  const table = useReactTable({
+    data: slots,
+    columns,
+    state: { sorting, columnFilters, globalFilter, pagination },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
+    globalFilterFn,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const { pageIndex, pageSize } = table.getState().pagination;
+  const totalFiltered = table.getFilteredRowModel().rows.length;
+  const pageCount = table.getPageCount();
 
   // Not logged in
   if (!user) {
@@ -216,75 +360,130 @@ export default function BookingAdmin() {
           </button>
         </div>
 
+        {/* Search + filter controls */}
+        <div className="table-controls">
+          <input
+            className="form-input table-search"
+            type="search"
+            placeholder="Search slots…"
+            value={globalFilter}
+            onChange={e => setGlobalFilter(e.target.value)}
+            aria-label="Search slots"
+          />
+          <select
+            className="form-select table-status-filter"
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            aria-label="Filter by status"
+          >
+            <option value="">All statuses</option>
+            <option value="available">Available</option>
+            <option value="booked">Booked</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+
         {slots.length === 0 && !loading ? (
           <p className="booking-admin__empty">No slots found. Add some above.</p>
         ) : (
-          <div className="booking-admin__table-wrap">
-            <table className="booking-admin__table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Status</th>
-                  <th>Guest</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {slots.map(slot => (
-                  <tr key={slot._id} className={`admin-row admin-row--${slot.status}`}>
-                    <td>{fmt(slot.date)}</td>
-                    <td className="admin-td-time">
-                      {fmtTime(slot.startTime)} – {fmtTime(slot.endTime)}
-                    </td>
-                    <td>
-                      <span className={`admin-badge admin-badge--${slot.status}`}>
-                        {slot.status}
-                      </span>
-                    </td>
-                    <td className="admin-td-guest">
-                      {slot.booking ? (
-                        <details>
-                          <summary>{slot.booking.name}</summary>
-                          <ul className="admin-guest-details">
-                            <li><strong>Email:</strong> {slot.booking.email}</li>
-                            {slot.booking.phone && <li><strong>Phone:</strong> {slot.booking.phone}</li>}
-                            {slot.booking.partySize && <li><strong>Party:</strong> {slot.booking.partySize}</li>}
-                            {slot.booking.message && <li><strong>Message:</strong> {slot.booking.message}</li>}
-                            <li><strong>Booked:</strong> {new Date(slot.booking.bookedAt).toLocaleString()}</li>
-                          </ul>
-                        </details>
-                      ) : '—'}
-                    </td>
-                    <td className="admin-td-actions">
-                      {slot.status === 'available' && (
-                        <button
-                          className="admin-btn admin-btn--block"
-                          onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Slot blocked'))}
-                        >Block</button>
-                      )}
-                      {slot.status === 'blocked' && (
-                        <button
-                          className="admin-btn admin-btn--unblock"
-                          onClick={() => updateSlot(slot._id, { status: 'available' }).then(() => flash('Slot unblocked'))}
-                        >Unblock</button>
-                      )}
-                      {slot.status === 'booked' && (
-                        <button
-                          className="admin-btn admin-btn--unbook"
-                          onClick={() => updateSlot(slot._id, { unbook: true }).then(() => flash('Booking cancelled'))}
-                        >Unbook</button>
-                      )}
-                      <button
-                        className="admin-btn admin-btn--delete"
-                        onClick={() => deleteSlot(slot._id)}
-                      >Delete</button>
-                    </td>
-                  </tr>
+          <>
+            <div className="booking-admin__table-wrap">
+              <table className="booking-admin__table">
+                <thead>
+                  {table.getHeaderGroups().map(hg => (
+                    <tr key={hg.id}>
+                      {hg.headers.map(header => (
+                        <th
+                          key={header.id}
+                          onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                          className={header.column.getCanSort() ? 'sortable-col' : ''}
+                          aria-sort={
+                            header.column.getIsSorted() === 'asc' ? 'ascending' :
+                            header.column.getIsSorted() === 'desc' ? 'descending' : 'none'
+                          }
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getCanSort() && (
+                            <span className="sort-icon" aria-hidden="true">
+                              {header.column.getIsSorted() === 'asc' ? ' ▲' :
+                               header.column.getIsSorted() === 'desc' ? ' ▼' : ' ⇅'}
+                            </span>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={columns.length} className="booking-admin__empty">
+                        No slots match your filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    table.getRowModel().rows.map(row => (
+                      <tr key={row.id} className={`admin-row admin-row--${row.original.status}`}>
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="table-pagination">
+              <span className="table-pagination__info">
+                {totalFiltered === 0
+                  ? 'No results'
+                  : `Showing ${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, totalFiltered)} of ${totalFiltered}`}
+              </span>
+              <div className="table-pagination__controls">
+                <button
+                  className="admin-btn"
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  aria-label="First page"
+                >«</button>
+                <button
+                  className="admin-btn"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  aria-label="Previous page"
+                >‹</button>
+                <span className="table-pagination__page">
+                  Page {pageIndex + 1} of {pageCount || 1}
+                </span>
+                <button
+                  className="admin-btn"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  aria-label="Next page"
+                >›</button>
+                <button
+                  className="admin-btn"
+                  onClick={() => table.setPageIndex(pageCount - 1)}
+                  disabled={!table.getCanNextPage()}
+                  aria-label="Last page"
+                >»</button>
+              </div>
+              <select
+                className="form-select table-pagination__size"
+                value={pageSize}
+                onChange={e => table.setPageSize(Number(e.target.value))}
+                aria-label="Rows per page"
+              >
+                {[10, 20, 50, 100].map(size => (
+                  <option key={size} value={size}>{size} / page</option>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </select>
+            </div>
+          </>
         )}
       </section>
 

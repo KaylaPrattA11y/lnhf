@@ -9,6 +9,8 @@ interface Slot {
   status: 'available' | 'booked' | 'blocked';
 }
 
+const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
+
 // Whole-hour tour slots (no half-hours)
 const TOUR_HOURS = [10, 11, 12, 13, 14, 15];
 
@@ -57,11 +59,11 @@ export default function BookingCalendar() {
       const start = isoDate(y, m, 1);
       const end   = isoDate(y, m, daysInMonth(y, m));
       const res = await fetch(
-        `/.netlify/functions/get-slots?startDate=${start}&endDate=${end}`,
+        `${FUNCTIONS_BASE}/.netlify/functions/get-slots?startDate=${start}&endDate=${end}`,
       );
       if (!res.ok) throw new Error('Unable to load availability');
       const data = await res.json();
-      setSlots(data.slots ?? []);
+      setSlots(Array.isArray(data) ? data : (data.slots ?? []));
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load calendar');
     } finally {
@@ -169,7 +171,7 @@ export default function BookingCalendar() {
           const hasAvailable = daySlots.some(s => s.status === 'available');
 
           let cellClass = 'booking-cal__cell';
-          if (!sunday || past)  cellClass += ' booking-cal__cell--disabled';
+          if (past)  cellClass += ' booking-cal__cell--disabled';
           else if (hasAvailable) cellClass += ' booking-cal__cell--available';
           else if (sunday)      cellClass += ' booking-cal__cell--sunday';
           if (active)           cellClass += ' is-selected';
@@ -179,14 +181,14 @@ export default function BookingCalendar() {
             <div key={date} className={cellClass} role="gridcell">
               <button
                 className="booking-cal__day-btn"
-                onClick={() => !past && sunday && handleDayClick(date)}
-                disabled={!sunday || past}
-                aria-label={`${date}${hasAvailable ? ', tours available' : sunday && !past ? ', no tours listed' : ''}`}
+                onClick={() => !past && handleDayClick(date)}
+                disabled={past}
+                aria-label={`${date}${hasAvailable ? ', tours available' : !past ? ', no tours listed' : ''}`}
                 aria-selected={active}
                 aria-pressed={active}
               >
                 <span className="booking-cal__day-num">{day}</span>
-                {sunday && !past && (
+                {!past && (
                   <span className="booking-cal__dot" aria-hidden="true">
                     {hasAvailable ? '●' : '○'}
                   </span>
@@ -201,7 +203,7 @@ export default function BookingCalendar() {
       <div className="booking-cal__legend" aria-label="Calendar legend">
         <span className="legend-item legend-item--available">● Available</span>
         <span className="legend-item legend-item--none">○ No tours listed</span>
-        <span className="legend-item legend-item--disabled">Non-Sunday (unavailable)</span>
+        <span className="legend-item legend-item--disabled">Past dates (unavailable)</span>
       </div>
 
       {/* Time slots panel */}
@@ -260,7 +262,15 @@ export default function BookingCalendar() {
       )}
 
       <style>{`
-        .booking-cal { max-width: 700px; margin: 0 auto; }
+        .booking-cal { 
+          border: 1.5px solid var(--color-border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-6);
+          margin-top: var(--space-6);
+          background: var(--color-white);
+          max-width: 700px; 
+          margin: 0 auto;
+        }
         .booking-cal__header {
           display: flex;
           align-items: center;
@@ -382,11 +392,7 @@ export default function BookingCalendar() {
         .legend-item--available { color: var(--color-available); font-weight: 700; }
         /* Times panel */
         .booking-cal__times {
-          border: 1.5px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
           margin-top: var(--space-6);
-          background: var(--color-white);
         }
         .booking-cal__times-title {
           font-size: var(--text-lg);
@@ -431,8 +437,12 @@ export default function BookingCalendar() {
         .booking-cal__slot-note {
           font-size: var(--text-sm);
           color: var(--color-text-muted);
-          text-align: center;
           margin: 0;
+        }
+        @container root (width < 600px) {
+          .booking-calendar-wrap {
+            --padding-x: 0;
+          }
         }
       `}</style>
     </div>

@@ -6,6 +6,8 @@ interface BookingModalProps {
   onSuccess: (slotId: string) => void;
 }
 
+const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
+
 function formatTime(t: string): string {
   const [h, m] = t.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
@@ -41,7 +43,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
     setErrorMsg('');
 
     try {
-      const res = await fetch('/.netlify/functions/create-booking', {
+      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,7 +78,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
         'party-size': form.partySize,
         'message': form.message,
       });
-      fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
+      fetch(`${FUNCTIONS_BASE}/.netlify/functions/notify-booking`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
         .catch(() => { /* non-critical */ });
 
       setStatus('success');
