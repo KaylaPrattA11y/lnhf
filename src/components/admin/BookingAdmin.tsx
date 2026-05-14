@@ -65,7 +65,7 @@ export default function BookingAdmin() {
       });
       if (!res.ok) throw new Error('Could not load bookings');
       const data = await res.json();
-      setSlots(data.slots ?? []);
+      setSlots(Array.isArray(data) ? data : (data.slots ?? []));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {

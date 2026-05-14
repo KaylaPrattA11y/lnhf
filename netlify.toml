@@ -11,6 +11,12 @@
   command = "npm run dev"
   targetPort = 4321
 
+# SCHEDULED FUNCTIONS -----
+# Generate available Sunday slots 8 weeks ahead, every Monday at midnight UTC
+# Schedule - cron expression: "minute hour day-of-month month day-of-week"
+[functions."generate-sunday-slots"]
+  schedule = "0 0 * * 1"
+
 # REDIRECTS ---------------
 # Redirect /sitemap.xml to /sitemap-index.xml (Astro's default sitemap name)
 # so bots looking for the common path still find it
