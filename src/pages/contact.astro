@@ -89,6 +89,7 @@ import Footer from '@components/layout/Footer.astro';
           class="contact-form"
           novalidate
           aria-label="General contact form"
+          id="contact-form"
         >
           <div class="bot-field" aria-hidden="true">
             <label>Do not fill: <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
@@ -107,8 +108,10 @@ import Footer from '@components/layout/Footer.astro';
               required
               autocomplete="name"
               aria-required="true"
+              aria-describedby="c-name-error"
               placeholder="Your full name"
             />
+            <span class="form-error" id="c-name-error" role="alert" aria-live="polite"></span>
           </div>
 
           <div class="form-group">
@@ -123,8 +126,10 @@ import Footer from '@components/layout/Footer.astro';
               required
               autocomplete="email"
               aria-required="true"
+              aria-describedby="c-email-error"
               placeholder="your@email.com"
             />
+            <span class="form-error" id="c-email-error" role="alert" aria-live="polite"></span>
           </div>
 
           <div class="form-group">
@@ -163,9 +168,11 @@ import Footer from '@components/layout/Footer.astro';
               required
               maxlength="500"
               aria-required="true"
+              aria-describedby="c-message-error"
               placeholder="How can we help? (500 character max)"
             ></textarea>
             <span class="contact-form__char-note">Maximum 500 characters</span>
+            <span class="form-error" id="c-message-error" role="alert" aria-live="polite"></span>
           </div>
 
           <button type="submit" class="btn btn--primary btn--lg">Send Message</button>
@@ -176,6 +183,60 @@ import Footer from '@components/layout/Footer.astro';
 
   <Footer slot="footer" />
 </BaseLayout>
+
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  if (form) {
+    const fields = [
+      {
+        el: document.getElementById('c-name') as HTMLInputElement,
+        errorEl: document.getElementById('c-name-error') as HTMLElement,
+        validate: (v: string) => v.trim() ? '' : 'Please enter your full name.',
+      },
+      {
+        el: document.getElementById('c-email') as HTMLInputElement,
+        errorEl: document.getElementById('c-email-error') as HTMLElement,
+        validate: (v: string) => {
+          if (!v.trim()) return 'Please enter your email address.';
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Please enter a valid email address.';
+          return '';
+        },
+      },
+      {
+        el: document.getElementById('c-message') as HTMLTextAreaElement,
+        errorEl: document.getElementById('c-message-error') as HTMLElement,
+        validate: (v: string) => v.trim() ? '' : 'Please enter a message.',
+      },
+    ];
+
+    const showError = (field: typeof fields[number], msg: string) => {
+      field.errorEl.textContent = msg;
+      field.el.classList.toggle('form-input--error', !!msg);
+      field.el.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    };
+
+    // Clear error as user corrects each field
+    fields.forEach(field => {
+      field.el.addEventListener('input', () => showError(field, field.validate(field.el.value)));
+    });
+
+    form.addEventListener('submit', (e) => {
+      let firstInvalid: HTMLElement | null = null;
+
+      fields.forEach(field => {
+        const msg = field.validate(field.el.value);
+        showError(field, msg);
+        if (msg && !firstInvalid) firstInvalid = field.el;
+      });
+
+      if (firstInvalid) {
+        e.preventDefault();
+        (firstInvalid as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        (firstInvalid as HTMLElement).focus();
+      }
+    });
+  }
+</script>
 
 <style>
   .contact-hero { background: var(--color-primary-dark); color: var(--color-white); }
@@ -261,4 +322,15 @@ import Footer from '@components/layout/Footer.astro';
     display: block;
   }
   .contact-form .form-group { margin-bottom: var(--space-5); }
+
+  .form-error {
+    display: block;
+    font-size: var(--text-sm);
+    color: #b91c1c;
+    min-height: 1em;
+  }
+  .form-input--error {
+    border-color: #b91c1c;
+    outline-color: #b91c1c;
+  }
 </style>
