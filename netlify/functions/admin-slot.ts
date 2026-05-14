@@ -103,6 +103,16 @@ export const handler: Handler = async (event, context: HandlerContext) => {
         };
       }
 
+      // Duplicate guard — reject if a slot with the same date + startTime already exists
+      const existing = await collection.findOne({ date, startTime });
+      if (existing) {
+        return {
+          statusCode: 409,
+          headers,
+          body: JSON.stringify({ error: `A slot for ${date} at ${startTime} already exists` }),
+        };
+      }
+
       const result = await collection.insertOne(doc);
       return { statusCode: 201, headers, body: JSON.stringify({ id: result.insertedId }) };
     }

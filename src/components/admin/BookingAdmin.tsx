@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './BookingAdmin.css';
+import * as XLSX from 'xlsx';
 import {
   useReactTable,
   getCoreRowModel,
@@ -57,6 +58,7 @@ const globalFilterFn: FilterFn<Slot> = (row, _columnId, filterValue: string) => 
 };
 
 export default function BookingAdmin() {
+  const adminMsg = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [user, setUser] = useState<unknown>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -77,6 +79,12 @@ export default function BookingAdmin() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+
+  // Export state
+  const [exportFrom, setExportFrom] = useState('');
+  const [exportTo, setExportTo] = useState('');
+  const [exportFmt, setExportFmt] = useState<'csv' | 'xlsx' | 'ods'>('csv');
+  const [exporting, setExporting] = useState(false);
 
   // Auth — register listeners BEFORE calling init() so the 'init' event is never missed
   useEffect(() => {
@@ -112,7 +120,47 @@ export default function BookingAdmin() {
     if (user) fetchSlots();
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const flash = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3500); };
+  const flash = (text: string) => { 
+    setMsg(text); 
+    setTimeout(() => setMsg(''), 7000000); 
+  };
+
+  const exportBookings = () => {
+    setExporting(true);
+    try {
+      let booked = slots.filter(s => s.status === 'booked');
+      if (exportFrom) booked = booked.filter(s => s.date >= exportFrom);
+      if (exportTo)   booked = booked.filter(s => s.date <= exportTo);
+
+      if (booked.length === 0) {
+        flash('No booked slots found for the selected date range.');
+        return;
+      }
+
+      const rows = booked.map(s => ({
+        Date:        fmt(s.date),
+        'Start Time': fmtTime(s.startTime),
+        'End Time':  fmtTime(s.endTime),
+        'Guest Name':  s.booking?.name ?? '',
+        'Guest Email': s.booking?.email ?? '',
+        'Guest Phone': s.booking?.phone ?? '',
+        'Party Size':  s.booking?.partySize ?? '',
+        Notes:         s.booking?.message ?? '',
+        'Booked At':   s.booking?.bookedAt ? new Date(s.booking.bookedAt).toLocaleString() : '',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Bookings');
+
+      const dateStamp = new Date().toISOString().split('T')[0];
+      const filename  = `lnhf-bookings-${dateStamp}.${exportFmt}`;
+      const bookType  = exportFmt === 'csv' ? 'csv' : exportFmt === 'ods' ? 'ods' : 'xlsx';
+      XLSX.writeFile(wb, filename, { bookType });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const updateSlot = async (id: string, body: Record<string, unknown>) => {
     const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-slot`, {
@@ -138,10 +186,19 @@ export default function BookingAdmin() {
 
   const addSlot = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const endHour = parseInt(newStart.split(':')[0], 10) + 1;
+    const endTime = `${String(endHour).padStart(2, '0')}:00`;
+
+    // Duplicate check: same date + startTime already exists in the loaded data
+    const duplicate = slots.some(s => s.date === newDate && s.startTime === newStart);
+    if (duplicate) {
+      flash(`A slot for ${fmt(newDate)} at ${fmtTime(newStart)} already exists.`);
+      return;
+    }
+
     setAdding(true);
     try {
-      const endHour = parseInt(newStart.split(':')[0], 10) + 1;
-      const endTime = `${String(endHour).padStart(2, '0')}:00`;
       const payload: Record<string, unknown> = { date: newDate, startTime: newStart, endTime, status: newStatus };
       if (newStatus === 'booked') {
         payload.booking = {
@@ -313,8 +370,10 @@ export default function BookingAdmin() {
         </button>
       </div>
 
-      {msg && <div className="booking-admin__msg" role="status">{msg}</div>}
-      {error && <div className="booking-admin__error" role="alert">{error}</div>}
+      <div id="admin-msg" className="booking-admin__msg-container" aria-live="polite" ref={adminMsg}>
+        {msg &&  <div className="booking-admin__msg" role="status">{msg}</div>}
+        {error && <div className="booking-admin__error" role="alert">{error}</div>}
+      </div>
 
       {/* Add slot form */}
       <section className="booking-admin__section">
@@ -445,6 +504,65 @@ export default function BookingAdmin() {
             {loading ? 'Loading…' : 'Refresh'}
           </button>
         </div>
+
+        {/* Export booked entries */}
+        <details className="booking-admin__export">
+          <summary className="booking-admin__export-summary">Export Booked Entries</summary>
+          <div className="booking-admin__export-controls">
+            <div className="form-group">
+              <label className="form-label" htmlFor="exp-from">From date</label>
+              <input
+                className="form-input"
+                type="date"
+                id="exp-from"
+                value={exportFrom}
+                onChange={e => setExportFrom(e.target.value)}
+                max={exportTo || undefined}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="exp-to">To date</label>
+              <input
+                className="form-input"
+                type="date"
+                id="exp-to"
+                value={exportTo}
+                onChange={e => setExportTo(e.target.value)}
+                min={exportFrom || undefined}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="exp-fmt">Format</label>
+              <select
+                className="form-select"
+                id="exp-fmt"
+                value={exportFmt}
+                onChange={e => setExportFmt(e.target.value as 'csv' | 'xlsx' | 'ods')}
+              >
+                <option value="csv">CSV (.csv)</option>
+                <option value="xlsx">Excel (.xlsx)</option>
+                <option value="ods">OpenDocument (.ods)</option>
+              </select>
+            </div>
+            <div className="form-group booking-admin__export-action">
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={exportBookings}
+                disabled={exporting || slots.filter(s => s.status === 'booked').length === 0}
+              >
+                {exporting ? 'Exporting…' : 'Download'}
+              </button>
+              <span className="booking-admin__export-count">
+                {(() => {
+                  let n = slots.filter(s => s.status === 'booked');
+                  if (exportFrom) n = n.filter(s => s.date >= exportFrom);
+                  if (exportTo)   n = n.filter(s => s.date <= exportTo);
+                  return `${n.length} booked slot${n.length !== 1 ? 's' : ''}`;
+                })()}
+              </span>
+            </div>
+          </div>
+        </details>
 
         {/* Search + filter controls */}
         <div className="table-controls">
