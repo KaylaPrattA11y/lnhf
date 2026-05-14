@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface BookingModalProps {
   slot: { _id: string; date: string; startTime: string; endTime: string } | null;
@@ -6,7 +6,7 @@ interface BookingModalProps {
   onSuccess: (slotId: string) => void;
 }
 
-const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
+const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
 
 function formatTime(t: string): string {
   const [h, m] = t.split(':').map(Number);
@@ -23,36 +23,64 @@ function formatDate(d: string): string {
 
 export default function BookingModal({ slot, onClose, onSuccess }: BookingModalProps) {
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', partySize: '', message: '', botField: '',
+    name: '', email: '', phone: '', partySize: '', message: '',
   });
+  const [errors, setErrors] = useState({ name: '', email: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const botRef = useRef<HTMLInputElement>(null);
+  // Defer close capability by one frame so the click that opened the modal
+  // cannot immediately trigger the backdrop's onClose handler.
+  const [canClose, setCanClose] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setCanClose(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    // Clear the field's error as the user types
+    if (e.target.name === 'name') setErrors(prev => ({ ...prev, name: '' }));
+    if (e.target.name === 'email') setErrors(prev => ({ ...prev, email: '' }));
   };
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!slot) return;
+    if (botRef.current?.value) return;
 
-    // Honeypot check
-    if (form.botField) return;
+    // Read from the DOM directly so browser-autofilled values are captured
+    // even if React's onChange didn't fire for them.
+    const fd = new FormData(e.currentTarget);
+    const name    = ((fd.get('name')      as string) ?? '').trim();
+    const email   = ((fd.get('email')     as string) ?? '').trim();
+    const phone   = ((fd.get('phone')     as string) ?? '').trim();
+    const partySz = ((fd.get('partySize') as string) ?? '').trim();
+    const message = ((fd.get('message')   as string) ?? '').trim();
+
+    const nameErr  = name ? '' : 'Please enter your full name.';
+    const emailErr = !email
+      ? 'Please enter your email address.'
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ? 'Please enter a valid email address.'
+        : '';
+    setErrors({ name: nameErr, email: emailErr });
+    if (nameErr || emailErr) return;
 
     setStatus('loading');
     setErrorMsg('');
 
     try {
-      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/create-booking`, {
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/create-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slotId: slot._id,
-          name: form.name,
-          email: form.email,
-          phone: form.phone || undefined,
-          partySize: form.partySize ? parseInt(form.partySize, 10) : undefined,
-          message: form.message || undefined,
+          name,
+          email,
+          phone: phone || undefined,
+          partySize: partySz ? parseInt(partySz, 10) : undefined,
+          message: message || undefined,
         }),
       });
 
@@ -67,18 +95,18 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
         throw new Error(data.error || 'Booking failed');
       }
 
-      // Also notify via Netlify Forms
+      // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
         'form-name': 'booking-notification',
-        'guest-name': form.name,
-        'guest-email': form.email,
-        'guest-phone': form.phone,
+        'guest-name': name,
+        'guest-email': email,
+        'guest-phone': phone,
         'slot-date': formatDate(slot.date),
         'slot-time': `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`,
-        'party-size': form.partySize,
-        'message': form.message,
+        'party-size': partySz,
+        'message': message,
       });
-      fetch(`${FUNCTIONS_BASE}/.netlify/functions/notify-booking`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
+      fetch(`${SITE_BASE_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
         .catch(() => { /* non-critical */ });
 
       setStatus('success');
@@ -87,8 +115,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
     }
-  }, [slot, form, onSuccess]);
-
+  }, [slot, onSuccess]);
   if (!slot) return null;
 
   return (
@@ -97,10 +124,14 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      onClick={(e) => e.stopPropagation()}
     >
-      <div className="booking-modal__backdrop" onClick={onClose} />
+      <div
+        className="booking-modal__backdrop"
+        onClick={() => { if (canClose) onClose(); }}
+      />
 
-      <div className="booking-modal__panel">
+      <div className="booking-modal__panel" onClick={(e) => e.stopPropagation()}>
         <button className="booking-modal__close" onClick={onClose} aria-label="Close booking form">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6 6 18M6 6l12 12"/>
@@ -135,13 +166,11 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
               noValidate
               aria-label="Tour booking form"
             >
-              {/* Honeypot */}
+              {/* Honeypot – uncontrolled so autofill can't trigger state updates */}
               <div style={{ position: 'absolute', left: '-9999px', opacity: 0 }} aria-hidden="true">
                 <input
                   type="text"
-                  name="botField"
-                  value={form.botField}
-                  onChange={handleChange}
+                  ref={botRef}
                   tabIndex={-1}
                   autoComplete="off"
                 />
@@ -153,7 +182,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
                     Full Name <span className="required" aria-hidden="true">*</span>
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input${errors.name ? ' form-input--error' : ''}`}
                     type="text"
                     id="bm-name"
                     name="name"
@@ -162,9 +191,12 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
                     required
                     autoComplete="name"
                     aria-required="true"
+                    aria-describedby="bm-name-error"
+                    aria-invalid={!!errors.name}
                     placeholder="Your full name"
                     disabled={status === 'loading'}
                   />
+                  {errors.name && <span className="form-error" id="bm-name-error" role="alert">{errors.name}</span>}
                 </div>
 
                 <div className="form-group">
@@ -172,7 +204,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
                     Email Address <span className="required" aria-hidden="true">*</span>
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input${errors.email ? ' form-input--error' : ''}`}
                     type="email"
                     id="bm-email"
                     name="email"
@@ -181,9 +213,12 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
                     required
                     autoComplete="email"
                     aria-required="true"
+                    aria-describedby="bm-email-error"
+                    aria-invalid={!!errors.email}
                     placeholder="your@email.com"
                     disabled={status === 'loading'}
                   />
+                  {errors.email && <span className="form-error" id="bm-email-error" role="alert">{errors.email}</span>}
                 </div>
 
                 <div className="form-group">
@@ -345,6 +380,13 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
           margin-bottom: var(--space-4);
           font-size: var(--text-sm);
         }
+        .form-error {
+          display: block;
+          margin-top: 4px;
+          font-size: 12px;
+          color: #b91c1c;
+        }
+        .form-input--error { border-color: #b91c1c; }
         .booking-modal__actions {
           display: flex;
           gap: var(--space-3);

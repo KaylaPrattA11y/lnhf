@@ -41,8 +41,9 @@ export const handler: Handler = async (event, context: HandlerContext) => {
 
     // ── CREATE ────────────────────────────────────────────────
     if (event.httpMethod === 'POST') {
-      const { date, startTime, endTime, status = 'available' } = body as {
+      const { date, startTime, endTime, status = 'available', booking: bookingInput } = body as {
         date: string; startTime: string; endTime: string; status?: string;
+        booking?: { name: string; email: string; phone?: string; partySize?: number; message?: string };
       };
 
       if (!date || !startTime || !endTime) {
@@ -63,16 +64,46 @@ export const handler: Handler = async (event, context: HandlerContext) => {
         };
       }
 
-      const validStatuses = ['available', 'blocked'];
+      const validStatuses = ['available', 'blocked', 'booked'];
       if (!validStatuses.includes(status as string)) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'status must be available or blocked' }),
+          body: JSON.stringify({ error: 'status must be available, blocked, or booked' }),
         };
       }
 
-      const result = await collection.insertOne({ date, startTime, endTime, status });
+      if (status === 'booked') {
+        if (!bookingInput?.name?.trim() || !bookingInput?.email?.trim()) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Guest name and email are required for booked slots' }),
+          };
+        }
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRe.test(bookingInput.email)) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Invalid guest email address' }),
+          };
+        }
+      }
+
+      const doc: Record<string, unknown> = { date, startTime, endTime, status };
+      if (status === 'booked' && bookingInput) {
+        doc.booking = {
+          name: bookingInput.name.trim(),
+          email: bookingInput.email.trim().toLowerCase(),
+          ...(bookingInput.phone ? { phone: bookingInput.phone.trim() } : {}),
+          ...(bookingInput.partySize ? { partySize: Number(bookingInput.partySize) } : {}),
+          ...(bookingInput.message ? { message: bookingInput.message.trim() } : {}),
+          bookedAt: new Date().toISOString(),
+        };
+      }
+
+      const result = await collection.insertOne(doc);
       return { statusCode: 201, headers, body: JSON.stringify({ id: result.insertedId }) };
     }
 

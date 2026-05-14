@@ -9,7 +9,7 @@ interface Slot {
   status: 'available' | 'booked' | 'blocked';
 }
 
-const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
+const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
 
 // Whole-hour tour slots (no half-hours)
 const TOUR_HOURS = [10, 11, 12, 13, 14, 15];
@@ -59,7 +59,7 @@ export default function BookingCalendar() {
       const start = isoDate(y, m, 1);
       const end   = isoDate(y, m, daysInMonth(y, m));
       const res = await fetch(
-        `${FUNCTIONS_BASE}/.netlify/functions/get-slots?startDate=${start}&endDate=${end}`,
+        `${SITE_BASE_URL}/.netlify/functions/get-slots?startDate=${start}&endDate=${end}`,
       );
       if (!res.ok) throw new Error('Unable to load availability');
       const data = await res.json();
@@ -99,9 +99,9 @@ export default function BookingCalendar() {
   };
 
   const handleBookingSuccess = (slotId: string) => {
-    // Optimistically mark slot as booked
+    // Optimistically mark slot as booked in the calendar
     setSlots(prev => prev.map(s => s._id === slotId ? { ...s, status: 'booked' } : s));
-    setTimeout(() => setSelectedSlot(null), 200);
+    // Do NOT auto-close — the modal shows a success screen; user closes it with "Done"
   };
 
   // Calendar grid

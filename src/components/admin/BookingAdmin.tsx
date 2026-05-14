@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 
 const netlifyIdentity = window.netlifyIdentity!;
-const FUNCTIONS_BASE = import.meta.env.SITE.replace(/\/$/, '');
+const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
 
 interface Slot {
   _id: string;
@@ -57,6 +57,7 @@ const globalFilterFn: FilterFn<Slot> = (row, _columnId, filterValue: string) => 
 };
 
 export default function BookingAdmin() {
+  const [initialized, setInitialized] = useState(false);
   const [user, setUser] = useState<unknown>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,8 +67,9 @@ export default function BookingAdmin() {
   // Add-slot form
   const [newDate, setNewDate] = useState('');
   const [newStart, setNewStart] = useState('13:00');
-  const [newStatus, setNewStatus] = useState<'available' | 'blocked'>('available');
+  const [newStatus, setNewStatus] = useState<'available' | 'blocked' | 'booked'>('available');
   const [adding, setAdding] = useState(false);
+  const [newBooking, setNewBooking] = useState({ name: '', email: '', phone: '', partySize: '', message: '' });
 
   // Table state
   const [globalFilter, setGlobalFilter] = useState('');
@@ -76,13 +78,12 @@ export default function BookingAdmin() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
 
-  // Auth
+  // Auth — register listeners BEFORE calling init() so the 'init' event is never missed
   useEffect(() => {
-    netlifyIdentity.init({ APIUrl: 'https://lowernotleyhallfarm.netlify.app/.netlify/identity' });
-    const current = netlifyIdentity.currentUser();
-    setUser(current);
+    netlifyIdentity.on('init', (u: unknown) => { setUser(u); setInitialized(true); });
     netlifyIdentity.on('login', (u: unknown) => { setUser(u); netlifyIdentity.close(); });
     netlifyIdentity.on('logout', () => setUser(null));
+    netlifyIdentity.init({ APIUrl: 'https://lowernotleyhallfarm.netlify.app/.netlify/identity' });
   }, []);
 
   const authHeader = () => {
@@ -94,7 +95,7 @@ export default function BookingAdmin() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-bookings`, {
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-bookings`, {
         headers: authHeader() as HeadersInit,
       });
       if (!res.ok) throw new Error('Could not load bookings');
@@ -114,7 +115,7 @@ export default function BookingAdmin() {
   const flash = (text: string) => { setMsg(text); setTimeout(() => setMsg(''), 3500); };
 
   const updateSlot = async (id: string, body: Record<string, unknown>) => {
-    const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
+    const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-slot`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id, ...body }),
@@ -125,7 +126,7 @@ export default function BookingAdmin() {
 
   const deleteSlot = async (id: string) => {
     if (!confirm('Delete this slot permanently?')) return;
-    const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
+    const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-slot`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id }),
@@ -141,15 +142,27 @@ export default function BookingAdmin() {
     try {
       const endHour = parseInt(newStart.split(':')[0], 10) + 1;
       const endTime = `${String(endHour).padStart(2, '0')}:00`;
-      const res = await fetch(`${FUNCTIONS_BASE}/.netlify/functions/admin-slot`, {
+      const payload: Record<string, unknown> = { date: newDate, startTime: newStart, endTime, status: newStatus };
+      if (newStatus === 'booked') {
+        payload.booking = {
+          name: newBooking.name,
+          email: newBooking.email,
+          ...(newBooking.phone ? { phone: newBooking.phone } : {}),
+          ...(newBooking.partySize ? { partySize: Number(newBooking.partySize) } : {}),
+          ...(newBooking.message ? { message: newBooking.message } : {}),
+        };
+      }
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-slot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
-        body: JSON.stringify({ date: newDate, startTime: newStart, endTime, status: newStatus }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Create failed');
       await fetchSlots();
       flash('Slot added');
       setNewDate('');
+      setNewBooking({ name: '', email: '', phone: '', partySize: '', message: '' });
+      setNewStatus('available');
     } catch (e) {
       flash(`Error: ${e instanceof Error ? e.message : 'Unknown'}`);
     } finally {
@@ -267,6 +280,11 @@ export default function BookingAdmin() {
   const totalFiltered = table.getFilteredRowModel().rows.length;
   const pageCount = table.getPageCount();
 
+  // Wait for the identity widget to finish validating the stored session
+  if (!initialized) {
+    return <div className="admin-login"><p>Loading…</p></div>;
+  }
+
   // Not logged in
   if (!user) {
     return (
@@ -335,19 +353,87 @@ export default function BookingAdmin() {
               className="form-select"
               id="a-status"
               value={newStatus}
-              onChange={e => setNewStatus(e.target.value as 'available' | 'blocked')}
+              onChange={e => setNewStatus(e.target.value as 'available' | 'blocked' | 'booked')}
             >
               <option value="available">Available</option>
               <option value="blocked">Blocked</option>
+              <option value="booked">Booked (phone/walk-in)</option>
             </select>
           </div>
-          <button
-            type="submit"
-            className="btn btn--primary"
-            disabled={adding}
-          >
-            {adding ? 'Adding…' : 'Add Slot'}
-          </button>
+
+          {newStatus === 'booked' && (
+            <fieldset className="booking-admin__guest-fieldset">
+              <legend className="form-label">Guest Details</legend>
+              <div className="form-group">
+                <label className="form-label" htmlFor="a-g-name">Name <span aria-hidden="true">*</span></label>
+                <input
+                  className="form-input"
+                  type="text"
+                  id="a-g-name"
+                  required
+                  value={newBooking.name}
+                  onChange={e => setNewBooking(b => ({ ...b, name: e.target.value }))}
+                  placeholder="Guest full name"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="a-g-email">Email <span aria-hidden="true">*</span></label>
+                <input
+                  className="form-input"
+                  type="email"
+                  id="a-g-email"
+                  required
+                  value={newBooking.email}
+                  onChange={e => setNewBooking(b => ({ ...b, email: e.target.value }))}
+                  placeholder="guest@example.com"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="a-g-phone">Phone</label>
+                <input
+                  className="form-input"
+                  type="tel"
+                  id="a-g-phone"
+                  value={newBooking.phone}
+                  onChange={e => setNewBooking(b => ({ ...b, phone: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="a-g-party">Party Size</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  id="a-g-party"
+                  min={1}
+                  value={newBooking.partySize}
+                  onChange={e => setNewBooking(b => ({ ...b, partySize: e.target.value }))}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="a-g-msg">Notes</label>
+                <textarea
+                  className="form-input"
+                  id="a-g-msg"
+                  rows={3}
+                  value={newBooking.message}
+                  onChange={e => setNewBooking(b => ({ ...b, message: e.target.value }))}
+                  placeholder="Optional notes"
+                />
+              </div>
+            </fieldset>
+          )}
+
+          <div className="form-group">
+            <button
+              type="submit"
+              className="btn btn--primary"
+              disabled={adding}
+            >
+              {adding ? 'Adding…' : 'Add Slot'}
+            </button>
+          </div>
         </form>
       </section>
 
