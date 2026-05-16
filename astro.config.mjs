@@ -11,6 +11,7 @@ export default defineConfig({
     sitemap(),
   ],
   output: 'static',
+  trailingSlash: 'always',
   vite: {
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-dom/client'],

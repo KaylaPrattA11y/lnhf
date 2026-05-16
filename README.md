@@ -290,7 +290,7 @@ interface BookingSlot {
 2. Visitor clicks an available Sunday → time slot pills appear.
 3. Visitor clicks a time → `BookingModal` opens.
 4. On submit, `POST /.netlify/functions/create-booking` uses a **MongoDB atomic `findOneAndUpdate`** to prevent double-booking. Returns `409 Conflict` if the slot was taken between the visitor opening the modal and submitting.
-5. On success, a secondary `POST` to `/` (Netlify Forms) submits the hidden `booking-notification` form, triggering an email notification to the venue.
+5. On success, a secondary `POST` to `/` (Netlify Forms) submits the hidden `booking` form, triggering an email notification to the venue.
 
 ### Adding slots (admin)
 
@@ -402,11 +402,10 @@ All forms use `data-netlify="true"` and include a hidden honeypot field (`bot-fi
 
 | Form name | Page | Fields |
 |---|---|---|
-| `tour-inquiry` | `/` (TourForm) | name\*, email\*, phone, preferred-date, message |
-| `booking-notification` | `/booking` (hidden) | guest-name, guest-email, guest-phone, slot-date, slot-time, party-size, message |
+| `booking` | `/booking` (hidden) | name, email, phone, date, time, party-size, message |
 | `contact` | `/contact` | name\*, email\*, phone, subject, message\* |
 
-> **Email target:** Configure submission notifications in Netlify → Forms → `tour-inquiry` / `contact` → **Add notification → Email notification** → recipient: `kaylapratt@protonmail.com`.
+> **Email target:** Configure submission notifications in Netlify → Forms → `cooking` / `contact` → **Add notification → Email notification** → recipient: `kaylapratt@protonmail.com`.
 
 ---
 
@@ -482,7 +481,7 @@ npm run build
 
 1. **Environment variables** — set all variables from `.env.example` in Site configuration → Environment variables.
 2. **Identity** — enable Netlify Identity, invite admin users.
-3. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `tour-inquiry`, `contact`, and `booking-notification`.
+3. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `contact` and `booking`.
 4. **Custom domain** — add `lowernotleyhallfarm.com` and enable HTTPS.
 
 ---

@@ -128,7 +128,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
       <div className="pricing-tool__note pricing-tool__note--cta">
         <p>
           Can&rsquo;t find what you want?{' '}
-          <a href="/contact">Contact Jack and Cindy</a>{' '}
+          <a href="/contact/">Contact Jack and Cindy</a>{' '}
           to create your custom package.
         </p>
       </div>

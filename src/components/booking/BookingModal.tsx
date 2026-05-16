@@ -28,7 +28,6 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
   const [errors, setErrors] = useState({ name: '', email: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const botRef = useRef<HTMLInputElement>(null);
   // Defer close capability by one frame so the click that opened the modal
   // cannot immediately trigger the backdrop's onClose handler.
   const [canClose, setCanClose] = useState(false);
@@ -47,7 +46,6 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!slot) return;
-    if (botRef.current?.value) return;
 
     // Read from the DOM directly so browser-autofilled values are captured
     // even if React's onChange didn't fire for them.
@@ -97,12 +95,12 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
 
       // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
-        'form-name': 'booking-notification',
-        'guest-name': name,
-        'guest-email': email,
-        'guest-phone': phone,
-        'slot-date': formatDate(slot.date),
-        'slot-time': `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`,
+        'form-name': 'booking',
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'date': formatDate(slot.date),
+        'time': `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`,
         'party-size': partySz,
         'message': message,
       });
@@ -166,16 +164,6 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
               noValidate
               aria-label="Tour booking form"
             >
-              {/* Honeypot – uncontrolled so autofill can't trigger state updates */}
-              <div style={{ position: 'absolute', left: '-9999px', opacity: 0 }} aria-hidden="true">
-                <input
-                  type="text"
-                  ref={botRef}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-              </div>
-
               <div className="booking-modal__grid">
                 <div className="form-group">
                   <label className="form-label" htmlFor="bm-name">

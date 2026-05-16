@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import BookingModal from './BookingModal';
 
 interface Slot {
@@ -50,6 +50,7 @@ export default function BookingCalendar() {
   const [fetchError, setFetchError] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const timeSlotsRef = useRef<HTMLDivElement>(null);
 
   // Fetch slots for the visible month
   const fetchSlots = useCallback(async (y: number, m: number) => {
@@ -90,9 +91,15 @@ export default function BookingCalendar() {
     slots.find(s => s.date === date && parseInt(s.startTime.split(':')[0], 10) === hour);
 
   const handleDayClick = (date: string) => {
-    if (selectedDate === date) setSelectedDate(null);
-    else setSelectedDate(date);
+    setSelectedDate(prev => prev === date ? null : date);
   };
+
+  // Scroll to the time slots panel AFTER it has rendered (selectedDate state change triggers re-render first)
+  useEffect(() => {
+    if (selectedDate && timeSlotsRef.current) {
+      timeSlotsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedDate]);
 
   const handleSlotClick = (slot: Slot) => {
     if (slot.status === 'available') setSelectedSlot(slot);
@@ -208,7 +215,7 @@ export default function BookingCalendar() {
 
       {/* Time slots panel */}
       {selectedDate && (
-        <div className="booking-cal__times" aria-label={`Time slots for ${selectedDate}`}>
+        <div className="booking-cal__times" aria-label={`Time slots for ${selectedDate}`} ref={timeSlotsRef}>
           <h3 className="booking-cal__times-title">
             Select a Time on{' '}
             {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
@@ -247,7 +254,7 @@ export default function BookingCalendar() {
           </div>
           <p className="booking-cal__slot-note">
             Don&rsquo;t see what you need?{' '}
-            <a href="/contact">Contact us</a> and we&rsquo;ll work something out.
+            <a href="/contact/">Contact us</a> and we&rsquo;ll work something out.
           </p>
         </div>
       )}
