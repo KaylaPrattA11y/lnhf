@@ -102,6 +102,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
         'date': formatDate(slot.date),
         'time': `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`,
         'party-size': partySz,
+        'subject': `Tour Request: ${name} for ${formatDate(slot.date)}`,
         'message': message,
       });
       fetch(`${SITE_BASE_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
