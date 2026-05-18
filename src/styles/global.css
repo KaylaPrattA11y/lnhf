@@ -201,7 +201,6 @@ blockquote {
               color var(--transition-base),
               border-color var(--transition-base),
               transform var(--transition-fast);
-  white-space: nowrap;
 }
 
 .btn:focus-visible {

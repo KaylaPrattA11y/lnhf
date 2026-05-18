@@ -85,12 +85,17 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     min-height: calc(100vh - var(--nav-height));
   }
 
+  :is(.hero__left, .hero__right) {
+    @container main (width >= 600px) {
+      display: flex;
+      align-items: center;
+      padding: 5rem 3rem 5rem;
+    }
+  }
+
   /* ── Left panel — dark photo ──────────────────────── */
   .hero__left {
     background-color: var(--color-bark);
-    display: flex;
-    align-items: center;
-    padding: 5rem 3rem 5rem;
     position: relative;
     overflow: hidden;
     min-height: 60vh;
@@ -109,32 +114,27 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     inline-size: 100%;
     object-fit: cover;
     object-position: center;
-    opacity: 0.1;
-  }
-
-  /* PHOTO PLACEHOLDER
-   * Replace the gradient background-image below with your hero photo:
-   *   url('/images/hero-waterfront.jpg') center/cover no-repeat
-   */
-  .hero__left-bg {
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(160deg, rgba(61,46,30,0.78) 0%, rgba(61,46,30,0.50) 100%),
-      linear-gradient(135deg, #3d2e1e 0%, #2d5563 60%, #261c10 100%);
-    background-size: cover;
   }
 
   .hero__left-content {
     position: relative;
     z-index: 1;
     animation: fadeUp 0.9s ease 0.2s both;
+    background: rgba(45, 85, 99, 0.72);
+    border-radius: 16px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    padding: 2rem;
+    border-radius: var(--space-5);
+    corner-shape: scoop;
+    border: 5px double rgba(255, 255, 255, 0.18);
   }
 
   .hero__eyebrow {
     font-family: var(--font-body);
     font-size: 0.62rem;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.30em;
     text-transform: uppercase;
     color: var(--color-gold-light);
@@ -160,7 +160,7 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     font-weight: 300;
     font-size: 0.92rem;
     line-height: 1.85;
-    color: rgba(245, 240, 232, 0.70);
+    color: white;
     max-width: 400px;
     margin-bottom: 3rem;
   }
@@ -174,11 +174,14 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
   /* ── Right panel — cream stats ────────────────────── */
   .hero__right {
     background-color: var(--color-cream);
-    display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 4rem 3rem;
+    
     position: relative;
+  }
+
+  .hero__right .hero-img-wrapper img {
+    opacity: 0.15;
   }
 
   .hero__stat-grid {
@@ -189,6 +192,9 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     gap: 2rem;
     margin-bottom: 3.5rem;
     animation: fadeUp 0.9s ease 0.3s both;
+    @container main (width < 600px) {
+      padding: 1rem;
+    }
   }
 
   .hero__stat {
@@ -251,7 +257,7 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
   @media (min-width: 900px) {
     .hero {
       grid-template-columns: 1fr 1fr;
-      min-height: 100vh;
+      min-height: calc(100vh - 12rem);
     }
 
     .hero__left {

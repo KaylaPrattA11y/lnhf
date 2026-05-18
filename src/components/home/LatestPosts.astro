@@ -15,7 +15,7 @@ const latestPosts = allPosts
 
 {latestPosts.length > 0 && (
   <section class="latest-posts section" aria-labelledby="blog-section-title">
-    <div class="container">
+    <div class="container latest-posts__container">
       <div class="section-header">
         <span class="section-header__eyebrow">From Our Blog</span>
         <h2 class="section-header__title" id="blog-section-title">Latest Updates</h2>
@@ -43,6 +43,11 @@ const latestPosts = allPosts
 )}
 
 <style>
+  .latest-posts__container {
+    @container main (width < 600px) {
+      --padding-x: 0;
+    }
+  }
   .latest-posts__grid {
     display: grid;
     gap: var(--space-6);

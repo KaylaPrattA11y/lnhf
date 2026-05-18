@@ -94,7 +94,7 @@ const handler: Handler = async (event) => {
         },
         method: "POST",
         body: JSON.stringify({
-          from: "noreply@lowernotleyhallfarm.com",
+          from: "noreply@mail.lowernotleyhallfarm.com",
           to: data.email.trim(),
           subject: "We received your message",
           parameters: {

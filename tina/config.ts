@@ -381,6 +381,11 @@ export default defineConfig({
             type: 'string',
             ui: {
               component: 'textarea',
+              validate: (value) => {
+                if (value?.length > 250) {
+                  return 'Testimonial text cannot exceed 250 characters';
+                }
+              },
             },
             required: true,
           },

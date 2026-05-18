@@ -91,22 +91,29 @@ export default function Testimonials({ testimonials }: { testimonials: Testimoni
 
       <style>{`
         .testimonials {
+          position: relative;
           padding-block: var(--space-20);
+          @container main (width < 600px) {
+            padding: 1rem;
+          }
         }
         .testimonials__inner {
           max-width: 800px;
           margin-inline: auto;
           padding-inline: var(--space-6);
           text-align: center;
+          @container main (width < 600px) {
+            padding-inline: 0;
+          }
         }
         .testimonials__slide {
           container: testimonial / inline-size;
           background: var(--color-bark-deep);
           transition: opacity 0.3s ease;
-          border-radius: var(--space-5);
-          corner-shape: bevel;
           color: white;
           padding: var(--space-10) var(--space-5) var(--space-5) var(--space-5);
+          border-radius: var(--space-5);
+          corner-shape: bevel;
         }
         .testimonials__slide.is-animating {
           opacity: 0;
@@ -166,6 +173,10 @@ export default function Testimonials({ testimonials }: { testimonials: Testimoni
           align-items: center;
           justify-content: center;
           gap: var(--space-6);
+          position: absolute;
+          inset: auto auto 1.5rem 0;
+          z-index: 1;
+          inline-size: 100%;
         }
         .testimonials__arrow {
           background: var(--color-accent-dark);

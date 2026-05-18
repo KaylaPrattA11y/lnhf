@@ -68,7 +68,7 @@ const testimonials = defineCollection({
   loader: glob({ base: './src/content/testimonials', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
     names: z.string(),
-    testimonial: z.string(),
+    testimonial: z.string().max(250, 'Testimonial text cannot exceed 250 characters'),
     date: z.string().optional(),
     photo: z.string().optional(),
     showOnHomepage: z.boolean().optional().default(false),
