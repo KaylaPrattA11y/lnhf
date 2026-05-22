@@ -372,6 +372,13 @@ export default defineConfig({
             name: 'names',
             label: 'Guest Name(s)',
             type: 'string',
+            ui: {
+              validate: (value) => {                
+                if (value?.length > 100) {
+                  return 'Names cannot exceed 100 characters';
+                }
+              }
+            },
             required: true,
             isTitle: true,
           },

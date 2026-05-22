@@ -67,7 +67,7 @@ const pricingTableEntries = defineCollection({
 const testimonials = defineCollection({
   loader: glob({ base: './src/content/testimonials', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
-    names: z.string(),
+    names: z.string().max(100, 'Names cannot exceed 100 characters'),
     testimonial: z.string().max(250, 'Testimonial text cannot exceed 250 characters'),
     date: z.string().optional(),
     photo: z.string().optional(),
