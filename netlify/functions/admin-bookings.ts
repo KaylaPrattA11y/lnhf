@@ -1,5 +1,6 @@
 import type { Handler, HandlerContext } from '@netlify/functions';
 import { getDb } from './utils/db';
+import { isAuthenticated } from './utils/auth';
 
 /**
  * GET /.netlify/functions/admin-bookings
@@ -20,8 +21,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
   }
 
   // Netlify Identity auth check
-  const { clientContext } = context as { clientContext?: { user?: { email: string } } };
-  if (!clientContext?.user) {
+  if (!(await isAuthenticated(event, context))) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 

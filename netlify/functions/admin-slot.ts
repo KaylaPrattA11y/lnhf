@@ -1,5 +1,6 @@
 import type { Handler, HandlerContext } from '@netlify/functions';
 import { getDb } from './utils/db';
+import { isAuthenticated } from './utils/auth';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,8 +28,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
   }
 
   // Auth guard
-  const { clientContext } = context as { clientContext?: { user?: { email: string } } };
-  if (!clientContext?.user) {
+  if (!(await isAuthenticated(event, context))) {
     return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 

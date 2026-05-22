@@ -99,6 +99,17 @@ export default function BookingAdmin() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
+  /**
+   * If a function returns 401 the access token has likely expired.
+   * Ask the widget to refresh; if refresh succeeds the `login` event
+   * fires and sets a new user, which triggers fetchSlots again.
+   * If it fails, open the login modal so the user can reauthenticate.
+   */
+  const handleUnauthorized = () => {
+    netlifyIdentity.refresh?.()
+      .catch(() => netlifyIdentity.open('login'));
+  };
+
   const fetchSlots = async () => {
     setLoading(true);
     setError('');
@@ -106,6 +117,7 @@ export default function BookingAdmin() {
       const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-bookings`, {
         headers: authHeader() as HeadersInit,
       });
+      if (res.status === 401) { handleUnauthorized(); return; }
       if (!res.ok) throw new Error('Could not load bookings');
       const data = await res.json();
       setSlots(Array.isArray(data) ? data : (data.slots ?? []));
@@ -168,6 +180,7 @@ export default function BookingAdmin() {
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id, ...body }),
     });
+    if (res.status === 401) { handleUnauthorized(); return; }
     if (!res.ok) throw new Error((await res.json()).error || 'Update failed');
     await fetchSlots();
   };
@@ -179,6 +192,7 @@ export default function BookingAdmin() {
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
       body: JSON.stringify({ id }),
     });
+    if (res.status === 401) { handleUnauthorized(); return; }
     if (!res.ok) throw new Error((await res.json()).error || 'Delete failed');
     await fetchSlots();
     flash('Slot deleted');
