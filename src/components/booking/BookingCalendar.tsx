@@ -97,7 +97,7 @@ export default function BookingCalendar() {
   // Scroll to the time slots panel AFTER it has rendered (selectedDate state change triggers re-render first)
   useEffect(() => {
     if (selectedDate && timeSlotsRef.current) {
-      timeSlotsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      timeSlotsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [selectedDate]);
 
