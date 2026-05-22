@@ -1,5 +1,5 @@
 import { schedule } from '@netlify/functions';
-import { getDb } from './utils/mongodb';
+import { getDb } from './utils/db';
 
 /**
  * Scheduled function — runs every Monday at 00:00 UTC.
@@ -33,29 +33,24 @@ function getUpcomingSundays(from: Date, count: number): string[] {
 
 export const handler = schedule('0 0 * * 1', async () => {
   try {
-    const db = await getDb();
-    const collection = db.collection('booking_slots');
-
     const sundays = getUpcomingSundays(new Date(), WEEKS_AHEAD);
 
-    const ops = sundays.flatMap(date =>
-      HOURS.map(h => {
-        const startTime = `${String(h).padStart(2, '0')}:00`;
-        const endTime   = `${String(h + 1).padStart(2, '0')}:00`;
-        return {
-          updateOne: {
-            filter: { date, startTime },
-            update: { $setOnInsert: { date, startTime, endTime, status: 'available' } },
-            upsert: true,
-          },
-        };
-      })
+    const rows = sundays.flatMap(date =>
+      HOURS.map(h => [
+        date,
+        `${String(h).padStart(2, '0')}:00`,
+        `${String(h + 1).padStart(2, '0')}:00`,
+      ])
     );
 
-    const result = await collection.bulkWrite(ops, { ordered: false });
+    const result = await getDb().sql`
+      INSERT INTO booking_slots (date, start_time, end_time)
+      VALUES ${getDb().sql.values(rows)}
+      ON CONFLICT (date, start_time) DO NOTHING
+    `;
 
     console.log(
-      `[generate-sunday-slots] Upserted ${result.upsertedCount} new slots ` +
+      `[generate-sunday-slots] Inserted ${result.length} new slots ` +
       `across ${sundays.length} Sundays (${sundays[0]} – ${sundays[sundays.length - 1]})`
     );
 

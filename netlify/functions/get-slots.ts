@@ -1,11 +1,11 @@
 import type { Handler } from '@netlify/functions';
-import { getDb } from './utils/mongodb';
+import { getDb } from './utils/db';
 
 /**
  * GET /.netlify/functions/get-slots?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  *
  * Returns all booking slots in the given date range.
- * Booked slots have booking details stripped for privacy (only status returned).
+ * Booking details are omitted for privacy.
  */
 export const handler: Handler = async (event) => {
   const headers = {
@@ -32,7 +32,6 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  // Validate date format
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRe.test(startDate) || !dateRe.test(endDate)) {
     return {
@@ -43,28 +42,21 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const db = await getDb();
-    const collection = db.collection('booking_slots');
+    const slots = await getDb().sql`
+      SELECT
+        id          AS "_id",
+        date,
+        start_time  AS "startTime",
+        end_time    AS "endTime",
+        status
+      FROM booking_slots
+      WHERE date >= ${startDate} AND date <= ${endDate}
+      ORDER BY date, start_time
+    `;
 
-    const slots = await collection
-      .find({ date: { $gte: startDate, $lte: endDate } })
-      .sort({ date: 1, startTime: 1 })
-      .toArray();
-
-    // Strip booking details from non-admin responses to protect guest privacy
-    const publicSlots = slots.map(({ booking: _booking, ...slot }) => slot);
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify(publicSlots),
-    };
+    return { statusCode: 200, headers, body: JSON.stringify(slots) };
   } catch (err) {
     console.error('[get-slots] Error:', err);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) };
   }
 };

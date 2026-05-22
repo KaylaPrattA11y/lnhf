@@ -1,6 +1,6 @@
 # Lower Notley Hall Farm — Website
 
-The official website for **Lower Notley Hall Farm**, a historic waterfront wedding venue in Chaptico, Southern Maryland. Built with Astro 5, React 19, TinaCMS, and MongoDB Atlas, deployed on Netlify.
+The official website for **Lower Notley Hall Farm**, a historic waterfront wedding venue in Chaptico, Southern Maryland. Built with Astro 6, React 19, TinaCMS, and Netlify Database (Postgres), deployed on Netlify.
 
 **Live site:** https://lowernotleyhallfarm.com  
 **Owners:** Jack & Cindy | **Phone:** (301) 769-2030  
@@ -32,10 +32,10 @@ The official website for **Lower Notley Hall Farm**, a historic waterfront weddi
 
 | Layer | Technology | Version |
 |---|---|---|
-| Framework | [Astro](https://astro.build) | 5.7.13 |
+| Framework | [Astro](https://astro.build) | 6.3.1 |
 | UI Components | [React](https://react.dev) | 19.1.0 |
 | CMS | [TinaCMS](https://tina.io) | 2.6.4 |
-| Database | [MongoDB Atlas](https://www.mongodb.com/atlas) M0 (free tier) | Driver 6.14 |
+| Database | [Netlify Database](https://docs.netlify.com/build/data-and-storage/netlify-database/) (managed Postgres) | `@netlify/database` |
 | Deployment | [Netlify](https://netlify.com) | — |
 | Auth | [Netlify Identity](https://docs.netlify.com/security/secure-access-to-sites/identity/) | Widget 1.9.2 |
 | Styling | Vanilla CSS (custom properties) | — |
@@ -51,13 +51,17 @@ lnhf/
 ├── .tina/
 │   └── config.ts               # TinaCMS schema & cloud config
 ├── netlify/
+│   ├── database/
+│   │   └── migrations/
+│   │       └── 0001_create_booking_slots.sql  # Schema (auto-applied on deploy)
 │   └── functions/
 │       ├── utils/
-│       │   └── mongodb.ts       # Shared MongoDB connection singleton
-│       ├── get-slots.ts         # GET  /api — public slot availability
-│       ├── create-booking.ts    # POST /api — atomic slot booking
-│       ├── admin-bookings.ts    # GET  /api — all slots (admin only)
-│       └── admin-slot.ts        # POST/PATCH/DELETE (admin only)
+│       │   └── db.ts            # Netlify Database client singleton
+│       ├── get-slots.ts         # GET  /.netlify/functions/get-slots
+│       ├── create-booking.ts    # POST /.netlify/functions/create-booking
+│       ├── admin-bookings.ts    # GET  /.netlify/functions/admin-bookings (admin only)
+│       ├── admin-slot.ts        # POST/PATCH/DELETE (admin only)
+│       └── generate-sunday-slots.ts  # Scheduled — seeds Sunday slots 8 weeks ahead
 ├── public/
 │   ├── logo.svg                 # Brand crest
 │   ├── robots.txt
@@ -128,9 +132,9 @@ lnhf/
 
 - **Node.js v22+** (matches Netlify build environment)
 - **npm** v10+
-- A **MongoDB Atlas** account (free M0 tier works)
+- **Netlify CLI** — `npm install -g netlify-cli` (required to run functions and the local database)
 - A **TinaCMS Cloud** account (free tier works)
-- A **Netlify** account
+- A **Netlify** account linked to this project (`netlify link`)
 
 ### 1. Clone & install
 
@@ -151,14 +155,31 @@ Open `.env` and fill in all four variables (see [Environment Variables](#environ
 ### 3. Start the dev server
 
 ```bash
-# With TinaCMS local mode (recommended — enables /admin editing locally)
-npm run dev:cms
-
-# Without TinaCMS (faster cold start, no /admin)
+# Full stack — Netlify Functions + local Postgres + TinaCMS + Astro (recommended)
 npm run dev
 ```
 
-The site will be available at **http://localhost:4321** (Astro default) or **http://localhost:3000** when using `netlify dev`.
+This runs `netlify dev`, which starts:
+- Astro at **http://localhost:4321** (proxied through Netlify at **http://localhost:8888**)
+- TinaCMS local mode (CMS admin at http://localhost:8888/admin)
+- All Netlify Functions at `http://localhost:8888/.netlify/functions/*`
+- A local Postgres database (auto-provisioned; no external DB needed)
+
+### 4. Apply database migrations
+
+On first run, apply the schema to the local database:
+
+```bash
+netlify database migrations apply
+```
+
+### 5. Seed Sunday slots
+
+Populate the next 8 Sundays with tour slots:
+
+```bash
+curl -X POST http://localhost:8888/.netlify/functions/generate-sunday-slots
+```
 
 ---
 
@@ -168,13 +189,14 @@ Copy `.env.example` to `.env` and fill in the values. **Never commit `.env` to g
 
 | Variable | Description | Where to get it |
 |---|---|---|
-| `MONGODB_URI` | MongoDB Atlas connection string | Atlas → Cluster → Connect → Drivers |
 | `TINA_PUBLIC_CLIENT_ID` | TinaCMS project client ID | app.tina.io → Project → Overview |
 | `TINA_TOKEN` | TinaCMS read/write token | app.tina.io → Project → Overview |
 | `TINA_SEARCH` | TinaCMS search token | app.tina.io → Project → Overview |
 | `NETLIFY_IDENTITY_URL` | Your Netlify site URL (for Identity) | Netlify Dashboard → Site settings → Identity |
 
-On Netlify, set these under **Site configuration → Environment variables**. `NETLIFY_IDENTITY_URL` is injected automatically in production.
+> **Database connection (`NETLIFY_DB_URL`)** is injected automatically by `netlify dev` locally and by Netlify at build/runtime in production. You do not set this manually.
+
+On Netlify, set the remaining variables under **Site configuration → Environment variables**. `NETLIFY_IDENTITY_URL` is injected automatically in production.
 
 ---
 
@@ -182,12 +204,24 @@ On Netlify, set these under **Site configuration → Environment variables**. `N
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start Astro dev server only (no TinaCMS) |
-| `npm run dev:cms` | Start TinaCMS local mode + Astro dev server |
+| `npm run dev` | Start full stack via `netlify dev` (functions + local DB + TinaCMS + Astro) |
 | `npm run build` | Run `tinacms build` then `astro build` |
 | `npm run preview` | Serve the production `dist/` folder locally |
+| `netlify database migrations apply` | Apply pending SQL migrations to the local database |
+| `netlify database status` | Show local DB connection string and migration status |
+| `netlify database connect` | Open an interactive psql session against the local database |
 
-> **Tip:** When using TinaCMS local mode (`dev:cms`), content is read/written directly from your local filesystem. No cloud credentials are needed for local editing. The `/admin` TinaCMS UI is available at http://localhost:4321/admin.
+> **Tip:** TinaCMS local mode is included in `npm run dev` — content is read/written directly from your local filesystem. No cloud credentials are needed for local editing. The CMS UI is available at http://localhost:8888/admin.
+
+### Force Sunday slot generation (dev & staging)
+
+The `generate-sunday-slots` function runs automatically every Monday at 00:00 UTC in production. To trigger it immediately during development:
+
+```bash
+curl -X POST http://localhost:8888/.netlify/functions/generate-sunday-slots
+```
+
+This inserts slots for the next 8 Sundays (1 PM – 4 PM, one slot per hour) and skips any that already exist. Safe to run multiple times.
 
 ---
 
@@ -251,50 +285,56 @@ Log in at `https://lowernotleyhallfarm.com/admin` using your TinaCMS Cloud accou
 
 ## Booking System
 
-Tours are held on **Sundays only**. Each tour slot is one hour. Available time slots:
+Tours are held on **Sundays only**. Each tour slot is one hour. Default auto-generated slots:
 
 | Slot | Time |
 |---|---|
-| 1 | 10:00 AM – 11:00 AM |
-| 2 | 11:00 AM – 12:00 PM |
-| 3 | 12:00 PM – 1:00 PM |
-| 4 | 1:00 PM – 2:00 PM |
-| 5 | 2:00 PM – 3:00 PM |
-| 6 | 3:00 PM – 4:00 PM |
+| 1 | 1:00 PM – 2:00 PM |
+| 2 | 2:00 PM – 3:00 PM |
+| 3 | 3:00 PM – 4:00 PM |
 
-### MongoDB schema
+Admins can create additional slots at any time via the [Admin Panel](#admin-panel).
 
-Database: `lnhf` | Collection: `booking_slots`
+### Database schema
 
-```typescript
-interface BookingSlot {
-  _id:       ObjectId
-  date:      string          // "YYYY-MM-DD"
-  startTime: string          // "10:00"
-  endTime:   string          // "11:00"
-  status:    'available' | 'booked' | 'blocked'
-  booking?: {
-    name:       string
-    email:      string
-    phone?:     string
-    partySize?: number
-    message?:   string
-    bookedAt:   Date
-  }
-}
+Managed Postgres via **Netlify Database**. Migration: `netlify/database/migrations/0001_create_booking_slots.sql`
+
+```sql
+CREATE TABLE booking_slots (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  date             TEXT NOT NULL,          -- 'YYYY-MM-DD'
+  start_time       TEXT NOT NULL,          -- 'HH:MM'
+  end_time         TEXT NOT NULL,          -- 'HH:MM'
+  status           TEXT NOT NULL DEFAULT 'available',  -- 'available' | 'booked' | 'blocked'
+  booking_name     TEXT,
+  booking_email    TEXT,
+  booking_phone    TEXT,
+  booking_party_size INTEGER,
+  booking_message  TEXT,
+  booked_at        TIMESTAMPTZ,
+  UNIQUE (date, start_time)
+);
 ```
+
+All API responses use `_id` (aliased from `id`) and camelCase field names for frontend compatibility.
+
+### Slot auto-generation
+
+`generate-sunday-slots` is a **scheduled Netlify Function** that runs every Monday at 00:00 UTC. It looks 8 weeks ahead and inserts one slot per hour (1 PM – 4 PM) for each upcoming Sunday, skipping any that already exist. The function is idempotent — safe to run multiple times.
+
+To trigger it immediately: see [Force Sunday slot generation](#force-sunday-slot-generation-dev--staging).
 
 ### Booking flow
 
 1. Visitor opens `/booking` — `BookingCalendar` fetches slots via `GET /.netlify/functions/get-slots`.
 2. Visitor clicks an available Sunday → time slot pills appear.
 3. Visitor clicks a time → `BookingModal` opens.
-4. On submit, `POST /.netlify/functions/create-booking` uses a **MongoDB atomic `findOneAndUpdate`** to prevent double-booking. Returns `409 Conflict` if the slot was taken between the visitor opening the modal and submitting.
+4. On submit, `POST /.netlify/functions/create-booking` uses a **SQL atomic `UPDATE ... WHERE status = 'available'`** to prevent double-booking. Returns `409 Conflict` if the slot was taken between the visitor opening the modal and submitting.
 5. On success, a secondary `POST` to `/` (Netlify Forms) submits the hidden `booking` form, triggering an email notification to the venue.
 
 ### Adding slots (admin)
 
-Slots must be explicitly created via the [Admin Panel](#admin-panel) or directly via `POST /.netlify/functions/admin-slot`. The calendar only shows slots that exist in the database; it does not auto-generate Sunday slots.
+Slots are auto-generated for Sundays by the scheduled function. Additional or one-off slots can be created via the [Admin Panel](#admin-panel) or directly via `POST /.netlify/functions/admin-slot`.
 
 ---
 
@@ -315,11 +355,9 @@ Returns available and booked slots in a date range. Booking details are stripped
 
 **Response `200`:**
 ```json
-{
-  "slots": [
-    { "_id": "...", "date": "2026-06-07", "startTime": "10:00", "endTime": "11:00", "status": "available" }
-  ]
-}
+[
+  { "_id": "ba8faa2c-...", "date": "2026-06-07", "startTime": "13:00", "endTime": "14:00", "status": "available" }
+]
 ```
 
 ---
@@ -332,7 +370,7 @@ Books an available slot. Atomic — safe against race conditions.
 
 | Field | Type | Required |
 |---|---|---|
-| `slotId` | MongoDB ObjectId string | ✓ |
+| `slotId` | UUID string (from `get-slots` response `_id`) | ✓ |
 | `name` | string | ✓ |
 | `email` | string | ✓ |
 | `phone` | string | — |
@@ -366,13 +404,13 @@ Manage individual slots. All methods require Netlify Identity JWT.
 
 **PATCH** — Update a slot's status, or cancel a booking (`unbook: true`):
 ```json
-{ "id": "<objectId>", "status": "blocked" }
-{ "id": "<objectId>", "unbook": true }
+{ "id": "<uuid>", "status": "blocked" }
+{ "id": "<uuid>", "unbook": true }
 ```
 
 **DELETE** — Remove a slot permanently:
 ```json
-{ "id": "<objectId>" }
+{ "id": "<uuid>" }
 ```
 
 ---
@@ -479,10 +517,11 @@ npm run build
 
 ### Required Netlify settings
 
-1. **Environment variables** — set all variables from `.env.example` in Site configuration → Environment variables.
-2. **Identity** — enable Netlify Identity, invite admin users.
-3. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `contact` and `booking`.
-4. **Custom domain** — add `lowernotleyhallfarm.com` and enable HTTPS.
+1. **Environment variables** — set all variables from `.env.example` in Site configuration → Environment variables. (`NETLIFY_DB_URL` is managed automatically.)
+2. **Database** — Netlify Database is automatically provisioned on first deploy. Migrations in `netlify/database/migrations/` are applied automatically during the build.
+3. **Identity** — enable Netlify Identity, invite admin users.
+4. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `contact` and `booking`.
+5. **Custom domain** — add `lowernotleyhallfarm.com` and enable HTTPS.
 
 ---
 
@@ -490,7 +529,7 @@ npm run build
 
 - **Honeypot fields** on all public forms prevent basic bot spam.
 - **Admin endpoints** (`admin-bookings`, `admin-slot`) validate the Netlify Identity JWT on every request. Requests without a valid token receive `401 Unauthorized`.
-- **Double-booking** is prevented atomically via MongoDB `findOneAndUpdate({ status: 'available' })` — no race condition possible.
+- **Double-booking** is prevented atomically via `UPDATE booking_slots SET status = 'booked' WHERE id = $1 AND status = 'available'` — no race condition possible.
 - **Input sanitization** on `create-booking`: all string inputs are trimmed and clamped to max lengths before being written to the database.
 - **`/admin/bookings`** page is a client-only React shell. The Netlify Identity check happens in the component before any admin API calls are made.
 - **robots.txt** disallows `/admin/` from search engine indexing.

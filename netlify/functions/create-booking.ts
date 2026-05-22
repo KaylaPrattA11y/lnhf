@@ -1,6 +1,7 @@
 import type { Handler } from '@netlify/functions';
-import { ObjectId } from 'mongodb';
-import { getDb } from './utils/mongodb';
+import { getDb } from './utils/db';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface BookingPayload {
   slotId: string;
@@ -61,35 +62,32 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  // Validate ObjectId format to prevent injection
-  if (!ObjectId.isValid(slotId)) {
+  // Validate UUID format to prevent injection
+  if (!UUID_RE.test(slotId)) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid slotId' }) };
   }
 
   try {
-    const db = await getDb();
-    const collection = db.collection('booking_slots');
-
     // Atomic update — only succeeds if status is still 'available'
-    const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(slotId), status: 'available' },
-      {
-        $set: {
-          status: 'booked',
-          booking: {
-            name: name.trim().substring(0, 100),
-            email: email.trim().toLowerCase().substring(0, 254),
-            phone: payload.phone?.trim().substring(0, 20),
-            partySize: payload.partySize,
-            message: payload.message?.trim().substring(0, 1000),
-            bookedAt: new Date(),
-          },
-        },
-      },
-      { returnDocument: 'after' }
-    );
+    const [slot] = await getDb().sql`
+      UPDATE booking_slots
+      SET
+        status              = 'booked',
+        booking_name        = ${name.trim().substring(0, 100)},
+        booking_email       = ${email.trim().toLowerCase().substring(0, 254)},
+        booking_phone       = ${payload.phone?.trim().substring(0, 20) ?? null},
+        booking_party_size  = ${payload.partySize ?? null},
+        booking_message     = ${payload.message?.trim().substring(0, 1000) ?? null},
+        booked_at           = NOW()
+      WHERE id = ${slotId} AND status = 'available'
+      RETURNING
+        id         AS "_id",
+        date,
+        start_time AS "startTime",
+        end_time   AS "endTime"
+    `;
 
-    if (!result) {
+    if (!slot) {
       // Slot was booked by someone else between the guest viewing it and submitting
       return {
         statusCode: 409,
@@ -103,14 +101,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({
-        success: true,
-        slot: {
-          date: result.date,
-          startTime: result.startTime,
-          endTime: result.endTime,
-        },
-      }),
+      body: JSON.stringify({ success: true, slot }),
     };
   } catch (err) {
     console.error('[create-booking] Error:', err);
