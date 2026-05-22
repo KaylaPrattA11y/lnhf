@@ -106,8 +106,13 @@ export default function BookingAdmin() {
    * If it fails, open the login modal so the user can reauthenticate.
    */
   const handleUnauthorized = () => {
-    netlifyIdentity.refresh?.()
-      .catch(() => netlifyIdentity.open('login'));
+    // `refresh` exists on the CDN widget but is absent from the TS types
+    const maybeRefresh = (netlifyIdentity as unknown as { refresh?: () => Promise<unknown> }).refresh;
+    if (maybeRefresh) {
+      maybeRefresh().catch(() => netlifyIdentity.open('login'));
+    } else {
+      netlifyIdentity.open('login');
+    }
   };
 
   const fetchSlots = async () => {
