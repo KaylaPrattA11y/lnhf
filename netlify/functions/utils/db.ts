@@ -5,7 +5,11 @@ import { getDatabase } from '@netlify/database';
 let _db: ReturnType<typeof getDatabase> | null = null;
 
 export function getDb() {
-  if (!_db) _db = getDatabase();
+  if (!_db) {
+    const connectionString =
+      process.env.NETLIFY_DB_URL;
+    _db = getDatabase({ connectionString });
+  }
   return _db;
 }
 
