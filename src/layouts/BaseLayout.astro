@@ -3,23 +3,91 @@
 import '@fontsource-variable/cormorant-garamond/wght.css';
 // Supports weights 100-900
 import '@fontsource-variable/jost/wght.css';
+import { SEO } from 'astro-seo';
 
 interface Props {
   title: string;
   description: string;
   ogImage?: string;
   canonicalUrl?: string;
+  schema?: Record<string, unknown> | Array<Record<string, unknown>>;
+  robots?: {
+    noindex?: boolean;
+    nofollow?: boolean;
+    noarchive?: boolean;
+    nosnippet?: boolean;
+    maxSnippet?: number;
+  };
 }
 
-const {
-  title,
-  description,
-  ogImage = '/images/og-default.jpg',
-  canonicalUrl = Astro.url.href,
-} = Astro.props;
+const { title, description, schema, robots, ogImage = '/images/og-default.jpg', canonicalUrl = Astro.url.href } = Astro.props;
 
 const siteTitle = 'Lower Notley Hall Farm';
 const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+
+const siteOrigin = Astro.site?.toString();
+
+const toAbsoluteUrl = (path: string) => {
+  if (!siteOrigin) return undefined;
+  return new URL(path, siteOrigin).toString();
+};
+
+const websiteUrl = toAbsoluteUrl(import.meta.env.BASE_URL);
+const logoUrl = toAbsoluteUrl("/images/logo.svg");
+const pageUrl = siteOrigin ? new URL(Astro.url.pathname, siteOrigin).toString() : undefined;
+
+const organizationSchema: Record<string, unknown> = {
+  "@context": "https://schema.org",
+  "@type": "EventVenue",
+  name: siteTitle,
+  description,
+  ...(websiteUrl ? { url: websiteUrl } : {}),
+  ...(logoUrl ? { image: logoUrl } : {}),
+  telephone: "(301) 769-2030",
+  priceRange: "$$",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "236290 Notley Manor Ln",
+    addressLocality: "Chaptico",
+    addressRegion: "MD",
+    postalCode: "20621",
+    addressCountry: "US",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 40.741895,
+    longitude: -73.989308,
+  },
+  openingHoursSpecification: [
+    { "@type": "OpeningHoursSpecification", dayOfWeek: "Sunday", opens: "13:00", closes: "16:00" },
+  ],
+  sameAs: [
+    "https://maps.app.goo.gl/j1eTA4rrkPDHLr2P8",
+    "https://www.facebook.com/Lower-Notley-Hall-Farm-Wedding-Venue-1629580437060850/",
+    "https://www.theknot.com/marketplace/lower-notley-hall-farm-chaptico-md-1069532",
+    "https://lower-notley-hall-farm-llc.wheree.com/",
+  ],
+};
+
+const webPageSchema: Record<string, unknown> = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: fullTitle,
+  description,
+  ...(pageUrl ? { url: pageUrl } : {}),
+  ...(websiteUrl
+    ? {
+        isPartOf: {
+          "@type": "WebSite",
+          name: siteTitle,
+          url: websiteUrl,
+        },
+      }
+    : {}),
+};
+
+const customSchema = Array.isArray(schema) ? schema : schema ? [schema] : [];
+const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
 ---
 
 <!doctype html>
@@ -28,32 +96,37 @@ const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
-
-    <!-- Primary Meta -->
-    <title>{fullTitle}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
-
-    <!-- Open Graph -->
-    <meta property="og:type"        content="website" />
-    <meta property="og:url"         content={canonicalUrl} />
-    <meta property="og:title"       content={fullTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:image"       content={new URL(ogImage, Astro.site).href} />
-    <meta property="og:site_name"   content={siteTitle} />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card"        content="summary_large_image" />
-    <meta name="twitter:title"       content={fullTitle} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image"       content={new URL(ogImage, Astro.site).href} />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-
-    <!-- Sitemap -->
     <link rel="sitemap" href="/sitemap-index.xml" />
-
+    <link rel="icon" href="/images/cropped-favicon-32x32.png" sizes="32x32">
+    <link rel="icon" href="/images/cropped-favicon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/images/cropped-favicon-180x180.png">
+    <meta name="msapplication-TileImage" content="/images/cropped-favicon-270x270.png">
+    <link rel="preload" as="image" href="/images/cropped-favicon-270x270.png" fetchpriority="high" />
+    <SEO
+      titleDefault={siteTitle}
+      title={fullTitle}
+      description={description}
+      openGraph={{
+        basic: {
+          title: fullTitle,
+          type: "website",
+          image: new URL(ogImage, Astro.site).href,
+        }
+      }}
+      noindex={robots?.noindex ?? false}
+      nofollow={robots?.nofollow ?? false} 
+      noarchive={robots?.noarchive ?? false} 
+      canonical={canonicalUrl}
+      extend={{
+        meta: [
+          {
+            name: "keywords",
+            content: "Lower Notley Hall Farm, wedding venue, waterfront weddings, barn weddings, outdoor ceremonies, wedding packages, wedding pricing, wedding estimator, farm weddings, countryside weddings"
+          }
+        ]
+      }}
+    />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(schemaGraph)}></script>
     <slot name="head" />
   </head>
 

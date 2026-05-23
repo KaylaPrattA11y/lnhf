@@ -15,7 +15,7 @@ const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month:
 
 <article class="blog-card card">
   {featuredImage ? (
-    <a href={`/blog/${slug}`} tabindex="-1" aria-hidden="true">
+    <a href={`/blog/${slug}/`} tabindex="-1" aria-hidden="true">
       <img
         src={featuredImage}
         alt=""
@@ -35,10 +35,10 @@ const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month:
       {author && <span> · {author}</span>}
     </p>
     <h3 class="blog-card__title">
-      <a href={`/blog/${slug}`}>{title}</a>
+      <a href={`/blog/${slug}/`}>{title}</a>
     </h3>
     {excerpt && <p class="blog-card__excerpt">{excerpt}</p>}
-    <a href={`/blog/${slug}`} class="blog-card__read-more" aria-label={`Read more: ${title}`}>
+    <a href={`/blog/${slug}/`} class="blog-card__read-more" aria-label={`Read more: ${title}`}>
       Read More <span aria-hidden="true">→</span>
     </a>
   </div>

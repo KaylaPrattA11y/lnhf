@@ -4,7 +4,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
-import Logo from '../../logo.svg';
+import Logo from '@assets/images/logo.svg';
 import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
 import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-House.jpg';
 import cedarLaneEntrance from '../assets/images/cedar-lane-entrance.jpg';
@@ -218,13 +218,13 @@ const galleryImages = [
   </section>
 
   <!-- CTA -->
-  <section class="section about-cta" aria-labelledby="about-cta-title">
+  <section class="section about-cta bg-quatrefoils" aria-labelledby="about-cta-title">
     <div class="container about-cta__inner">
       <h2 class="about-cta__title" id="about-cta-title">Ready to See It in Person?</h2>
       <p class="about-cta__sub">Schedule a private Sunday tour with Jack and Cindy.</p>
       <div class="about-cta__btns">
         <a href="/booking/" class="btn btn--primary btn--lg">Book a Tour</a>
-        <a href="/pricing/" class="btn btn--secondary btn--lg">See Pricing</a>
+        <a href="/pricing/" class="btn btn--primary btn--lg">See Pricing</a>
       </div>
     </div>
   </section>
@@ -373,7 +373,7 @@ const galleryImages = [
   }
 
   /* CTA */
-  .about-cta { background: var(--color-primary-dark); color: white; text-align: center; }
+  .about-cta { color: white; text-align: center; }
   .about-cta__title {
     font-family: var(--font-heading);
     font-size: clamp(2rem, 4vw, 3rem);
