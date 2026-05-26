@@ -3,19 +3,17 @@ import BaseLayout from './BaseLayout.astro';
 import Nav from '../components/layout/Nav.astro';
 import Footer from '../components/layout/Footer.astro';
 
-interface Props {
-  title: string;
-  description: string;
-  date?: Date;
-  author?: string;
-  featuredImage?: string;
-  ogImage?: string;
-}
-
 const { title, description, date, author, featuredImage, ogImage } = Astro.props;
+const resolvedOgImage =
+  (typeof ogImage === 'string' ? ogImage : undefined) ??
+  (typeof featuredImage === 'string' ? featuredImage : featuredImage?.src);
 ---
 
-<BaseLayout title={title} description={description} ogImage={ogImage ?? featuredImage}>
+<BaseLayout 
+  title={title} 
+  description={description} 
+  ogImage={resolvedOgImage}
+>
   <Nav slot="nav" />
 
   {featuredImage && (

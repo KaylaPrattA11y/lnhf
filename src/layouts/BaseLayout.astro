@@ -3,12 +3,15 @@
 import '@fontsource-variable/cormorant-garamond/wght.css';
 // Supports weights 100-900
 import '@fontsource-variable/jost/wght.css';
-import { SEO } from 'astro-seo';
+import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
 
-interface Props {
+export interface BaseLayoutProps {
   title: string;
   description: string;
   ogImage?: string;
+  ogImageSquare?: string;
+  openGraph?: SEOProps['openGraph'];
+  twitter?: SEOProps['twitter'];
   canonicalUrl?: string;
   schema?: Record<string, unknown> | Array<Record<string, unknown>>;
   robots?: {
@@ -20,21 +23,84 @@ interface Props {
   };
 }
 
-const { title, description, schema, robots, ogImage = '/images/og-default.jpg', canonicalUrl = Astro.url.href } = Astro.props;
+const defaultTitle = 'Lower Notley Hall Farm';
+const defaultDescription = 'A charming waterfront wedding venue in Southern Maryland, offering rustic elegance and picturesque views for your special day.';
 
-const siteTitle = 'Lower Notley Hall Farm';
+const { 
+  title, 
+  description, 
+  ogImage,
+  ogImageSquare,
+  schema, 
+  robots, 
+  openGraph,
+  twitter,
+  canonicalUrl = Astro.url.href 
+} = Astro.props as BaseLayoutProps;
+
+const siteTitle = defaultTitle;
 const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+const siteOrigin = Astro.site?.toString() ?? Astro.url.origin;
 
-const siteOrigin = Astro.site?.toString();
+const toStringValue = (value: unknown): string | undefined => {
+  if (!value) return undefined;
+  return String(value);
+};
 
-const toAbsoluteUrl = (path: string) => {
-  if (!siteOrigin) return undefined;
-  return new URL(path, siteOrigin).toString();
+const toAbsoluteUrl = (value?: string) => {
+  if (!value) return undefined;
+  try {
+    return new URL(value).toString();
+  } catch {
+    return new URL(value, siteOrigin).toString();
+  }
+};
+
+const ogImageUrl = toAbsoluteUrl("/images/og-image.png");
+
+const canonicalAbsoluteUrl = toAbsoluteUrl(canonicalUrl) ?? Astro.url.href;
+
+const openGraphImage =
+  toAbsoluteUrl(toStringValue(openGraph?.basic?.image)) ??
+  toAbsoluteUrl(ogImage) ??
+  ogImageUrl;
+
+const openGraphUrl =
+  toAbsoluteUrl(toStringValue(openGraph?.basic?.url)) ??
+  canonicalAbsoluteUrl;
+
+const mergedOpenGraph: SEOProps['openGraph'] = {
+  basic: {
+    title: openGraph?.basic?.title ?? fullTitle,
+    type: openGraph?.basic?.type ?? 'website',
+    image: openGraphImage,
+    url: openGraphUrl,
+  },
+  optional: {
+    description,
+    siteName: siteTitle,
+    ...openGraph?.optional,
+  },
+  image: openGraph?.image,
+  article: openGraph?.article,
+};
+
+const mergedTwitter: SEOProps['twitter'] = {
+  card: twitter?.card ?? ('summary_large_image' as TwitterCardType),
+  title: twitter?.title ?? fullTitle,
+  description: twitter?.description ?? description ?? defaultDescription,
+  image:
+    toAbsoluteUrl(toStringValue(twitter?.image)) ??
+    toAbsoluteUrl(ogImageSquare) ??
+    ogImageUrl,
+  site: twitter?.site,
+  creator: twitter?.creator,
+  imageAlt: twitter?.imageAlt,
 };
 
 const websiteUrl = toAbsoluteUrl(import.meta.env.BASE_URL);
 const logoUrl = toAbsoluteUrl("/images/logo.svg");
-const pageUrl = siteOrigin ? new URL(Astro.url.pathname, siteOrigin).toString() : undefined;
+const pageUrl = new URL(Astro.url.pathname, siteOrigin).toString();
 
 const organizationSchema: Record<string, unknown> = {
   "@context": "https://schema.org",
@@ -106,17 +172,12 @@ const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
       titleDefault={siteTitle}
       title={fullTitle}
       description={description}
-      openGraph={{
-        basic: {
-          title: fullTitle,
-          type: "website",
-          image: new URL(ogImage, Astro.site).href,
-        }
-      }}
+      openGraph={mergedOpenGraph}
+      twitter={mergedTwitter}
       noindex={robots?.noindex ?? false}
       nofollow={robots?.nofollow ?? false} 
       noarchive={robots?.noarchive ?? false} 
-      canonical={canonicalUrl}
+      canonical={canonicalAbsoluteUrl}
       extend={{
         meta: [
           {
