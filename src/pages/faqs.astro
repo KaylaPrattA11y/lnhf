@@ -1,30 +1,21 @@
 ---
 import { getCollection, render } from 'astro:content';
-import BaseLayout from '@layouts/BaseLayout.astro';
-import Nav from '@components/layout/Nav.astro';
-import Footer from '@components/layout/Footer.astro';
+import InteriorLayout from '@layouts/InteriorLayout.astro';
 
 const faqEntries = await getCollection('faqs');
 const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
 ---
 
-<BaseLayout
+<InteriorLayout
   title="Frequently Asked Questions"
   description="Answers to the most common questions about booking, pricing, policies, and amenities at Lower Notley Hall Farm."
+  eyebrow="Need Answers?"
+  heroTitle="Frequently Asked Questions"
 >
-  <Nav slot="nav" />
-
-  <section class="faqs-hero section section--sm" aria-label="FAQs hero">
-    <div class="container" style="text-align: center; max-width: 700px;">
-      <span class="section-header__eyebrow">Need Answers?</span>
-      <h1 class="faqs-hero__title">Frequently Asked Questions</h1>
-      <hr class="divider" aria-hidden="true" />
-      <p class="faqs-hero__lead">
-        We've collected the questions we hear most often. Don't see yours? We're happy to help —
-        <a href="/contact/">reach out any time</a> or call <a href="tel:3017692030">(301) 769-2030</a>.
-      </p>
-    </div>
-  </section>
+  <p class="interior-hero__lead" slot="hero">
+    We've collected the questions we hear most often. Don't see yours? We're happy to help —
+    <a href="/contact/">reach out any time</a> or call <a href="tel:3017692030">(301) 769-2030</a>.
+  </p>
 
   <section class="section bg-arabesque" aria-label="FAQ accordion">
     <div class="container faqs-container">
@@ -70,8 +61,7 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
     </div>
   </section>
 
-  <Footer slot="footer" />
-</BaseLayout>
+</InteriorLayout>
 
 <script>
   document.querySelectorAll<HTMLButtonElement>('[data-faq-trigger]').forEach(btn => {
@@ -88,22 +78,6 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
 </script>
 
 <style>
-  .faqs-hero { background: var(--color-primary-dark); color: var(--color-white); }
-  .faqs-hero__title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    color: var(--color-white);
-    margin-bottom: var(--space-5);
-  }
-  .faqs-hero__lead {
-    font-size: var(--text-lg);
-    color: rgba(255,255,255,0.85);
-    line-height: var(--leading-relaxed);
-  }
-  .faqs-hero__lead a { color: var(--color-accent); font-weight: 700; }
-  .faqs-hero .section-header__eyebrow { color: var(--color-accent); }
-  .faqs-hero .divider { border-color: rgba(255,255,255,0.2); }
-
   .faqs-container { max-width: 840px; }
 
   .faq-list {

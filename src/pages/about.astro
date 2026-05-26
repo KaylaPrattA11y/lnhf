@@ -1,8 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import BaseLayout from '@layouts/BaseLayout.astro';
-import Nav from '@components/layout/Nav.astro';
-import Footer from '@components/layout/Footer.astro';
+import InteriorLayout from '@layouts/InteriorLayout.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
 import Logo from '@assets/images/logo.svg';
 import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
@@ -28,25 +26,17 @@ const galleryImages = [
 ];
 ---
 
-<BaseLayout
+<InteriorLayout
   title="About the Venue"
   description="Discover the history, grounds, and unique character of Lower Notley Hall Farm — a historic waterfront estate in Chaptico, Southern Maryland."
+  eyebrow="Chaptico, Maryland"
+  heroTitle="A Venue With a Story"
 >
-  <Nav slot="nav" />
-
-  <!-- Page Hero -->
-  <section class="about-hero section" aria-label="About page hero">
-    <div class="container about-hero__inner">
-      <span class="section-header__eyebrow">Chaptico, Maryland</span>
-      <h1 class="about-hero__title">A Venue With a Story</h1>
-      <hr class="divider" aria-hidden="true" />
-      <p class="about-hero__lead">
-        Set on the shores of the Wicomico River in Southern Maryland, Lower Notley Hall Farm is a place
-        where history breathes through every timber and every view. It's 50 miles from Washington, DC —
-        yet a world away.
-      </p>
-    </div>
-  </section>
+  <p class="interior-hero__lead" slot="hero">
+    Set on the shores of the Wicomico River in Southern Maryland, Lower Notley Hall Farm is a place
+    where history breathes through every timber and every view. It's 50 miles from Washington, DC —
+    yet a world away.
+  </p>
 
   <!-- Location & Setting -->
   <section class="section bg-arabesque" aria-labelledby="location-title">
@@ -229,28 +219,9 @@ const galleryImages = [
     </div>
   </section>
 
-  <Footer slot="footer" />
-</BaseLayout>
+</InteriorLayout>
 
 <style>
-  /* Hero */
-  .about-hero { background: var(--color-primary-dark); color: var(--color-white); text-align: center; }
-  .about-hero__title {
-    font-family: var(--font-heading);
-    font-size: clamp(2.5rem, 6vw, 4rem);
-    color: var(--color-white);
-    margin-bottom: var(--space-5);
-  }
-  .about-hero__lead {
-    font-size: var(--text-xl);
-    max-width: 700px;
-    margin: 0 auto;
-    color: rgba(255,255,255,0.85);
-    line-height: var(--leading-relaxed);
-  }
-  .about-hero .section-header__eyebrow { color: var(--color-accent); }
-  .about-hero .divider { border-color: rgba(255,255,255,0.2); }
-
   /* Split layout */
   .about-split {
     display: grid;

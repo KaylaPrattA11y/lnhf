@@ -1,27 +1,18 @@
 ---
-import BaseLayout from '@layouts/BaseLayout.astro';
-import Nav from '@components/layout/Nav.astro';
-import Footer from '@components/layout/Footer.astro';
+import InteriorLayout from '@layouts/InteriorLayout.astro';
 ---
 
-<BaseLayout
+<InteriorLayout
   title="Contact Us"
   description="Get in touch with Lower Notley Hall Farm. We'd love to answer your questions and help plan your wedding or special event."
+  eyebrow="We'd Love to Hear from You"
+  heroTitle="Get in Touch"
 >
-  <Nav slot="nav" />
-
-  <section class="contact-hero section section--sm" aria-label="Contact hero">
-    <div class="container" style="text-align: center; max-width: 700px;">
-      <span class="section-header__eyebrow">We'd Love to Hear from You</span>
-      <h1 class="contact-hero__title">Get in Touch</h1>
-      <hr class="divider" aria-hidden="true" />
-      <p class="contact-hero__lead">
-        Have a question before you book? Curious whether we can accommodate your vision?
-        Check our <a href="/faqs/">FAQs</a> first — you may find your answer in seconds.
-        Otherwise, fill out the form or give us a call.
-      </p>
-    </div>
-  </section>
+  <p class="interior-hero__lead" slot="hero">
+    Have a question before you book? Curious whether we can accommodate your vision?
+    Check our <a href="/faqs/">FAQs</a> first — you may find your answer in seconds.
+    Otherwise, fill out the form or give us a call.
+  </p>
 
   <section class="section bg-arabesque contact-section" aria-label="Contact information and form">
     <div class="container contact-grid">
@@ -179,8 +170,9 @@ import Footer from '@components/layout/Footer.astro';
     </div>
   </section>
 
-  <Footer slot="footer" />
-</BaseLayout>
+  </section>
+
+</InteriorLayout>
 
 <script>
   const form = document.getElementById('contact-form') as HTMLFormElement | null;
@@ -237,22 +229,6 @@ import Footer from '@components/layout/Footer.astro';
 </script>
 
 <style>
-  .contact-hero { background: var(--color-primary-dark); color: var(--color-white); }
-  .contact-hero__title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    color: var(--color-white);
-    margin-bottom: var(--space-5);
-  }
-  .contact-hero__lead {
-    font-size: var(--text-lg);
-    color: rgba(255,255,255,0.85);
-    line-height: var(--leading-relaxed);
-  }
-  .contact-hero__lead a { color: var(--color-accent); font-weight: 700; }
-  .contact-hero .section-header__eyebrow { color: var(--color-accent); }
-  .contact-hero .divider { border-color: rgba(255,255,255,0.2); }
-
   .contact-grid {
     display: grid;
     gap: var(--space-12);

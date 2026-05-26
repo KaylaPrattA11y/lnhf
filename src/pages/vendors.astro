@@ -1,8 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseLayout from '@layouts/BaseLayout.astro';
-import Nav from '@components/layout/Nav.astro';
-import Footer from '@components/layout/Footer.astro';
+import InteriorLayout from '@layouts/InteriorLayout.astro';
 
 const vendors = await getCollection('vendors');
 // Sort by category, then preferred partners first, then alphabetically by name, then by sortOrder if provided (with a default of 99 to push unsorted items to the end)
@@ -31,23 +29,17 @@ const vendorsSorted = vendors
   }, {});
 ---
 
-<BaseLayout
+<InteriorLayout
   title="Preferred Vendors"
   description="Our recommended wedding vendors for Lower Notley Hall Farm — photographers, caterers, florists, officiants, and more in Southern Maryland."
+  eyebrow="Our Trusted Partners"
+  heroTitle="Preferred Vendors"
 >
-  <Nav slot="nav" />
-
-  <section class="vendors-hero section section--sm" aria-label="Vendors hero">
-    <div class="container" style="text-align: center; max-width: 700px;">
-      <span class="section-header__eyebrow">Our Trusted Partners</span>
-      <h1 class="vendors-hero__title">Preferred Vendors</h1>
-      <hr class="divider" aria-hidden="true" />
-      <p class="vendors-hero__lead">
-        We've built relationships with exceptional vendors who know our property, share our values,
-        and will make your wedding day extraordinary. For our most current recommendations,
-        please <a href="/contact/">contact Jack and Cindy</a> directly.
-      </p>
-    </div>
+  <p class="interior-hero__lead" slot="hero">
+    We've built relationships with exceptional vendors who know our property, share our values,
+    and will make your wedding day extraordinary. For our most current recommendations,
+    please <a href="/contact/">contact Jack and Cindy</a> directly.
+  </p>
   </section>
 
   <section class="section bg-arabesque" aria-label="Vendor list">
@@ -111,26 +103,9 @@ const vendorsSorted = vendors
     </div>
   </section>
 
-  <Footer slot="footer" />
-</BaseLayout>
+</InteriorLayout>
 
 <style>
-  .vendors-hero { background: var(--color-primary-dark); color: var(--color-white); }
-  .vendors-hero__title {
-    font-family: var(--font-heading);
-    font-size: clamp(2rem, 5vw, 3.25rem);
-    color: var(--color-white);
-    margin-bottom: var(--space-5);
-  }
-  .vendors-hero__lead {
-    font-size: var(--text-lg);
-    color: rgba(255,255,255,0.85);
-    line-height: var(--leading-relaxed);
-  }
-  .vendors-hero__lead a { color: var(--color-accent); font-weight: 700; }
-  .vendors-hero .section-header__eyebrow { color: var(--color-accent); }
-  .vendors-hero .divider { border-color: rgba(255,255,255,0.2); }
-
   .vendors-container { max-width: 900px; }
 
   .vendor-group { margin-bottom: var(--space-10); }

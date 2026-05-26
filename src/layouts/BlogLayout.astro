@@ -32,30 +32,32 @@ const { title, description, date, author, featuredImage, ogImage } = Astro.props
     </div>
   )}
 
-  <article class="blog-post container">
-    <header class="blog-post__header">
-      <h1 class="blog-post__title">{title}</h1>
-      {(date || author) && (
-        <p class="blog-post__meta">
-          {date && (
-            <time datetime={date.toISOString()}>
-              {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </time>
-          )}
-          {date && author && <span aria-hidden="true"> · </span>}
-          {author && <span>By {author}</span>}
-        </p>
-      )}
-      <hr class="divider divider--left" aria-hidden="true" />
-    </header>
-
-    <div class="blog-post__body prose">
-      <slot />
+  <article class="bg-arabesque">
+    <div class="blog-post container">
+      <header class="blog-post__header">
+        <h1 class="blog-post__title">{title}</h1>
+        {(date || author) && (
+          <p class="blog-post__meta">
+            {date && (
+              <time datetime={date.toISOString()}>
+                {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+            )}
+            {date && author && <span aria-hidden="true"> · </span>}
+            {author && <span>By {author}</span>}
+          </p>
+        )}
+        <hr class="divider divider--left" aria-hidden="true" />
+      </header>
+  
+      <div class="blog-post__body prose">
+        <slot />
+      </div>
+  
+      <footer class="blog-post__footer">
+        <a href="/blog/" class="btn btn--secondary btn--sm">&larr; Back to Blog</a>
+      </footer>
     </div>
-
-    <footer class="blog-post__footer">
-      <a href="/blog/" class="btn btn--secondary btn--sm">&larr; Back to Blog</a>
-    </footer>
   </article>
 
   <Footer slot="footer" />

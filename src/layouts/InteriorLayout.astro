@@ -1,0 +1,108 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Small eyebrow text above the page title */
+  eyebrow?: string;
+  /** The page <h1> rendered inside the hero */
+  heroTitle?: string;
+  /**
+   * Max-width of the hero content wrapper.
+   * Defaults to '700px'. Pass 'none' to use the full container width.
+   */
+  heroMaxWidth?: string;
+  // BaseLayout pass-throughs
+  ogImage?: string;
+  canonicalUrl?: string;
+  schema?: Record<string, unknown> | Array<Record<string, unknown>>;
+  robots?: {
+    noindex?: boolean;
+    nofollow?: boolean;
+    noarchive?: boolean;
+    nosnippet?: boolean;
+    maxSnippet?: number;
+  };
+}
+
+const {
+  title,
+  description,
+  eyebrow,
+  heroTitle,
+  heroMaxWidth = '700px',
+  ogImage,
+  canonicalUrl,
+  schema,
+  robots,
+} = Astro.props;
+
+const heroBodyStyle =
+  heroMaxWidth !== 'none'
+    ? `text-align: center; max-width: ${heroMaxWidth};`
+    : 'text-align: center;';
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  canonicalUrl={canonicalUrl}
+  schema={schema}
+  robots={robots}
+>
+  <Nav slot="nav" />
+
+  <section class="interior-hero section section--sm" aria-label={`${heroTitle ?? title} hero`}>
+    <div class="container interior-hero__body" style={heroBodyStyle}>
+      {eyebrow && <span class="section-header__eyebrow">{eyebrow}</span>}
+      {heroTitle && <h1 class="interior-hero__title">{heroTitle}</h1>}
+      <hr class="divider" aria-hidden="true" />
+      <slot name="hero" />
+    </div>
+  </section>
+
+  <slot />
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  /* ── Shared hero shell ─────────────────────────────────────── */
+  .interior-hero {
+    background: var(--color-primary-dark);
+    color: var(--color-white);
+  }
+
+  .interior-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+
+  .interior-hero .section-header__eyebrow { color: var(--color-accent); }
+  .interior-hero .divider { border-color: rgba(255, 255, 255, 0.2); }
+
+  /* ── Slotted hero content (use :global so page-scoped elements are styled) ── */
+  .interior-hero :global(.interior-hero__lead) {
+    font-size: var(--text-lg);
+    color: rgba(255, 255, 255, 0.85);
+    line-height: var(--leading-relaxed);
+  }
+
+  .interior-hero :global(.interior-hero__lead a) {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+
+  /* Small disclaimer / note line under the lead (used by pricing) */
+  .interior-hero :global(.interior-hero__note) {
+    font-size: var(--text-sm);
+    color: rgba(255, 255, 255, 0.55);
+    margin: 0;
+  }
+</style>
