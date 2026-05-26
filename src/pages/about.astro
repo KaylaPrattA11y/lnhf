@@ -1,29 +1,15 @@
 ---
 import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
 import Logo from '@assets/images/logo.svg';
+const images = await getCollection('gallery');
+const latestImages = images
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
 import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
 import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-House.jpg';
-import cedarLaneEntrance from '../assets/images/cedar-lane-entrance.jpg';
-import receptionBarnInteriorRiverside from '../assets/images/reception-barn-interior-riverside.jpg';
-import coupleWaterfrontWedding from '../assets/images/couple-waterfront-wedding.jpg';
-import lexiThomasWaterfront from '../assets/images/Lexi-Thomas-Waterfront.jpg';
-import manorHouseBathroom from '../assets/images/Notley-Hall-Farm-Manor-House-Bathroom.jpg';
-import manorHouse from '../assets/images/Notley-Hall-Farm-Manor-House.jpg';
-import receptionBarnEntrance from '../assets/images/Notley-Hall-Farm-Reception-Barn-Entrance.jpg';
-import receptionBarnTables from '../assets/images/Notley-Hall-Farm-Reception-Barn-Tables.jpg';
-
-const galleryImages = [
-  { src: cedarLaneEntrance.src,   alt: 'The Cedar-lined lane, a rustic approach to the manor house', caption: 'The Cedar-lined lane, a rustic approach to the manor house' },
-  { src: receptionBarnInteriorRiverside.src,    alt: 'Reception barn interior, facing the Wicomico River', caption: 'Reception barn interior, facing the Wicomico River' },
-  { src: coupleWaterfrontWedding.src, alt: 'A bride and groom celebrate by the waterfront', caption: 'A bride and groom celebrate by the waterfront' },
-  { src: lexiThomasWaterfront.src,     alt: 'A group revels on the waterfront ', caption: 'A group revels on the waterfront ' },
-  { src: manorHouseBathroom.src,      alt: 'An elegant bathroom with preserved historic Victorian fixtures', caption: 'An elegant bathroom with preserved historic Victorian fixtures' },
-  { src: manorHouse.src,     alt: 'The back of the Manor House', caption: 'The back of the Manor House' },
-  { src: receptionBarnEntrance.src,     alt: 'Reception barn interior, facing expansive green and golden fields', caption: 'Reception barn interior, facing expansive green and golden fields' },
-  { src: receptionBarnTables.src,     alt: 'Elegant reception table setting', caption: 'Elegant reception table setting' },
-];
 ---
 
 <InteriorLayout
@@ -190,22 +176,24 @@ const galleryImages = [
   </section>
 
   <!-- Photo Gallery -->
-  <section class="section bg-arabesque" aria-labelledby="gallery-title">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-header__eyebrow">Photo Gallery</span>
-        <h2 class="section-header__title" id="gallery-title">See It for Yourself</h2>
-        <hr class="divider" aria-hidden="true" />
-        <p class="section-header__subtitle">
-          Click any photo to view full size. Photos by{' '}
-          <a href="https://candacenicolephotography.com" target="_blank" rel="noopener noreferrer">
-            Candace Nicole Photography
-          </a>.
-        </p>
+  {latestImages.length > 0 && (
+    <section class="section bg-arabesque" aria-labelledby="gallery-title">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-header__eyebrow">Photo Gallery</span>
+          <h2 class="section-header__title" id="gallery-title">See It for Yourself</h2>
+          <hr class="divider" aria-hidden="true" />
+          <p class="section-header__subtitle">
+            Click any photo to view full size. Photos by{' '}
+            <a href="https://candacenicolephotography.com" target="_blank" rel="noopener noreferrer">
+              Candace Nicole Photography
+            </a>.
+          </p>
+        </div>
+        <LightboxGallery client:load images={latestImages} columns={3} />
       </div>
-      <LightboxGallery client:load images={galleryImages} columns={3} />
-    </div>
-  </section>
+    </section>
+  )}
 
   <!-- CTA -->
   <section class="section about-cta bg-quatrefoils" aria-labelledby="about-cta-title">

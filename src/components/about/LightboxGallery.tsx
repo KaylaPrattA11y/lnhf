@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface GalleryImage {
-  src: string;
-  alt: string;
-  caption?: string;
+  id: string;
+  data: {
+    mediaType: 'photo' | 'video';
+    image?: string;
+    vimeoUrl?: string;
+    pubDate: Date;
+    title: string;
+    caption?: string;
+    credit?: string;
+  }
 }
 
 interface LightboxGalleryProps {
@@ -50,15 +57,15 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
       >
         {images.map((img, i) => (
           <button
-            key={i}
+            key={img.id}
             className="lightbox-thumb"
             role="listitem"
             onClick={() => open(i)}
-            aria-label={`Open photo: ${img.alt}`}
+            aria-label={`Open photo: ${img.data.title}`}
           >
             <img
-              src={img.src}
-              alt={img.alt}
+              src={img.data.image}
+              alt={img.data.title}
               loading="lazy"
               width="400"
               height="280"
@@ -78,7 +85,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
           className="lightbox"
           role="dialog"
           aria-modal="true"
-          aria-label={`Photo: ${current.alt}`}
+          aria-label={`Photo: ${current.data.title}`}
         >
           {/* Backdrop */}
           <div className="lightbox__backdrop" onClick={close} />
@@ -99,14 +106,15 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
 
             <figure className="lightbox__figure">
               <img
-                key={lightboxIndex}
-                src={current.src}
-                alt={current.alt}
+                key={current.id}
+                src={current.data.image}
+                alt={current.data.title}
                 className="lightbox__img"
               />
-              {current.caption && (
-                <figcaption className="lightbox__caption">{current.caption}</figcaption>
-              )}
+              <figcaption className="lightbox__caption">
+                <div>{current.data.title}</div>
+                {current.data.caption && <p>{current.data.caption}</p>}
+              </figcaption>
             </figure>
 
             <button className="lightbox__nav lightbox__nav--next" onClick={next} aria-label="Next photo">
@@ -212,8 +220,14 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         }
         .lightbox__caption {
           color: rgba(255,255,255,0.7);
-          font-size: var(--text-lg);
+        }
+        .lightbox__caption > div {
           margin-top: var(--space-3);
+          font-size: var(--text-xl);
+          font-weight: 500;
+        }
+        .lightbox__caption > p {
+          font-size: var(--text-lg);
           font-style: italic;
         }
         .lightbox__close {
@@ -253,7 +267,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
           position: absolute;
           bottom: 0;
           left: 50%;
-          translate: -50% 50%;
+          translate: -50% 75%;
           color: rgba(255,255,255,0.6);
           font-size: var(--text-sm);
         }
