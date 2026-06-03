@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import BookingModal from './BookingModal';
 
 interface Slot {
@@ -9,10 +9,18 @@ interface Slot {
   status: 'available' | 'booked' | 'blocked';
 }
 
+interface TourTimeSlotOption {
+  tourStart: string;
+  tourEnd: string;
+}
+
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
 
-// Whole-hour tour slots (no half-hours)
-const TOUR_HOURS = [10, 11, 12, 13, 14, 15];
+const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
+  { tourStart: '13:00', tourEnd: '14:00' },
+  { tourStart: '14:00', tourEnd: '15:00' },
+  { tourStart: '15:00', tourEnd: '16:00' },
+];
 
 function startOfMonth(y: number, m: number): Date {
   return new Date(y, m, 1);
@@ -35,13 +43,13 @@ function formatMonthYear(y: number, m: number): string {
 }
 
 function formatTime(t: string): string {
-  const [h] = t.split(':').map(Number);
+  const [h, m] = t.split(':').map(Number);
   const period = h >= 12 ? 'PM' : 'AM';
   const hr = h % 12 || 12;
-  return `${hr}:00 ${period}`;
+  return `${hr}:${String(m).padStart(2, '0')} ${period}`;
 }
 
-export default function BookingCalendar() {
+export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?: TourTimeSlotOption[] }) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -52,6 +60,16 @@ export default function BookingCalendar() {
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const timeSlotsRef = useRef<HTMLDivElement>(null);
 
+  const configuredTimeSlots = useMemo(() => {
+    const source = (timeSlotOptions && timeSlotOptions.length > 0)
+      ? timeSlotOptions
+      : DEFAULT_TIME_SLOT_OPTIONS;
+
+    return source
+      .filter((slot) => /^\d{2}:\d{2}$/.test(slot.tourStart) && /^\d{2}:\d{2}$/.test(slot.tourEnd))
+      .sort((a, b) => a.tourStart.localeCompare(b.tourStart));
+  }, [timeSlotOptions]);
+
   // Fetch slots for the visible month
   const fetchSlots = useCallback(async (y: number, m: number) => {
     setLoading(true);
@@ -60,7 +78,7 @@ export default function BookingCalendar() {
       const start = isoDate(y, m, 1);
       const end   = isoDate(y, m, daysInMonth(y, m));
       const res = await fetch(
-        `${SITE_BASE_URL}/.netlify/functions/get-slots?startDate=${start}&endDate=${end}`,
+        `${SITE_BASE_URL}/.netlify/functions/get-tour-slots?startDate=${start}&endDate=${end}`,
       );
       if (!res.ok) throw new Error('Unable to load availability');
       const data = await res.json();
@@ -87,8 +105,8 @@ export default function BookingCalendar() {
 
   const slotsForDate = (date: string) => slots.filter(s => s.date === date);
 
-  const getSlotForHour = (date: string, hour: number): Slot | undefined =>
-    slots.find(s => s.date === date && parseInt(s.startTime.split(':')[0], 10) === hour);
+  const getSlotForRange = (date: string, startTime: string, endTime: string): Slot | undefined =>
+    slots.find((slot) => slot.date === date && slot.startTime === startTime && slot.endTime === endTime);
 
   const handleDayClick = (date: string) => {
     setSelectedDate(prev => prev === date ? null : date);
@@ -223,15 +241,15 @@ export default function BookingCalendar() {
             })}
           </h3>
           <div className="booking-cal__slots">
-            {TOUR_HOURS.map(hour => {
-              const slot = getSlotForHour(selectedDate, hour);
+            {configuredTimeSlots.map((timeSlot) => {
+              const slot = getSlotForRange(selectedDate, timeSlot.tourStart, timeSlot.tourEnd);
               const available = slot?.status === 'available';
               const booked    = slot?.status === 'booked' || slot?.status === 'blocked';
               const noData    = !slot;
 
               return (
                 <button
-                  key={hour}
+                  key={`${timeSlot.tourStart}-${timeSlot.tourEnd}`}
                   className={[
                     'booking-cal__slot',
                     available ? 'booking-cal__slot--available' : '',
@@ -240,10 +258,10 @@ export default function BookingCalendar() {
                   ].join(' ')}
                   onClick={() => slot && handleSlotClick(slot)}
                   disabled={!available}
-                  aria-label={`${formatTime(`${hour}:00`)} – ${formatTime(`${hour + 1}:00`)}: ${available ? 'Book this slot' : booked ? 'Already booked' : 'Not available'}`}
+                  aria-label={`${formatTime(timeSlot.tourStart)} – ${formatTime(timeSlot.tourEnd)}: ${available ? 'Book this slot' : booked ? 'Already booked' : 'Not available'}`}
                 >
                   <span className="booking-cal__slot-time">
-                    {formatTime(`${hour}:00`)} – {formatTime(`${hour + 1}:00`)}
+                    {formatTime(timeSlot.tourStart)} – {formatTime(timeSlot.tourEnd)}
                   </span>
                   <span className="booking-cal__slot-status">
                     {available ? 'Available' : booked ? 'Booked' : 'N/A'}
@@ -277,6 +295,9 @@ export default function BookingCalendar() {
           background: var(--color-white);
           max-width: 700px; 
           margin: 0 auto;
+          @container (width < 600px) {
+            padding-inline: var(--space-4);
+          }
         }
         .booking-cal__header {
           display: flex;

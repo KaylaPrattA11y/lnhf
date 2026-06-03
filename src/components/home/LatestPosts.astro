@@ -1,15 +1,12 @@
 ---
-// LatestPosts.astro — shows posts with showOnHomepage=true OR published in last 3 months
+// LatestPosts.astro — shows only posts explicitly marked for homepage
 import { getCollection } from 'astro:content';
 import BlogCard from '../blog/BlogCard.astro';
 
-const threeMonthsAgo = new Date();
-threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
 const allPosts = await getCollection('blog');
 const latestPosts = allPosts
-  .filter(post => post.data.showOnHomepage || post.data.date >= threeMonthsAgo)
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .filter(post => post.data.showOnHomepage === true)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
   .slice(0, 3);
 ---
 
@@ -26,7 +23,7 @@ const latestPosts = allPosts
         {latestPosts.map(post => (
           <BlogCard
             title={post.data.title}
-            date={post.data.date}
+            date={post.data.pubDate}
             author={post.data.author}
             excerpt={post.data.excerpt}
             featuredImage={post.data.featuredImage}

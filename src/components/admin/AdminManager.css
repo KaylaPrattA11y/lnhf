@@ -1,0 +1,536 @@
+.admin-page {
+  min-height: calc(100vh - var(--nav-height));
+  background: var(--color-gray-100);
+  overflow-x: clip;
+}
+
+.admin-login {
+  margin-inline: auto;
+  max-inline-size: 900px;
+  text-align: center;
+  padding: var(--space-16) var(--space-4);
+}
+
+.admin-login h2 {
+  font-size: var(--text-3xl);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-4);
+}
+
+.admin-login p {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-6);
+}
+
+.admin-manager {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  position: relative;
+  overflow-x: clip;
+}
+
+.admin-manager__topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  gap: var(--space-4);
+}
+
+.admin-manager__topbar > * {
+  min-width: 0;
+}
+
+.admin-manager__title {
+  font-size: var(--text-4xl);
+  color: var(--color-primary-dark);
+  margin: 0;
+}
+
+.admin-manager__subtitle {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.admin-manager__msg-container {
+  position: sticky;
+  inset: var(--nav-height) auto auto 0;
+  z-index: 9999;
+}
+
+.admin-manager__msg,
+.admin-manager__error {
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-sm);
+}
+
+.admin-manager__msg {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.admin-manager__error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.admin-manager__section {
+  container: section / inline-size;
+  margin-block-end: var(--space-12);
+}
+
+.admin-manager__section-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.admin-manager__section-header details p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-manager__section-title {
+  font-size: var(--text-2xl);
+  color: var(--color-primary-dark);
+  margin: 0 0 var(--space-5);
+}
+
+.admin-manager__section-header .admin-manager__section-title {
+  margin: 0;
+}
+
+.admin-field-error {
+  margin: var(--space-1) 0 0;
+  color: #b91c1c;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+.form-input.is-invalid,
+.form-select.is-invalid,
+.form-textarea.is-invalid {
+  border-color: #b91c1c;
+}
+
+.admin-manager__add-form,
+.admin-manager__grid {
+  @container (width > 500px) {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @container (width > 750px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.admin-manager__fieldset {
+  container: fieldset / inline-size;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.admin-manager__fieldset--wedding-pricing {
+  grid-column: 1 / 4;
+}
+
+.admin-manager__fieldset--wedding-notes {
+  @container (width > 500px) {
+    grid-column: 1 / -1;
+  }
+  @container (width > 750px) {
+    grid-column: 1 / -2;
+  }
+}
+.admin-manager__fieldset--payments-received {
+  grid-column: 1 / 4;
+}
+.admin-manager__payments-table {
+  margin-top: var(--space-4);
+}
+
+.admin-manager__fieldset legend {
+  padding: 0 var(--space-2);
+  font-weight: 600;
+}
+
+.admin-manager__subsection-title {
+  margin: 0 0 var(--space-3);
+  color: var(--color-primary-dark);
+}
+
+.admin-manager__actions-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-manager__empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-8) 0;
+}
+
+.admin-manager__table-wrap {
+  overflow-x: auto;
+}
+
+.admin-manager__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.admin-manager__table th {
+  background: var(--color-primary-dark);
+  color: white;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.admin-manager__table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.admin-row--available {
+  background: rgba(45, 122, 64, 0.04);
+}
+
+.admin-row--booked {
+  background: rgba(37, 74, 175, 0.04);
+}
+
+.admin-row--blocked {
+  background: rgba(100, 100, 100, 0.04);
+}
+
+.admin-row--active {
+  background: rgba(45, 122, 64, 0.03);
+}
+
+.admin-row--cancelled {
+  background: rgba(185, 28, 28, 0.04);
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-badge--available,
+.admin-badge--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-badge--booked {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.admin-badge--blocked,
+.admin-badge--cancelled {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-td-actions {
+  white-space: nowrap;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.admin-btn:hover {
+  opacity: 0.8;
+}
+
+.admin-btn svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.admin-btn--muted {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.admin-btn--good {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-btn--warn {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.admin-btn--danger {
+  border-color: #fca5a5;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.table-controls {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.table-search {
+  flex: 1;
+  min-width: 180px;
+}
+
+.table-status-filter {
+  width: 180px;
+}
+
+.sortable-col {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-col:hover {
+  background: color-mix(in srgb, var(--color-primary-dark) 85%, white);
+}
+
+.sort-icon {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.table-pagination__info {
+  color: var(--color-text-muted);
+}
+
+.table-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.table-pagination__page {
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+.table-pagination__size {
+  width: 110px;
+}
+
+.admin-manager__export {
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  overflow: hidden;
+}
+
+.admin-manager__export-summary {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  background: var(--color-cream, #fdf8f0);
+  list-style: none;
+  user-select: none;
+}
+
+.admin-manager__export-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-manager__export-summary::before {
+  content: '▶ ';
+  font-size: 0.7em;
+}
+
+section > details {
+  scroll-margin-top: 100px;
+}
+
+section > details[open] .admin-manager__export-summary::before {
+  content: '▼ ';
+}
+
+section > details[open] > summary {
+  margin: 0 0 var(--space-5);
+}
+
+section > details > summary::marker {
+  content: none;
+}
+
+section > details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+summary > * {
+  margin: 0 !important;
+}
+
+.admin-manager__export-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+  padding: var(--space-4);
+}
+
+.admin-manager__export-count {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-manager__links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.admin-manager__link-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.admin-manager__link-card h3 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-primary-dark);
+}
+
+.admin-manager__link-card h3,
+.admin-manager__link-card p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 500px) {
+  .admin-manager__links {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-manager__link-card .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+.admin-manager__pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  line-height: 1.1;
+}
+
+.admin-manager__pricing-table td,
+.admin-manager__pricing-table th {
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px;
+}
+
+.admin-manager__pricing-table th {
+  text-align: left;
+  padding-block-start: 0;
+}
+
+.admin-manager__pricing-table th small {
+  font-weight: 400;
+}
+
+.admin-manager__pricing-total {
+  font-weight: 700;
+  text-align: right;
+  margin-top: var(--space-2);
+}
+
+.admin-manager__pricing-collection {
+  inline-size: 100%;
+  display: grid;
+  gap: var(--space-8);
+  @container (width > 400px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-manager__fieldset--other-contacts {
+  grid-column: 1 / -1;
+}
+
+.admin-manager__fieldset--wedding-dates {
+  grid-column: 1 / 4;
+}
+
+.admin-manager__other-contacts-collection {
+  margin-block-start: var(--space-4);
+  @container (width >= 600px) {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+.is-negative {
+  font-weight: 400;
+  color: var(--color-available);
+}
+
+.is-positive {
+  font-weight: 400;
+  color: var(--color-bark-deep);
+}
+
+.is-addons {
+  border: 1px dashed var(--color-border);
+  padding: var(--space-2);
+  margin-bottom: var(--space-4);
+}

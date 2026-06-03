@@ -3,6 +3,8 @@
 import '@fontsource-variable/cormorant-garamond/wght.css';
 // Supports weights 100-900
 import '@fontsource-variable/jost/wght.css';
+import { createHash } from 'node:crypto';
+import { getCollection } from 'astro:content';
 import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
 
 export interface BaseLayoutProps {
@@ -56,7 +58,9 @@ const toAbsoluteUrl = (value?: string) => {
   }
 };
 
-const ogImageUrl = toAbsoluteUrl("/images/og-image.png");
+const ogImageUrl =
+  toAbsoluteUrl('/uploads/aerial-barn-party.jpg') ??
+  new URL('/uploads/aerial-barn-party.jpg', siteOrigin).toString();
 
 const canonicalAbsoluteUrl = toAbsoluteUrl(canonicalUrl) ?? Astro.url.href;
 
@@ -71,10 +75,10 @@ const openGraphUrl =
 
 const mergedOpenGraph: SEOProps['openGraph'] = {
   basic: {
-    title: openGraph?.basic?.title ?? fullTitle,
-    type: openGraph?.basic?.type ?? 'website',
-    image: openGraphImage,
-    url: openGraphUrl,
+    title: String(openGraph?.basic?.title ?? fullTitle ?? siteTitle),
+    type: String(openGraph?.basic?.type ?? 'website'),
+    image: String(openGraphImage),
+    url: String(openGraphUrl),
   },
   optional: {
     description,
@@ -154,6 +158,17 @@ const webPageSchema: Record<string, unknown> = {
 
 const customSchema = Array.isArray(schema) ? schema : schema ? [schema] : [];
 const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
+
+const pricingEntries = await getCollection('pricing');
+const pricingVersionSeed = pricingEntries
+  .map((entry) => `${entry.id}:${JSON.stringify(entry.data)}`)
+  .sort()
+  .join('|');
+const pricingCookieVersion = createHash('sha256')
+  .update(pricingVersionSeed)
+  .digest('hex')
+  .slice(0, 12);
+const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
 ---
 
 <!doctype html>
@@ -201,6 +216,26 @@ const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
       <!-- Default nav is injected by individual pages -->
     </slot>
 
+    <aside
+      id="pricing-recommendation"
+      class="pricing-recommendation"
+      data-cookie-name={pricingCookieName}
+      data-pricing-path="/pricing/"
+      data-current-path={Astro.url.pathname}
+      hidden
+      aria-live="polite"
+    >
+      <div class="pricing-recommendation__inner container">
+        <p>
+          Looking for pricing? Visit our pricing page and use the estimator to build your package before you submit the contact form.
+        </p>
+        <div class="pricing-recommendation__actions">
+          <a class="btn btn--primary btn--sm" href="/pricing/">Use Pricing Estimator</a>
+          <button class="btn btn--ghost btn--sm" type="button" data-pricing-recommendation-close>Dismiss</button>
+        </div>
+      </div>
+    </aside>
+
     <main id="main-content" tabindex="-1">
       <slot />
     </main>
@@ -218,14 +253,136 @@ const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
         identity.on('init', (user: unknown) => {
           if (!user) {
             identity.on('login', () => {
-              document.location.href = '/admin/bookings';
+              document.location.href = '/booking-manager/';
             });
           }
         });
       }
     </script>
+    <script>
+      const recommendationElement = document.getElementById('pricing-recommendation');
+      const root = document.documentElement;
+      const navElement = document.getElementById('nav');
+
+      const syncPricingBannerOffset = () => {
+        if (!(navElement instanceof HTMLElement)) {
+          root.style.setProperty('--pricing-banner-offset', '0px');
+          return;
+        }
+
+        const navHeight = navElement.getBoundingClientRect().height;
+        root.style.setProperty('--pricing-banner-offset', `${Math.max(navHeight, 0)}px`);
+      };
+
+      syncPricingBannerOffset();
+
+      if (navElement instanceof HTMLElement && 'ResizeObserver' in window) {
+        const navResizeObserver = new ResizeObserver(() => {
+          syncPricingBannerOffset();
+        });
+        navResizeObserver.observe(navElement);
+      }
+
+      window.addEventListener('resize', syncPricingBannerOffset);
+
+      if (recommendationElement instanceof HTMLElement) {
+        const cookieName = recommendationElement.dataset.cookieName;
+        const pricingPath = recommendationElement.dataset.pricingPath ?? '/pricing/';
+        const currentPath = recommendationElement.dataset.currentPath ?? window.location.pathname;
+
+        const normalizedPath = (path: string) => {
+          if (path.endsWith('/')) return path;
+          return `${path}/`;
+        };
+
+        const normalizedCurrentPath = normalizedPath(currentPath);
+        const isPricingPage = normalizedCurrentPath.startsWith(normalizedPath(pricingPath));
+        const isAdminPath = normalizedCurrentPath.startsWith('/admin/') || normalizedCurrentPath.startsWith('/booking-manager/');
+
+        const hasSeenPricing = () => {
+          if (!cookieName) return false;
+          return document.cookie
+            .split(';')
+            .map((value) => value.trim())
+            .some((value) => value === `${cookieName}=1`);
+        };
+
+        const markPricingAsSeen = () => {
+          if (!cookieName) return;
+          const oneYearFromNow = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+          document.cookie = `${cookieName}=1; expires=${oneYearFromNow.toUTCString()}; path=/; SameSite=Lax`;
+        };
+
+        if (isPricingPage) {
+          markPricingAsSeen();
+        } else if (!isAdminPath && !hasSeenPricing()) {
+          recommendationElement.hidden = false;
+        }
+
+        const closeButton = recommendationElement.querySelector('[data-pricing-recommendation-close]');
+        if (closeButton instanceof HTMLButtonElement) {
+          closeButton.addEventListener('click', () => {
+            recommendationElement.hidden = true;
+          });
+        }
+      }
+    </script>
   </body>
 </html>
+
+<style>
+  .pricing-recommendation {
+    position: sticky;
+    top: var(--pricing-banner-offset, 0px);
+    z-index: 40;
+    background: color-mix(in srgb, var(--color-bark) 94%, #000 6%);
+    border-top: 1px solid color-mix(in srgb, var(--color-gold) 30%, transparent 70%);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-gold) 30%, transparent 70%);
+    color: var(--color-cream);
+  }
+
+  .pricing-recommendation__inner {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+    justify-content: space-between;
+    padding-block: var(--space-3);
+  }
+
+  .pricing-recommendation p {
+    margin: 0;
+    line-height: 1.4;
+    font-size: var(--text-sm);
+    color: rgba(245, 240, 232, 0.95);
+  }
+
+  .pricing-recommendation__actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-shrink: 0;
+  }
+
+  .pricing-recommendation .btn--ghost {
+    color: var(--color-cream);
+  }
+
+  .pricing-recommendation .btn--ghost:hover {
+    color: var(--color-cream);
+    background: rgba(245, 240, 232, 0.14);
+  }
+
+  @media (max-width: 760px) {
+    .pricing-recommendation__inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .pricing-recommendation__actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+  }
+</style>
 
 <style is:global>
   @import '../styles/global.css';

@@ -1,0 +1,48 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import WeddingsAdmin from '@components/admin/WeddingsAdmin';
+import AdminManagerStyles from '@components/admin/AdminManagerStyles.astro';
+import { getCollection } from 'astro:content';
+
+const entries = await getCollection('pricing');
+const pricingEntries = entries
+  .map((entry) => ({
+    id: entry.id,
+    name: entry.data.name,
+    feeType: entry.data.feeType ?? 'static',
+    perUnit: entry.data.perUnit ?? false,
+    maxUnits: entry.data.maxUnits,
+    billingTreatment: entry.data.billingTreatment ?? 'includedInTotals',
+    value: Number(entry.data.adjustment ?? 0),
+    description: entry.data.description ?? '',
+    sortOrder: Number(entry.data.sortOrder ?? 99),
+  }))
+  // sort  by static first (alphabetically), then dynamic (also alphabetically) --- this ensures a consistent order for the default static entries, while allowing dynamic entries to be sorted as needed
+  .sort((a, b) => {
+    if (a.feeType === b.feeType) {
+      return a.name.localeCompare(b.name);
+    }
+    return a.feeType === 'static' ? -1 : 1;
+  })
+  .map(({ sortOrder, ...rest }) => rest);
+---
+
+<BaseLayout title="Weddings Manager" description="Manage wedding bookings and pricing details.">
+  <script
+    slot="head"
+    src="https://identity.netlify.com/v1/netlify-identity-widget.js"
+    is:inline
+  ></script>
+
+  <AdminManagerStyles />
+
+  <Nav slot="nav" />
+
+  <main class="admin-page">
+    <WeddingsAdmin client:only="react" pricingEntries={pricingEntries} />
+  </main>
+
+  <Footer slot="footer" />
+</BaseLayout>

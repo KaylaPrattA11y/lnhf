@@ -11,11 +11,34 @@
   command = "npm run dev"
   targetPort = 4321
 
+# EDGE FUNCTIONS ----------
+# Restrict selected routes by source IP using netlify/edge-functions/ip-allowlist.js
+# Configure allowed IPs with env var: IP_ALLOWLIST="1.2.3.4,5.6.7.0/24"
+[[edge_functions]]
+  function = "ip-allowlist"
+  path = "/admin"
+
+[[edge_functions]]
+  function = "ip-allowlist"
+  path = "/admin/*"
+
+[[edge_functions]]
+  function = "ip-allowlist"
+  path = "/booking-manager"
+
+[[edge_functions]]
+  function = "ip-allowlist"
+  path = "/booking-manager/*"
+
+[[edge_functions]]
+  function = "ip-allowlist"
+  path = "/.netlify/functions/admin-*"
+
 # SCHEDULED FUNCTIONS -----
-# Generate available Sunday slots 8 weeks ahead, every Monday at midnight UTC
+# Synchronize seeded tour slots from tour-time-slots content monthly
 # Schedule - cron expression: "minute hour day-of-month month day-of-week"
-[functions."generate-sunday-slots"]
-  schedule = "0 0 * * 1"
+[functions."generate-seeded-tour-slots"]
+  schedule = "0 0 1 * *"
 
 # REDIRECTS ---------------
 # Redirect /sitemap.xml to /sitemap-index.xml (Astro's default sitemap name)

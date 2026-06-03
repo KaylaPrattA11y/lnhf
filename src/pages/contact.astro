@@ -64,7 +64,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
         </ul>
 
         <div class="contact-info__cta">
-          <a href="/booking/" class="btn btn--primary">Book a Tour</a>
+          <a href="/tours/" class="btn btn--primary">Book a Tour</a>
         </div>
       </aside>
 
@@ -283,6 +283,9 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     box-shadow: var(--shadow-md);
+    @container (width < 600px) {
+      padding-inline: var(--space-4);
+    }
   }
   .contact-form__title {
     font-size: var(--text-2xl);

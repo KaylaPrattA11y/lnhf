@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import BlogLayout from '@layouts/BlogLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
+import LightboxGallery from '@components/about/LightboxGallery';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -14,12 +15,58 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+
+type BlogGalleryItem = {
+  mediaType: 'photo' | 'video';
+  image?: string;
+  vimeoUrl?: string;
+  pubDate?: Date;
+  title?: string;
+  caption?: string;
+  credit?: string;
+};
+
+const normalizedGallery: BlogGalleryItem[] = (post.data.photoGallery ?? [])
+  .map((item) => {
+    if (typeof item === 'string') {
+      return {
+        mediaType: 'photo' as const,
+        image: item,
+      };
+    }
+
+    return {
+      mediaType: item.mediaType,
+      image: item.image,
+      vimeoUrl: item.vimeoUrl,
+      pubDate: item.pubDate,
+      title: item.title,
+      caption: item.caption,
+      credit: item.credit,
+    };
+  })
+  .filter((item) => (item.mediaType === 'video' ? Boolean(item.vimeoUrl) : Boolean(item.image)))
+  .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0));
+
+const galleryImages = normalizedGallery
+  .filter((item) => item.mediaType === 'photo' && Boolean(item.image))
+  .map((item, index) => ({
+    id: `${post.id}-gallery-${index}`,
+    data: {
+      mediaType: 'photo' as const,
+      image: item.image as string,
+      pubDate: item.pubDate ?? post.data.pubDate,
+      title: item.title ?? `Gallery photo ${index + 1}`,
+      caption: item.caption,
+      credit: item.credit,
+    },
+  }));
 ---
 
 <BlogLayout
   title={post.data.title}
   description={post.data.excerpt ?? `Read about ${post.data.title} on the Lower Notley Hall Farm blog.`}
-  date={post.data.date}
+  date={post.data.pubDate}
   author={post.data.author}
   featuredImage={post.data.featuredImage}
   ogImage={post.data.featuredImage}
@@ -28,23 +75,10 @@ const { Content } = await render(post);
 
   <Content />
 
-  {post.data.photoGallery && post.data.photoGallery.length > 0 && (
+  {galleryImages.length > 0 && (
     <section class="blog-gallery" aria-label="Photo gallery">
       <h2 class="blog-gallery__title">Photo Gallery</h2>
-      <div class="blog-gallery__grid">
-        {post.data.photoGallery.map((src: string, i: number) => (
-          <figure class="blog-gallery__item">
-            <img
-              src={src}
-              alt={`Gallery photo ${i + 1} for ${post.data.title}`}
-              loading="lazy"
-              class="blog-gallery__img"
-              width="600"
-              height="400"
-            />
-          </figure>
-        ))}
-      </div>
+      <LightboxGallery client:load images={galleryImages} columns={3} />
     </section>
   )}
 
@@ -62,21 +96,5 @@ const { Content } = await render(post);
     font-size: var(--text-3xl);
     color: var(--color-primary-dark);
     margin-bottom: var(--space-6);
-  }
-  .blog-gallery__grid {
-    display: grid;
-    gap: var(--space-4);
-    grid-template-columns: repeat(2, 1fr);
-  }
-  @media (min-width: 640px) {
-    .blog-gallery__grid { grid-template-columns: repeat(3, 1fr); }
-  }
-  .blog-gallery__item { margin: 0; }
-  .blog-gallery__img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    aspect-ratio: 4/3;
-    border-radius: var(--radius-md);
   }
 </style>

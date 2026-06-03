@@ -10,7 +10,7 @@ interface PricingTableEntry {
   sortOrder: number;
   description?: string;
   maxUnits?: number; // only used if perUnit is true
-  omitFromTotal?: boolean; // for line items like damage deposit that aren't included in the running total
+  billingTreatment?: 'includedInTotals' | 'returnedLater' | 'informationalOnly';
 }
 
 interface PricingTableProps {
@@ -21,16 +21,28 @@ export default function PricingTable({ entries }: PricingTableProps) {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  const estimatedTotal = entries.reduce((sum, ent) => {
-    if (ent.omitFromTotal) return sum; // Skip entries that shouldn't be included in the total
-    if (ent.feeType === 'static') return sum + ent.adjustment; // Static fees are always included if checked
-    // For dynamic fees, only include if checked, and multiply by quantity if perUnit
-    if (ent.feeType === 'dynamic' && checked[ent.name]) {
-      const qty = ent.perUnit ? (quantities[ent.name] ?? 1) : 1;
-      return sum + ent.adjustment * qty;
-    }
-    return sum;
+  const getBillingTreatment = (ent: PricingTableEntry) => {
+    return ent.billingTreatment ?? 'includedInTotals';
+  };
+
+  const selectedEntries = entries.filter((ent) => {
+    if (getBillingTreatment(ent) === 'informationalOnly') return false;
+    if (ent.feeType === 'static') return true;
+    return Boolean(checked[ent.name]);
+  });
+
+  const totalCost = selectedEntries.reduce((sum, ent) => {
+    const qty = ent.perUnit && ent.feeType === 'dynamic' ? (quantities[ent.name] ?? 1) : 1;
+    return sum + ent.adjustment * qty;
   }, 0);
+
+  const refundableTotal = selectedEntries.reduce((sum, ent) => {
+    if (getBillingTreatment(ent) !== 'returnedLater') return sum;
+    const qty = ent.perUnit && ent.feeType === 'dynamic' ? (quantities[ent.name] ?? 1) : 1;
+    return sum + ent.adjustment * qty;
+  }, 0);
+
+  const netCost = totalCost - refundableTotal;
 
   const toggle = (entry: PricingTableEntry) => {
     setChecked(prev => ({ ...prev, [entry.name]: !prev[entry.name] }));
@@ -95,6 +107,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
                     {ent.adjustment < 0 ? '−' : '+'}{fmt(Math.abs(ent.adjustment))}
                     {ent.perUnit && checked[ent.name] && ` × ${quantities[ent.name] ?? 1}`}
                   </span>
+                  {getBillingTreatment(ent) === 'returnedLater' && <span className="pricing-table__refundable">Refundable</span>}
                 </td>
                 <td className="pricing-table__qty">
                   {ent.perUnit && checked[ent.name] && (
@@ -114,9 +127,16 @@ export default function PricingTable({ entries }: PricingTableProps) {
           </tbody>
           <tfoot>
             <tr className="pricing-table__row pricing-table__row--total">
-              <td><strong>Estimated Package Total</strong></td>
+              <td><strong>Total Amount Due (including refundable items)</strong></td>
               <td className="pricing-table__amount pricing-table__total" aria-live="polite">
-                <strong>{fmt(estimatedTotal)}</strong>
+                <strong>{fmt(totalCost)}</strong>
+              </td>
+              <td></td>
+            </tr>
+            <tr className="pricing-table__row pricing-table__row--net">
+              <td><strong>Net Cost After Refundable Amounts Are Returned</strong></td>
+              <td className="pricing-table__amount pricing-table__total" aria-live="polite">
+                <strong>{fmt(netCost)}</strong>
               </td>
               <td></td>
             </tr>
@@ -141,14 +161,14 @@ export default function PricingTable({ entries }: PricingTableProps) {
           onClick={handlePrint}
           aria-label="Print or save this estimate as PDF"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{marginInlineEnd: '8px'}}>
             <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
           </svg>
           Print / Save as PDF
         </button>
         <button
           type="button"
-          className="btn btn--ghost"
+          className="btn btn--secondary"
           onClick={() => { setChecked({}); setQuantities({}); }}
           aria-label="Reset pricing estimator"
         >
@@ -201,10 +221,19 @@ export default function PricingTable({ entries }: PricingTableProps) {
         .pricing-table__row--base { background: var(--color-gray-100); }
         .pricing-table__row--fixed { background: var(--color-gray-100); color: var(--color-text-muted); }
         .pricing-table__row--total { background: var(--color-primary-dark); color: var(--color-white); }
+        .pricing-table__row--net { background: color-mix(in srgb, var(--color-primary-dark) 88%, white); color: var(--color-white); }
         .pricing-table__row--total td { border: none; padding: var(--space-5); }
+        .pricing-table__row--net td { border: none; padding: var(--space-5); }
         .pricing-table__row.is-checked { background: var(--color-available-bg); }
         
         .pricing-table__total { font-size: var(--text-xl); }
+        .pricing-table__refundable {
+          display: block;
+          margin-top: 2px;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
+          font-weight: 600;
+        }
         .is-discount { color: var(--color-available); font-weight: 700; }
         .is-surcharge { color: var(--color-accent-dark); font-weight: 700; }
         .pricing-table__label { min-width: 260px; }
@@ -253,6 +282,10 @@ export default function PricingTable({ entries }: PricingTableProps) {
           gap: var(--space-3);
           flex-wrap: wrap;
           margin-bottom: var(--space-8);
+          @container (width < 600px) {
+            justify-content: center;
+            padding-inline: var(--space-4);
+          }
         }
         .pricing-tool__notes {
           background: var(--color-gray-100);

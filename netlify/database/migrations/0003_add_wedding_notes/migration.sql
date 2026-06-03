@@ -1,0 +1,2 @@
+ALTER TABLE wedding_bookings
+ADD COLUMN IF NOT EXISTS notes TEXT;

@@ -1,30 +1,65 @@
 ---
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 
 const vendors = await getCollection('vendors');
-// Sort by category, then preferred partners first, then alphabetically by name, then by sortOrder if provided (with a default of 99 to push unsorted items to the end)
-const vendorsSorted = vendors
-  .map(v => ({ id: v.id, ...v.data }))
+const vendorsWithContent = await Promise.all(
+  vendors.map(async (vendor) => {
+    const { Content } = await render(vendor);
+    return {
+      vendor,
+      Content,
+      hasBodyContent: Boolean(vendor.body?.trim()),
+    };
+  }),
+);
+
+const serviceOrder = [
+  'Bartending',
+  'Catering',
+  'Decor',
+  'DJs and Entertainment',
+  'Florist',
+  'Photography',
+  'Transportation',
+  'Wedding Coordination',
+  'Other',
+];
+
+const serviceRank = new Map(serviceOrder.map((service, index) => [service, index]));
+
+const normalizedVendors = vendorsWithContent.map(({ vendor, Content, hasBodyContent }) => {
+  const data = vendor.data as typeof vendor.data & { vendorType?: string };
+  const services = Array.isArray(data.vendorServices)
+    ? data.vendorServices
+    : data.vendorServices
+      ? [data.vendorServices]
+      : data.vendorType
+        ? [data.vendorType]
+        : ['Other'];
+
+  return {
+    id: vendor.id,
+    ...data,
+    vendorServices: services,
+    Content,
+    hasBodyContent,
+  };
+});
+
+const vendorsGrouped = normalizedVendors
+  .flatMap((vendor) => vendor.vendorServices.map((service) => ({ service, vendor })))
   .sort((a, b) => {
-    if (a.vendorType === b.vendorType) {
-      if (a.isPreferred === b.isPreferred) {
-        if (a.name === b.name) {
-          return (a.sortOrder ?? 99) - (b.sortOrder ?? 99);
-        }
-        return a.name.localeCompare(b.name);
-      }
-      return a.isPreferred ? -1 : 1;
-    }
-    return a.vendorType.localeCompare(b.vendorType);
+    const byCategory = (serviceRank.get(a.service) ?? 999) - (serviceRank.get(b.service) ?? 999);
+    if (byCategory !== 0) return byCategory;
+    if (a.vendor.isPreferred !== b.vendor.isPreferred) return a.vendor.isPreferred ? -1 : 1;
+    const byName = a.vendor.name.localeCompare(b.vendor.name);
+    if (byName !== 0) return byName;
+    return (a.vendor.sortOrder ?? 99) - (b.vendor.sortOrder ?? 99);
   })
-  // Group by category
-  .reduce((groups, vendor) => {
-    const category = vendor.vendorType || 'Other';
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(vendor);
+  .reduce<Record<string, typeof normalizedVendors>>((groups, item) => {
+    if (!groups[item.service]) groups[item.service] = [];
+    groups[item.service].push(item.vendor);
     return groups;
   }, {});
 ---
@@ -40,14 +75,13 @@ const vendorsSorted = vendors
     and will make your wedding day extraordinary. For our most current recommendations,
     please <a href="/contact/">contact Jack and Cindy</a> directly.
   </p>
-  </section>
 
   <section class="section bg-arabesque" aria-label="Vendor list">
     <div class="container vendors-container">
       <p>Below is a list of pre-approved and highly recommended Southern Maryland Wedding Venue vendors.</p>
       <p>All other vendors must be approved by Lower Notley Hall Farm and must present licensing and proof of insurance, including photographers as applicable. If your vendor is not approved by Lower Notley Hall Farm, they will not be allowed to work at the venue.</p>
       <p><em>Approval of any vendor not listed below must be approved by Lower Notley Hall Farm, LLC in writing.</em></p>
-      {Object.entries(vendorsSorted).map(([category, items]) => (
+      {Object.entries(vendorsGrouped).map(([category, items]) => (
         <div class="vendor-group">
           <h2 class="vendor-group__title">{category}</h2>
           <div class="vendor-cards">
@@ -85,6 +119,18 @@ const vendorsSorted = vendors
                     <a href={`tel:${v.phone.replace(/\D/g, '').trim()}`}>{v.phone.trim()}</a>
                   </p>
                 )}
+                {v.hasBodyContent && (
+                  <div class="vendor-card__desc vendor-card__details">
+                    <v.Content />
+                  </div>
+                )}
+                <div class="vendor-card__services" aria-label="Vendor services">
+                  {v.vendorServices.map((service) => (
+                    <span class={`vendor-card__service-chip${service === category ? ' vendor-card__service-chip--active' : ''}`}>
+                      {service}
+                    </span>
+                  ))}
+                </div>
               </article>
             ))}
           </div>
@@ -172,6 +218,41 @@ const vendorsSorted = vendors
     color: var(--color-text-muted);
     line-height: var(--leading-relaxed);
     margin: 0;
+  }
+
+  .vendor-card__details {
+    margin-top: var(--space-3);
+  }
+
+  .vendor-card__details :global(p) {
+    margin: 0 0 var(--space-2);
+  }
+
+  .vendor-card__details :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .vendor-card__services {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .vendor-card__service-chip {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    background: var(--color-cream);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: 2px 10px;
+  }
+
+  .vendor-card__service-chip--active {
+    color: var(--color-primary-dark);
+    background: color-mix(in srgb, var(--color-accent) 20%, white);
+    border-color: color-mix(in srgb, var(--color-accent) 60%, white);
+    font-weight: 600;
   }
 
   .vendors-note {

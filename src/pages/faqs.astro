@@ -78,6 +78,11 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
 </script>
 
 <style>
+  .container {
+    @container (width < 600px) {
+      --padding-x: 0;
+    }
+  }
   .faqs-container { max-width: 840px; }
 
   .faq-list {

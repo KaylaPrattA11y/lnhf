@@ -1,25 +1,29 @@
 ---
 // TheSetting.astro
+import ManorHouseImg from '@assets/images/Notley-Hall-Farm-Manor-House.jpg';
+import ReceptionBarnImg from '@assets/images/Notley-Hall-Farm-Reception-Barn-Entrance.jpg';
+import WaterfrontImg from '@assets/images/couple-waterfront-wedding.jpg';
+
 const spaces = [
   {
     name: 'The Manor House',
     description:
       'Float down a beautiful grand staircase, wander through historic double parlors, and explore rooms that have witnessed generations of Maryland history since the 17th century.',
-    icon: '🏛️',
+    photo: ManorHouseImg.src,
     link: '/about#manor-house',
   },
   {
     name: 'The Reception Barn',
     description:
       'Built by the local Amish community, this spacious rustic board-and-batten barn sparkles with chandeliers and twinkling Edison lights just steps from the Wicomico River.',
-    icon: '🌾',
+    photo: ReceptionBarnImg.src,
     link: '/about#reception-barn',
   },
   {
     name: 'The Wicomico Waterfront',
     description:
       'Wide open skies, cool river breezes, unimaginable sunsets, and the calls of herons, osprey, and eagles — the river is the soul of every celebration at LNHF.',
-    icon: '🌊',
+    photo: WaterfrontImg.src,
     link: '/about#waterfront',
   },
 ];
@@ -41,7 +45,14 @@ const spaces = [
     <div class="setting__grid">
       {spaces.map((space) => (
         <article class="setting__card card">
-          <div class="setting__card-icon" aria-hidden="true">{space.icon}</div>
+          <img
+            class="setting__card-icon"
+            src={space.photo}
+            alt=""
+            loading="lazy"
+            width="960"
+            height="640"
+          />
           <div class="card__body">
             <h3 class="setting__card-title">{space.name}</h3>
             <p>{space.description}</p>
@@ -72,8 +83,14 @@ const spaces = [
   }
 
   .setting__card-icon {
-    font-size: 3rem;
-    padding: var(--space-6) var(--space-6) var(--space-2);
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    object-position: center;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-mist);
   }
 
   .setting__card-title {

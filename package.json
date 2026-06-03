@@ -8,7 +8,9 @@
     "build": "tinacms build && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "clean:content": "rm -rf node_modules/.astro && astro sync"
+    "clean:content": "rm -rf node_modules/.astro && astro sync",
+    "db:migrate": "netlify database migrations apply",
+    "db:migrate:neon": "node scripts/apply-neon-migrations.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",
@@ -24,6 +26,7 @@
     "astro-pagefind": "^1.8.6",
     "astro-seo": "^1.1.0",
     "netlify-identity-widget": "^2.0.3",
+    "pg": "^8.21.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tinacms": "^2.6.4",

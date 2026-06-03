@@ -2,8 +2,8 @@
 
 The official website for **Lower Notley Hall Farm**, a historic waterfront wedding venue in Chaptico, Southern Maryland. Built with Astro 6, React 19, TinaCMS, and Netlify Database (Postgres), deployed on Netlify.
 
-**Live site:** https://lowernotleyhallfarm.com  
-**Owners:** Jack & Cindy | **Phone:** (301) 769-2030  
+**Live site:** https://lowernotleyhallfarm.com
+**Owners:** Jack & Cindy | **Phone:** (301) 769-2030
 **Address:** 36290 Notley Manor Ln, Chaptico, MD 20621
 
 ---
@@ -53,15 +53,15 @@ lnhf/
 ├── netlify/
 │   ├── database/
 │   │   └── migrations/
-│   │       └── 0001_create_booking_slots.sql  # Schema (auto-applied on deploy)
+│   │       └── 0002_tours_and_weddings_schema/migration.sql  # Core tours + weddings schema
 │   └── functions/
 │       ├── utils/
 │       │   └── db.ts            # Netlify Database client singleton
-│       ├── get-slots.ts         # GET  /.netlify/functions/get-slots
-│       ├── create-booking.ts    # POST /.netlify/functions/create-booking
-│       ├── admin-bookings.ts    # GET  /.netlify/functions/admin-bookings (admin only)
-│       ├── admin-slot.ts        # POST/PATCH/DELETE (admin only)
-│       └── generate-sunday-slots.ts  # Scheduled — seeds Sunday slots 8 weeks ahead
+│       ├── get-tour-slots.ts         # GET  /.netlify/functions/get-tour-slots
+│       ├── create-tour-booking.ts    # POST /.netlify/functions/create-tour-booking
+│       ├── admin-tours.ts            # GET  /.netlify/functions/admin-tours (admin only)
+│       ├── admin-tour-slot.ts        # POST/PATCH/DELETE (admin only)
+│       └── generate-seeded-tour-slots.ts  # Scheduled monthly seeded-slot sync
 ├── public/
 │   ├── logo.svg                 # Brand crest
 │   ├── robots.txt
@@ -71,7 +71,8 @@ lnhf/
 │   │   ├── about/
 │   │   │   └── LightboxGallery.tsx   # Keyboard-navigable photo lightbox
 │   │   ├── admin/
-│   │   │   └── BookingAdmin.tsx      # Admin UI (Netlify Identity gated)
+│   │   │   ├── ToursAdmin.tsx        # Tours admin UI (Netlify Identity gated)
+│   │   │   └── WeddingsAdmin.tsx     # Weddings admin UI (Netlify Identity gated)
 │   │   ├── blog/
 │   │   │   └── BlogCard.astro        # Reusable post card
 │   │   ├── booking/
@@ -82,12 +83,14 @@ lnhf/
 │   │   ├── home/
 │   │   │   ├── Blockquote.astro
 │   │   │   ├── Hero.astro
-│   │   │   ├── LatestPosts.astro
+│   │   │   ├── tours.astro               # Tour booking calendar
 │   │   │   ├── StatsBar.astro
 │   │   │   ├── Testimonials.tsx      # Auto-advancing carousel
 │   │   │   ├── TheSetting.astro
 │   │   │   └── TourForm.astro        # Netlify Form for tour requests
-│   │   ├── layout/
+│   │   │   ├── booking-manager/index.astro      # Admin portal (client:only)
+│   │   │   ├── booking-manager/tours.astro      # Tours admin panel
+│   │   │   ├── booking-manager/weddings.astro   # Weddings admin panel
 │   │   │   ├── Footer.astro          # Map, contact info, quick links
 │   │   │   └── Nav.astro             # Sticky nav, search, mobile menu
 │   │   └── pricing/
@@ -104,12 +107,12 @@ lnhf/
 │   ├── pages/
 │   │   ├── index.astro               # Home
 │   │   ├── about.astro               # About / history / gallery
-│   │   ├── booking.astro             # Tour booking calendar
+│   │   ├── tours.astro               # Tour booking calendar
 │   │   ├── pricing.astro             # Package pricing estimator
 │   │   ├── faqs.astro                # FAQ accordion
 │   │   ├── contact.astro             # Contact form
 │   │   ├── vendors.astro             # Preferred vendor directory
-│   │   ├── admin/bookings.astro      # Admin panel (client:only)
+│   │   ├── booking-manager/index.astro # Admin portal (client:only)
 │   │   ├── blog/index.astro          # Blog listing
 │   │   ├── blog/[slug].astro         # Dynamic blog post
 │   │   └── contact/success.astro     # Form submission thank-you
@@ -173,12 +176,12 @@ On first run, apply the schema to the local database:
 netlify database migrations apply
 ```
 
-### 5. Seed Sunday slots
+### 5. Run seeded slot sync (optional)
 
-Populate the next 8 Sundays with tour slots:
+Seed future tour slots from `src/content/tour-time-slots` (based on each slot's `seedSlotOnDay` values):
 
 ```bash
-curl -X POST http://localhost:8888/.netlify/functions/generate-sunday-slots
+curl -X POST http://localhost:8888/.netlify/functions/generate-seeded-tour-slots
 ```
 
 ---
@@ -193,10 +196,23 @@ Copy `.env.example` to `.env` and fill in the values. **Never commit `.env` to g
 | `TINA_TOKEN` | TinaCMS read/write token | app.tina.io → Project → Overview |
 | `TINA_SEARCH` | TinaCMS search token | app.tina.io → Project → Overview |
 | `NETLIFY_IDENTITY_URL` | Your Netlify site URL (for Identity) | Netlify Dashboard → Site settings → Identity |
+| `IP_ALLOWLIST` *(optional but recommended)* | Comma-separated list of allowed source IPs/CIDRs for protected admin routes (example: `203.0.113.10,198.51.100.0/24`) | Netlify Dashboard → Site configuration → Environment variables |
 
-> **Database connection (`NETLIFY_DB_URL`)** is injected automatically by `netlify dev` locally and by Netlify at build/runtime in production. You do not set this manually.
+> **Database connection (`NETLIFY_TOURS_DB_URL`)** is injected automatically by `netlify dev` locally and by Netlify at build/runtime in production. You do not set this manually.
 
 On Netlify, set the remaining variables under **Site configuration → Environment variables**. `NETLIFY_IDENTITY_URL` is injected automatically in production.
+
+### IP allowlist format
+
+The edge allowlist parser accepts a comma-separated list:
+
+```bash
+IP_ALLOWLIST=203.0.113.10,198.51.100.25,198.51.100.0/24
+```
+
+- Exact IPs are supported.
+- IPv4 CIDR ranges are supported.
+- If `IP_ALLOWLIST` is unset/empty, IP filtering is bypassed (safe default to avoid lockout).
 
 ---
 
@@ -207,21 +223,23 @@ On Netlify, set the remaining variables under **Site configuration → Environme
 | `npm run dev` | Start full stack via `netlify dev` (functions + local DB + TinaCMS + Astro) |
 | `npm run build` | Run `tinacms build` then `astro build` |
 | `npm run preview` | Serve the production `dist/` folder locally |
+| `npm run db:migrate` | Apply pending migrations using Netlify CLI (local/linked environment) |
+| `npm run db:migrate:neon` | Apply all migration.sql files to the DB from `DATABASE_URL` or the repo `.env` |
 | `netlify database migrations apply` | Apply pending SQL migrations to the local database |
 | `netlify database status` | Show local DB connection string and migration status |
 | `netlify database connect` | Open an interactive psql session against the local database |
 
 > **Tip:** TinaCMS local mode is included in `npm run dev` — content is read/written directly from your local filesystem. No cloud credentials are needed for local editing. The CMS UI is available at http://localhost:8888/admin.
 
-### Force Sunday slot generation (dev & staging)
+### Force seeded slot sync (dev & staging)
 
-The `generate-sunday-slots` function runs automatically every Monday at 00:00 UTC in production. To trigger it immediately during development:
+The `generate-seeded-tour-slots` function runs automatically on the first day of each month at 00:00 UTC in production. To trigger it immediately during development:
 
 ```bash
-curl -X POST http://localhost:8888/.netlify/functions/generate-sunday-slots
+curl -X POST http://localhost:8888/.netlify/functions/generate-seeded-tour-slots
 ```
 
-This inserts slots for the next 8 Sundays (1 PM – 4 PM, one slot per hour) and skips any that already exist. Safe to run multiple times.
+This syncs slots for the next 12 months using the configured time ranges and weekdays. It inserts missing future slots and removes future unbooked slots that are no longer seeded. Safe to run multiple times.
 
 ---
 
@@ -231,7 +249,7 @@ This inserts slots for the next 8 Sundays (1 PM – 4 PM, one slot per hour) and
 |---|---|---|
 | `/` | `src/pages/index.astro` | Hero, stats bar, blockquote, venue overview, testimonials carousel, latest blog posts, tour request form |
 | `/about` | `src/pages/about.astro` | Location, history, crest symbolism, room descriptions, photo gallery lightbox, CTA |
-| `/booking` | `src/pages/booking.astro` | Interactive Sunday tour calendar; time slot picker; booking modal |
+| `/tours` | `src/pages/tours.astro` | Interactive tour calendar; time slot picker; booking modal |
 | `/pricing` | `src/pages/pricing.astro` | Interactive package estimator with running total; print/PDF button |
 | `/faqs` | `src/pages/faqs.astro` | Accessible accordion sourced from content collection |
 | `/contact` | `src/pages/contact.astro` | Contact form (Netlify Forms), address, phone, Facebook link |
@@ -239,7 +257,9 @@ This inserts slots for the next 8 Sundays (1 PM – 4 PM, one slot per hour) and
 | `/vendors` | `src/pages/vendors.astro` | Preferred vendor directory by category |
 | `/blog` | `src/pages/blog/index.astro` | Blog post grid, sorted newest first |
 | `/blog/[slug]` | `src/pages/blog/[slug].astro` | Individual post with optional photo gallery |
-| `/admin/bookings` | `src/pages/admin/bookings.astro` | Booking management panel (Netlify Identity required) |
+| `/booking-manager` | `src/pages/booking-manager/index.astro` | Admin portal (Netlify Identity required) |
+| `/booking-manager/tours` | `src/pages/booking-manager/tours.astro` | Tours management panel (Netlify Identity required) |
+| `/booking-manager/weddings` | `src/pages/booking-manager/weddings.astro` | Weddings management panel (Netlify Identity required) |
 
 ---
 
@@ -285,7 +305,8 @@ Log in at `https://lowernotleyhallfarm.com/admin` using your TinaCMS Cloud accou
 
 ## Booking System
 
-Tours are held on **Sundays only**. Each tour slot is one hour. Default auto-generated slots:
+Tours are configurable by time range and weekday via `src/content/tour-time-slots`.
+Default seeded slots currently include:
 
 | Slot | Time |
 |---|---|
@@ -297,20 +318,20 @@ Admins can create additional slots at any time via the [Admin Panel](#admin-pane
 
 ### Database schema
 
-Managed Postgres via **Netlify Database**. Migration: `netlify/database/migrations/0001_create_booking_slots.sql`
+Managed Postgres via **Netlify Database**. Core migration: `netlify/database/migrations/0002_tours_and_weddings_schema/migration.sql`
 
 ```sql
-CREATE TABLE booking_slots (
+CREATE TABLE tour_slots (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   date             TEXT NOT NULL,          -- 'YYYY-MM-DD'
   start_time       TEXT NOT NULL,          -- 'HH:MM'
   end_time         TEXT NOT NULL,          -- 'HH:MM'
   status           TEXT NOT NULL DEFAULT 'available',  -- 'available' | 'booked' | 'blocked'
-  booking_name     TEXT,
-  booking_email    TEXT,
-  booking_phone    TEXT,
-  booking_party_size INTEGER,
-  booking_message  TEXT,
+  guest_name       TEXT,
+  guest_email      TEXT,
+  guest_phone      TEXT,
+  guest_party_size INTEGER,
+  guest_message    TEXT,
   booked_at        TIMESTAMPTZ,
   UNIQUE (date, start_time)
 );
@@ -320,21 +341,25 @@ All API responses use `_id` (aliased from `id`) and camelCase field names for fr
 
 ### Slot auto-generation
 
-`generate-sunday-slots` is a **scheduled Netlify Function** that runs every Monday at 00:00 UTC. It looks 8 weeks ahead and inserts one slot per hour (1 PM – 4 PM) for each upcoming Sunday, skipping any that already exist. The function is idempotent — safe to run multiple times.
+`generate-seeded-tour-slots` is a **scheduled Netlify Function** that runs monthly (day 1 at 00:00 UTC). It looks 12 months ahead and syncs seeded slots from `seedSlotOnDay` in `src/content/tour-time-slots`.
 
-To trigger it immediately: see [Force Sunday slot generation](#force-sunday-slot-generation-dev--staging).
+- Inserts missing future slots for configured weekdays/time ranges.
+- Removes future **unbooked** slots when a weekday is un-seeded.
+- Never removes booked slots.
+
+To trigger it immediately: see [Force seeded slot sync](#force-seeded-slot-sync-dev--staging).
 
 ### Booking flow
 
-1. Visitor opens `/booking` — `BookingCalendar` fetches slots via `GET /.netlify/functions/get-slots`.
+1. Visitor opens `/tours` — `BookingCalendar` fetches slots via `GET /.netlify/functions/get-tour-slots`.
 2. Visitor clicks an available Sunday → time slot pills appear.
 3. Visitor clicks a time → `BookingModal` opens.
-4. On submit, `POST /.netlify/functions/create-booking` uses a **SQL atomic `UPDATE ... WHERE status = 'available'`** to prevent double-booking. Returns `409 Conflict` if the slot was taken between the visitor opening the modal and submitting.
+4. On submit, `POST /.netlify/functions/create-tour-booking` uses a **SQL atomic `UPDATE ... WHERE status = 'available'`** to prevent double-booking. Returns `409 Conflict` if the slot was taken between the visitor opening the modal and submitting.
 5. On success, a secondary `POST` to `/` (Netlify Forms) submits the hidden `booking` form, triggering an email notification to the venue.
 
 ### Adding slots (admin)
 
-Slots are auto-generated for Sundays by the scheduled function. Additional or one-off slots can be created via the [Admin Panel](#admin-panel) or directly via `POST /.netlify/functions/admin-slot`.
+Slots are seeded by the scheduled sync function. Additional or one-off slots can be created via the [Admin Panel](#admin-panel) or directly via `POST /.netlify/functions/admin-tour-slot`.
 
 ---
 
@@ -342,7 +367,7 @@ Slots are auto-generated for Sundays by the scheduled function. Additional or on
 
 All functions live in `netlify/functions/`. They are deployed automatically by Netlify.
 
-### `GET /.netlify/functions/get-slots`
+### `GET /.netlify/functions/get-tour-slots`
 
 Returns available and booked slots in a date range. Booking details are stripped from the response to protect guest privacy.
 
@@ -362,7 +387,7 @@ Returns available and booked slots in a date range. Booking details are stripped
 
 ---
 
-### `POST /.netlify/functions/create-booking`
+### `POST /.netlify/functions/create-tour-booking`
 
 Books an available slot. Atomic — safe against race conditions.
 
@@ -370,7 +395,7 @@ Books an available slot. Atomic — safe against race conditions.
 
 | Field | Type | Required |
 |---|---|---|
-| `slotId` | UUID string (from `get-slots` response `_id`) | ✓ |
+| `slotId` | UUID string (from `get-tour-slots` response `_id`) | ✓ |
 | `name` | string | ✓ |
 | `email` | string | ✓ |
 | `phone` | string | — |
@@ -385,7 +410,7 @@ Books an available slot. Atomic — safe against race conditions.
 
 ---
 
-### `GET /.netlify/functions/admin-bookings` *(auth required)*
+### `GET /.netlify/functions/admin-tours` *(auth required)*
 
 Returns all slots including full booking details. Requires a valid Netlify Identity JWT in the `Authorization: Bearer <token>` header.
 
@@ -393,7 +418,7 @@ Returns all slots including full booking details. Requires a valid Netlify Ident
 
 ---
 
-### `POST | PATCH | DELETE /.netlify/functions/admin-slot` *(auth required)*
+### `POST | PATCH | DELETE /.netlify/functions/admin-tour-slot` *(auth required)*
 
 Manage individual slots. All methods require Netlify Identity JWT.
 
@@ -417,12 +442,12 @@ Manage individual slots. All methods require Netlify Identity JWT.
 
 ## Admin Panel
 
-The admin panel is available at `/admin/bookings`. It is a React component (`client:only="react"`) gated by **Netlify Identity**.
+The admin panel is available at `/booking-manager` with tours at `/booking-manager/tours`. It is a React component (`client:only="react"`) gated by **Netlify Identity**.
 
 **To access:**
 1. A Netlify Identity user must be invited via **Netlify Dashboard → Identity → Invite users**.
 2. The invited user accepts the invite and sets a password.
-3. Navigate to `/admin/bookings` and log in with those credentials.
+3. Navigate to `/booking-manager` and log in with those credentials.
 
 **Admin capabilities:**
 - View all upcoming (and past) tour slots with guest details
@@ -440,10 +465,10 @@ All forms use `data-netlify="true"` and include a hidden honeypot field (`bot-fi
 
 | Form name | Page | Fields |
 |---|---|---|
-| `booking` | `/booking` (hidden) | name, email, phone, date, time, party-size, message |
+| `tour-booking` | `/tours` (hidden) | name, email, phone, date, time, party-size, message |
 | `contact` | `/contact` | name\*, email\*, phone, subject, message\* |
 
-> **Email target:** Configure submission notifications in Netlify → Forms → `cooking` / `contact` → **Add notification → Email notification** → recipient: `kaylapratt@protonmail.com`.
+> **Email target:** Configure submission notifications in Netlify → Forms → `tour-booking` / `contact` → **Add notification → Email notification**.
 
 ---
 
@@ -517,21 +542,27 @@ npm run build
 
 ### Required Netlify settings
 
-1. **Environment variables** — set all variables from `.env.example` in Site configuration → Environment variables. (`NETLIFY_DB_URL` is managed automatically.)
+1. **Environment variables** — set all variables from `.env.example` in Site configuration → Environment variables. (`NETLIFY_TOURS_DB_URL` is managed automatically.)
 2. **Database** — Netlify Database is automatically provisioned on first deploy. Migrations in `netlify/database/migrations/` are applied automatically during the build.
 3. **Identity** — enable Netlify Identity, invite admin users.
-4. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `contact` and `booking`.
+4. **Forms** — enable Netlify Forms (automatic on first deploy); configure email notifications for `contact` and `tour-booking`.
 5. **Custom domain** — add `lowernotleyhallfarm.com` and enable HTTPS.
+6. **Admin IP allowlist (recommended)** — set `IP_ALLOWLIST` and keep the edge function mappings in `netlify.toml` for protected admin paths.
 
 ---
 
 ## Security Notes
 
 - **Honeypot fields** on all public forms prevent basic bot spam.
-- **Admin endpoints** (`admin-bookings`, `admin-slot`) validate the Netlify Identity JWT on every request. Requests without a valid token receive `401 Unauthorized`.
-- **Double-booking** is prevented atomically via `UPDATE booking_slots SET status = 'booked' WHERE id = $1 AND status = 'available'` — no race condition possible.
-- **Input sanitization** on `create-booking`: all string inputs are trimmed and clamped to max lengths before being written to the database.
-- **`/admin/bookings`** page is a client-only React shell. The Netlify Identity check happens in the component before any admin API calls are made.
+- **Admin endpoints** (`admin-tours`, `admin-tour-slot`, `admin-weddings`) validate the Netlify Identity JWT on every request. Requests without a valid token receive `401 Unauthorized`.
+- **Edge IP allowlist** can restrict admin surfaces before auth is even reached. `netlify/edge-functions/ip-allowlist.js` is mapped in `netlify.toml` to protect:
+  - `/admin` and `/admin/*`
+  - `/booking-manager` and `/booking-manager/*`
+  - `/.netlify/functions/admin-*`
+  Requests from non-allowlisted IPs receive `403 Forbidden`.
+- **Double-booking** is prevented atomically via `UPDATE tour_slots SET status = 'booked' WHERE id = $1 AND status = 'available'` — no race condition possible.
+- **Input sanitization** on `create-tour-booking`: all string inputs are trimmed and clamped to max lengths before being written to the database.
+- **`/booking-manager`** pages are client-only React shells. The Netlify Identity check happens in the component before any admin API calls are made.
 - **robots.txt** disallows `/admin/` from search engine indexing.
 - **.env** is listed in `.gitignore` — secrets are never committed. The `.env.example` file contains only placeholder values.
 
@@ -550,7 +581,7 @@ Monitor TinaCMS releases for upstream fixes.
 
 This project is private. For questions or changes, contact the site maintainer:
 
-**Kayla Pratt** — [KaylaPrattA11y](https://github.com/KaylaPrattA11y)  
+**Kayla Pratt** — [KaylaPrattA11y](https://github.com/KaylaPrattA11y)
 Photography credit: [Candace Nicole Photography](https://candacenicolephotography.com)
 
 ---

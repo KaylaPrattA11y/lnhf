@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import ToursAdmin from '@components/admin/ToursAdmin';
+import AdminManagerStyles from '@components/admin/AdminManagerStyles.astro';
+
+const tourTimeSlots = (await getCollection('tourTimeSlots'))
+  .map((entry) => ({
+    tourStart: entry.data.tourStart,
+    tourEnd: entry.data.tourEnd,
+  }))
+  .sort((a, b) => a.tourStart.localeCompare(b.tourStart));
+---
+
+<BaseLayout title="Tours Manager" description="Manage tour slot availability and tour bookings.">
+  <script
+    slot="head"
+    src="https://identity.netlify.com/v1/netlify-identity-widget.js"
+    is:inline
+  ></script>
+
+  <AdminManagerStyles />
+
+  <Nav slot="nav" />
+
+  <main class="admin-page">
+    <ToursAdmin client:only="react" timeSlotOptions={tourTimeSlots} />
+  </main>
+
+  <Footer slot="footer" />
+</BaseLayout>

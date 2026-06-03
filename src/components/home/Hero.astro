@@ -1,23 +1,78 @@
 ---
 // Hero.astro
 import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import receptionBarnInteriorRiverside from '../../assets/images/reception-barn-interior-riverside.jpg';
 import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
+
+interface HeroSlide {
+  image: string;
+  title: string;
+  caption: string;
+}
+
+const heroSlides: HeroSlide[] = (await getCollection('carousel'))
+  .sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99))
+  .slice(0, 5)
+  .map((slide) => ({
+    image: slide.data.image,
+    caption: slide.data.caption,
+    title: slide.data.title,
+  }));
+
+if (heroSlides.length === 0) {
+  heroSlides.push({
+    image: aerialReceptionBarn.src,
+    title: 'Reception barn aerial view',
+    caption: 'Aerial view of the reception barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery.',
+  });
+}
+
 ---
 
 <section class="hero" aria-label="Welcome to Lower Notley Hall Farm">
 
   <!-- LEFT — dark photo panel -->
   <div class="hero__left">
-    <div class="hero__left-bg" aria-hidden="true">
-      <div class="hero-img-wrapper">
-        <Image
-          src={aerialReceptionBarn}
-          alt="Aerial view of the reception barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery."
-          width="1400"
-          height="933"
-          loading="eager"
-        />
+    <div class="hero__left-bg">
+      <div
+        class="hero-carousel"
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Homepage photo slideshow"
+        data-hero-carousel
+      >
+        <div class="hero-carousel__slides">
+          {heroSlides.map((slide, index) => (
+            <div
+              class="hero-carousel__slide"
+              data-slide
+              data-active={index === 0 ? 'true' : 'false'}
+              aria-roledescription="slide"
+              aria-label={`Slide ${index + 1} of ${heroSlides.length}`}
+              aria-hidden={index === 0 ? 'false' : 'true'}
+            >
+              <img src={slide.image} alt={slide.caption} loading={index === 0 ? 'eager' : 'lazy'} />
+            </div>
+          ))}
+        </div>
+
+        {heroSlides.length > 1 && (
+          <div class="hero-carousel__dots" role="group" aria-label="Choose slide">
+            {heroSlides.map((slide, index) => (
+              <button
+                class="hero-carousel__dot"
+                type="button"
+                data-dot
+                data-index={index}
+                aria-label={`Show slide ${index + 1}${slide.title ? `: ${slide.title}` : ''}`}
+                aria-current={index === 0 ? 'true' : 'false'}
+              >
+                <span class="sr-only">Slide {index + 1}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
     <div class="hero__left-content">
@@ -28,7 +83,7 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
         A place where your story becomes the one people talk about for years.
       </p>
       <div class="hero__ctas">
-        <a href="/booking/" class="btn btn--primary btn--lg">Book a Tour</a>
+        <a href="/tours/" class="btn btn--primary btn--lg">Book a Tour</a>
         <a href="/about/"   class="btn btn--outline-white btn--lg">Explore the Farm</a>
       </div>
     </div>
@@ -78,6 +133,79 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
 
 </section>
 
+<script>
+  const carousels = document.querySelectorAll('[data-hero-carousel]');
+
+  carousels.forEach((carousel) => {
+    const slides = carousel.querySelectorAll<HTMLElement>('[data-slide]');
+    const dots = carousel.querySelectorAll<HTMLButtonElement>('[data-dot]');
+    let currentIndex = 0;
+    let autoplayId: ReturnType<typeof setInterval> | null = null;
+
+    if (!slides.length || dots.length <= 1) {
+      return;
+    }
+
+    const setSlide = (nextIndex: number) => {
+      currentIndex = nextIndex;
+
+      slides.forEach((slide, index) => {
+        const isActive = index === nextIndex;
+        slide.setAttribute('data-active', isActive ? 'true' : 'false');
+        slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+
+      dots.forEach((dot, index) => {
+        dot.setAttribute('aria-current', index === nextIndex ? 'true' : 'false');
+      });
+    };
+
+    const startAutoplay = () => {
+      if (autoplayId) {
+        clearInterval(autoplayId);
+      }
+
+      autoplayId = setInterval(() => {
+        const nextIndex = currentIndex === slides.length - 1 ? 0 : currentIndex + 1;
+        setSlide(nextIndex);
+      }, 5000);
+    };
+
+    const handleManualSlide = (nextIndex: number) => {
+      setSlide(nextIndex);
+      startAutoplay();
+    };
+
+    dots.forEach((dot, index) => {
+      dot.addEventListener('click', () => handleManualSlide(index));
+
+      dot.addEventListener('keydown', (event) => {
+        const keyEvent = event as KeyboardEvent;
+        const last = dots.length - 1;
+        let next = index;
+
+        if (keyEvent.key === 'ArrowRight') {
+          next = index === last ? 0 : index + 1;
+        } else if (keyEvent.key === 'ArrowLeft') {
+          next = index === 0 ? last : index - 1;
+        } else if (keyEvent.key === 'Home') {
+          next = 0;
+        } else if (keyEvent.key === 'End') {
+          next = last;
+        } else {
+          return;
+        }
+
+        event.preventDefault();
+        handleManualSlide(next);
+        dots[next].focus();
+      });
+    });
+
+    startAutoplay();
+  });
+</script>
+
 <style>
   .hero {
     display: grid;
@@ -98,7 +226,16 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     background-color: var(--color-bark);
     position: relative;
     overflow: hidden;
-    min-height: 60vh;
+    min-height: 68vh;
+  }
+
+  .hero__left::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(17, 35, 42, 0.12) 15%, rgba(17, 35, 42, 0.62) 82%);
+    z-index: 1;
+    pointer-events: none;
   }
 
   .hero-img-wrapper {
@@ -108,7 +245,31 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     block-size: 100%;
     inline-size: 100%;
   }
-  .hero-img-wrapper img {
+
+  .hero-carousel {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero-carousel__slides {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero-carousel__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    scale: 1;
+    transition: scale 5s linear, opacity 350ms ease;
+  }
+
+  .hero-carousel__slide[data-active='true'] {
+    opacity: 1;
+    scale: 1.035;
+  }
+
+  .hero-carousel__slide img {
     display: block;
     block-size: 100%;
     inline-size: 100%;
@@ -116,19 +277,56 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     object-position: center;
   }
 
+  .hero-carousel__dots {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 1rem;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    gap: 0.7rem;
+  }
+
+  .hero-carousel__dot {
+    inline-size: 0.7rem;
+    block-size: 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    transition: transform 120ms ease, background-color 120ms ease;
+  }
+
+  .hero-carousel__dot[aria-current='true'] {
+    background: var(--color-gold-light);
+    border-color: var(--color-gold-light);
+    transform: scale(1.06);
+  }
+
+  .hero-carousel__dot:hover {
+    background: rgba(255, 255, 255, 0.45);
+  }
+
+  .hero-carousel__dot:focus-visible {
+    outline: 2px solid var(--color-gold-light);
+    outline-offset: 2px;
+  }
+
+  .hero__left {
+    padding: 0.5rem 0.5rem 2.5rem 0.5rem;
+  }
+
   .hero__left-content {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     animation: fadeUp 0.9s ease 0.2s both;
-    background: rgba(45, 85, 99, 0.72);
-    border-radius: 16px;
+    background: rgba(45, 85, 99, 0.3);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    padding: 2rem;
+    padding: 2rem 1rem;
     border-radius: var(--space-5);
     corner-shape: scoop;
     border: 5px double rgba(255, 255, 255, 0.18);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 
   .hero__eyebrow {
@@ -162,7 +360,7 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
     line-height: 1.85;
     color: white;
     max-width: 400px;
-    margin-bottom: 3rem;
+    margin-bottom: 2.4rem;
   }
 
   .hero__ctas {
@@ -256,13 +454,23 @@ import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
   /* ── Responsive ───────────────────────────────────── */
   @media (min-width: 900px) {
     .hero {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 2fr 1fr;
       min-height: calc(100vh - 12rem);
     }
 
     .hero__left {
       min-height: unset;
       padding: 7rem 4rem 6rem 5rem;
+    }
+
+    .hero__left-content {
+      max-width: 40rem;
+      padding: 2.4rem;
+      background: rgba(22, 44, 52, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
     }
 
     .hero__right {

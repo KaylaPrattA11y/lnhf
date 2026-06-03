@@ -27,7 +27,7 @@ const handler: Handler = async (event) => {
 
   const { data, form_name } = payload.payload;
 
-  if (["booking", "contact"].includes(form_name) === false) {
+  if (["tour-booking", "booking", "contact"].includes(form_name) === false) {
     return { statusCode: 200, body: "Not a known form submission, skipping" };
   }
 
@@ -94,7 +94,7 @@ const handler: Handler = async (event) => {
         },
         method: "POST",
         body: JSON.stringify({
-          from: "noreply@mail.lowernotleyhallfarm.com",
+          from: `noreply@${process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN}`,
           to: data.email.trim(),
           subject: "We received your message",
           parameters: {

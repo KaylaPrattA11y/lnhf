@@ -60,18 +60,23 @@ h1 em, h2 em, h3 em {
 p {
   margin-bottom: var(--space-4);
 }
-p:last-child { margin-bottom: 0; }
+p:last-child:not(:only-child) { margin-bottom: 0; }
 
 a {
-  color: var(--color-gold);
+  color: var(--color-river-deep);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
-a:hover { color: var(--color-gold-dark); }
+a:is([href^="mailto:"], [href^="tel:"]) { word-break: break-word; }
+a:hover { color: var(--color-river); }
 
 a:focus-visible {
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
+}
+
+main a {
+  text-decoration: underline;
 }
 
 img, video {
@@ -266,11 +271,21 @@ blockquote {
 /* ============================================================
    Forms
    ============================================================ */
+input {
+  accent-color: var(--color-river);
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1) var(--space-2);
   margin-bottom: var(--space-5);
+  flex-basis: 100%;
+}
+
+.form-group p {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .form-label {
@@ -279,6 +294,7 @@ blockquote {
   text-transform: uppercase;
   letter-spacing: 0.20em;
   color: var(--color-text-muted);
+  line-height: 1.2;
 }
 .form-label .required { color: #c0392b; margin-left: 2px; }
 
@@ -320,6 +336,26 @@ blockquote {
 .form-hint {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
+}
+
+.checks-vertical {
+  inline-size: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2) var(--space-6);
+}
+
+.checks-vertical .form-label {
+  text-transform: none;
+  font-size: var(--text-md);
+  letter-spacing: 0;
+}
+
+.checks-vertical .form-label > div {
+  inline-size: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 /* Honeypot */

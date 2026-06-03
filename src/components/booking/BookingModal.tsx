@@ -69,7 +69,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
     setErrorMsg('');
 
     try {
-      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/create-booking`, {
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/create-tour-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
 
       // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
-        'form-name': 'booking',
+        'form-name': 'tour-booking',
         'name': name,
         'email': email,
         'phone': phone,
