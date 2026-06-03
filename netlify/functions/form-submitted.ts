@@ -7,6 +7,18 @@ interface NetlifySubmissionPayload {
   };
 }
 
+type KnownFormName = 'tour-booking' | 'contact';
+
+const EMAIL_TEMPLATE_BY_FORM: Record<KnownFormName, string> = {
+  contact: 'message-received',
+  'tour-booking': 'tour-booked',
+};
+
+const EMAIL_SUBJECT_BY_FORM: Record<KnownFormName, string> = {
+  contact: 'We received your message',
+  'tour-booking': 'Your Lower Notley Hall Farm tour was booked',
+};
+
 const handler: Handler = async (event) => {
   if (process.env.CONTEXT !== "production" || process.env.BRANCH !== "main") {
     console.log(`Skipping submission handler — context: ${process.env.CONTEXT}, branch: ${process.env.BRANCH}`);
@@ -27,9 +39,11 @@ const handler: Handler = async (event) => {
 
   const { data, form_name } = payload.payload;
 
-  if (["tour-booking", "booking", "contact"].includes(form_name) === false) {
+  if (["tour-booking", "contact"].includes(form_name) === false) {
     return { statusCode: 200, body: "Not a known form submission, skipping" };
   }
+
+  const knownFormName = form_name as KnownFormName;
 
   // Honeypot check - if the bot-field is filled out, it's likely a bot submission
   if (data["bot-field"] && data["bot-field"].trim() !== "") {
@@ -72,6 +86,11 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: "Email service not configured" };
   }
 
+  if (!process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN) {
+    console.error("NETLIFY_EMAILS_MAILGUN_DOMAIN not configured");
+    return { statusCode: 500, body: "Email service not configured" };
+  }
+
   if (!process.env.URL) {
     console.error("URL environment variable not configured");
     return { statusCode: 500, body: "Email service not configured" };
@@ -84,9 +103,12 @@ const handler: Handler = async (event) => {
   const maxNameLength = 100;
   const truncatedName = safeName.substring(0, maxNameLength);
 
+  const templateName = EMAIL_TEMPLATE_BY_FORM[knownFormName];
+  const subject = EMAIL_SUBJECT_BY_FORM[knownFormName];
+
   try {
     const response = await fetch(
-      `${process.env.URL}/.netlify/functions/emails/form-submitted`,
+      `${process.env.URL}/.netlify/functions/emails/${templateName}`,
       {
         headers: {
           "netlify-emails-secret": process.env.NETLIFY_EMAILS_SECRET,
@@ -96,7 +118,7 @@ const handler: Handler = async (event) => {
         body: JSON.stringify({
           from: `noreply@${process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN}`,
           to: data.email.trim(),
-          subject: "We received your message",
+          subject,
           parameters: {
             name: truncatedName,
           },
