@@ -4,6 +4,7 @@ import BlogLayout from '@layouts/BlogLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
+import BlogFigure from '@components/blog/BlogFigure.astro';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -17,9 +18,7 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 
 type BlogGalleryItem = {
-  mediaType: 'photo' | 'video';
-  image?: string;
-  vimeoUrl?: string;
+  image: string;
   pubDate?: Date;
   title?: string;
   caption?: string;
@@ -30,30 +29,26 @@ const normalizedGallery: BlogGalleryItem[] = (post.data.photoGallery ?? [])
   .map((item) => {
     if (typeof item === 'string') {
       return {
-        mediaType: 'photo' as const,
         image: item,
       };
     }
 
     return {
-      mediaType: item.mediaType,
       image: item.image,
-      vimeoUrl: item.vimeoUrl,
       pubDate: item.pubDate,
       title: item.title,
       caption: item.caption,
       credit: item.credit,
     };
   })
-  .filter((item) => (item.mediaType === 'video' ? Boolean(item.vimeoUrl) : Boolean(item.image)))
+  .filter((item) => Boolean(item.image))
   .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0));
 
 const galleryImages = normalizedGallery
-  .filter((item) => item.mediaType === 'photo' && Boolean(item.image))
+  .filter((item) => Boolean(item.image))
   .map((item, index) => ({
     id: `${post.id}-gallery-${index}`,
     data: {
-      mediaType: 'photo' as const,
       image: item.image as string,
       pubDate: item.pubDate ?? post.data.pubDate,
       title: item.title ?? `Gallery photo ${index + 1}`,
@@ -73,7 +68,7 @@ const galleryImages = normalizedGallery
 >
   <Nav slot="nav" />
 
-  <Content />
+  <Content components={{ BlogFigure }} />
 
   {galleryImages.length > 0 && (
     <section class="blog-gallery" aria-label="Photo gallery">

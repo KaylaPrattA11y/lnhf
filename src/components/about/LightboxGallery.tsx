@@ -3,9 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 interface GalleryImage {
   id: string;
   data: {
-    mediaType: 'photo' | 'video';
-    image?: string;
-    vimeoUrl?: string;
+    image: string;
     pubDate: Date;
     title: string;
     caption?: string;
@@ -157,6 +155,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
           height: 100%;
           object-fit: cover;
           transition: transform 0.4s ease;
+          margin: 0;
         }
         .lightbox-thumb:hover .lightbox-thumb__img {
           transform: scale(1.05);

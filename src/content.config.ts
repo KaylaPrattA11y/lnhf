@@ -3,9 +3,7 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 const galleryItemSchema = z.object({
-  mediaType: z.enum(['photo', 'video']),
-  image: z.string().optional(),
-  vimeoUrl: z.string().optional(),
+  image: z.string(),
   pubDate: z.coerce.date().default(new Date()),
   title: z.string(),
   caption: z.string().optional(),
@@ -16,7 +14,7 @@ const blog = defineCollection({
   loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
     title: z.string(),
-    pubDate: z.coerce.date(),
+    pubDate: z.coerce.date().default(new Date()),
     showOnHomepage: z.boolean().optional().default(false),
     author: z.string().optional(),
     excerpt: z.string().optional(),

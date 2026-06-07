@@ -17,36 +17,45 @@ const resolvedOgImage =
   <Nav slot="nav" />
 
   {featuredImage && (
-    <div class="blog-hero" aria-hidden="true">
-      <img
-        src={featuredImage}
-        alt=""
-        class="blog-hero__image"
-        loading="eager"
-        width="1280"
-        height="500"
-      />
-      <div class="blog-hero__overlay"></div>
+    <div class="parallax" aria-hidden="true" style={`background-image: url('${featuredImage}');`}>
+      <header class="blog-post__header">
+        <div class="container">
+          <h1 class="blog-post__title">{title}</h1>
+          {(date || author) && (
+            <p class="blog-post__meta">
+              {date && (
+                <time datetime={date.toISOString()}>
+                  {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </time>
+              )}
+              {date && author && <span aria-hidden="true"> · </span>}
+              {author && <span>By {author}</span>}
+            </p>
+          )}
+        </div>
+      </header>
     </div>
   )}
 
   <article class="bg-arabesque">
     <div class="blog-post container">
-      <header class="blog-post__header">
-        <h1 class="blog-post__title">{title}</h1>
-        {(date || author) && (
-          <p class="blog-post__meta">
-            {date && (
-              <time datetime={date.toISOString()}>
-                {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </time>
-            )}
-            {date && author && <span aria-hidden="true"> · </span>}
-            {author && <span>By {author}</span>}
-          </p>
-        )}
-        <hr class="divider divider--left" aria-hidden="true" />
-      </header>
+      {!featuredImage && (
+        <header class="blog-post__header">
+          <h1 class="blog-post__title">{title}</h1>
+          {(date || author) && (
+            <p class="blog-post__meta">
+              {date && (
+                <time datetime={date.toISOString()}>
+                  {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </time>
+              )}
+              {date && author && <span aria-hidden="true"> · </span>}
+              {author && <span>By {author}</span>}
+            </p>
+          )}
+          <hr class="divider divider--left" aria-hidden="true" />
+        </header>
+      )}
   
       <div class="blog-post__body prose">
         <slot />
@@ -115,14 +124,93 @@ const resolvedOgImage =
     margin-bottom: var(--space-6);
   }
 
-  .blog-post__body :global(img) {
+  .blog-post__body :global(img:not(.lightbox-thumb__img)) {
     border-radius: var(--radius-lg);
     margin-block: var(--space-8);
+  }
+
+  .blog-post__body :global(.blog-figure) {
+    width: 100%;
+    max-width: 50%;
+    margin-block-end: var(--space-2);
+  }
+
+  .blog-post__body :global(.blog-figure img) {
+    width: 100%;
+    margin: 0;
+    display: block;
+    border-radius: 0.75rem;
+    corner-shape: bevel;
+  }
+
+  .blog-post__body :global(.blog-figure figcaption) {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .blog-post__body :global(.blog-figure--left) {
+    float: left;
+    margin-right: var(--space-6);
+  }
+
+  .blog-post__body :global(.blog-figure--right) {
+    float: right;
+    margin-left: var(--space-6);
+  }
+
+  .blog-post__body :global(.blog-figure--center) {
+    float: none;
+    margin-inline: auto;
+  }
+
+  .blog-post__body::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  @media (max-width: 900px) {
+    .blog-post__body :global(.blog-figure) {
+      float: none;
+      max-width: 100%;
+      margin-inline: 0;
+    }
   }
 
   .blog-post__footer {
     margin-top: var(--space-16);
     padding-top: var(--space-8);
     border-top: 1px solid var(--color-border);
+  }
+
+  .parallax {
+    position: relative;
+    min-height: 65vh;
+    min-height: 65dvh;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  .parallax .blog-post__header {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-size: var(--text-5xl);
+    padding-block: var(--space-16);
+    /* Add vertical deep blue linear gradient overlay */
+    background: linear-gradient(to top, rgba(26,53,120,0.9), rgba(0,0,0,0));
+    margin: 0;
+  }
+  .parallax .blog-post__title,
+  .parallax .blog-post__meta {
+    color: white;
+  }
+
+  .parallax .container {
+    max-width: 760px;
   }
 </style>

@@ -42,27 +42,12 @@ const timeOnlyInput = (props: any) => {
 
 const galleryFields = [
   {
-    type: 'string',
-    label: 'Media type',
-    name: 'mediaType',
-    options: ['photo', 'video'],
-    required: true,
-    description:
-      'Select whether this gallery item is a photo or video.',
-  },
-  {
     type: 'image',
     label: 'Image',
     name: 'image',
+    required: true,
     description:
       'Upload the image file for the gallery. Recommended dimensions: 1200x630px',
-  },
-  {
-    type: 'string',
-    label: 'Vimeo video URL',
-    name: 'vimeoUrl',
-    description:
-      "Paste the Vimeo video URL (e.g., 'https://vimeo.com/1110587814')",
   },
   {
     type: 'datetime',
@@ -190,7 +175,6 @@ export default defineConfig({
             description: 'Additional media for this article.',
             ui: {
               defaultItem: () => ({
-                mediaType: 'photo',
                 pubDate: new Date().toISOString(),
               }),
             },
@@ -201,6 +185,42 @@ export default defineConfig({
             label: 'Body',
             type: 'rich-text',
             isBody: true,
+            templates: [
+              {
+                name: 'BlogFigure',
+                label: 'Image with Caption',
+                fields: [
+                  {
+                    name: 'image',
+                    label: 'Image',
+                    type: 'image',
+                    required: true,
+                  },
+                  {
+                    name: 'caption',
+                    label: 'Caption',
+                    type: 'string',
+                  },
+                  {
+                    name: 'float',
+                    label: 'Float',
+                    type: 'string',
+                    required: true,
+                    options: [
+                      { label: 'Left', value: 'left' },
+                      { label: 'Center', value: 'center' },
+                      { label: 'Right', value: 'right' },
+                    ],
+                  },
+                  {
+                    name: 'alt',
+                    label: 'Alt Text',
+                    type: 'string',
+                    description: 'Describe the image for screen readers. Leave blank only for decorative images.',
+                  },
+                ],
+              },
+            ],
             description: 'The main content of the article. Supports text formatting, links, and embedded media.',
           },
         ],

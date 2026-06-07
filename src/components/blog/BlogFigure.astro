@@ -1,0 +1,16 @@
+---
+interface Props {
+  image: string;
+  caption?: string;
+  float?: 'left' | 'center' | 'right';
+  alt?: string;
+}
+
+const { image, caption, float = 'center', alt = '' } = Astro.props as Props;
+const safeFloat = ['left', 'center', 'right'].includes(float) ? float : 'center';
+---
+
+<figure class={`blog-figure blog-figure--${safeFloat}`}>
+  <img src={image} alt={alt} loading="lazy" decoding="async" />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
