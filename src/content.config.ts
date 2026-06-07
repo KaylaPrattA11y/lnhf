@@ -93,6 +93,7 @@ const pricing = defineCollection({
     description: z.string().optional(),
     billingTreatment: z.enum(['includedInTotals', 'returnedLater', 'informationalOnly']).optional().default('includedInTotals'),
     feeType: z.enum(['static', 'dynamic']).default('static'),
+    isChecked: z.boolean().optional().default(false),
     adjustment: z.number().optional(),
     perUnit: z.boolean().optional().default(false),
     maxUnits: z.number().optional(), // only used if perUnit is true

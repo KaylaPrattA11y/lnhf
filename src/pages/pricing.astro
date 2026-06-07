@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import PricingTable from '@components/pricing/PricingTable';
+import { comparePricingEntries } from '@lib/pricing-order';
 
 const rawEntries = await getCollection('pricing');
 const entries = rawEntries
@@ -9,6 +10,7 @@ const entries = rawEntries
     id: e.id,
     name: e.data.name,
     feeType: e.data.feeType,
+    isChecked: e.data.isChecked === true,
     adjustment: e.data.adjustment ?? 0,
     perUnit: e.data.perUnit ?? false,
     sortOrder: e.data.sortOrder ?? 99,
@@ -16,15 +18,7 @@ const entries = rawEntries
     maxUnits: e.data.maxUnits,
     billingTreatment: e.data.billingTreatment ?? 'includedInTotals',
   }))
-  // sort by sortOrder, with a default of 99 if not set, so that entries appear in the intended order
-  .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
-  // also sort by feeType, with static fees first, since those are the ones that should be added together for the base package
-  .sort((a, b) => {
-    if (a.feeType === b.feeType) {
-      return (a.sortOrder ?? 99) - (b.sortOrder ?? 99);
-    }
-    return a.feeType === 'static' ? -1 : 1;
-  });
+  .sort(comparePricingEntries);
 ---
 
 <InteriorLayout
@@ -36,7 +30,7 @@ const entries = rawEntries
 >
   <Fragment slot="hero">
     <p class="interior-hero__lead">
-      Check or uncheck the options below to build your custom estimate. All packages are subject to
+      Check or uncheck the features below to build your custom estimate. All packages are subject to
       a separate refundable damage deposit and a non-refundable retaining fee to hold your date.
     </p>
     <p class="interior-hero__note">

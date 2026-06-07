@@ -497,6 +497,12 @@ export default defineConfig({
             description: 'Base fees are not selectable by the user and are always included in the quote. Add-on fees can be toggled on/off by the user when generating a custom quote.',
           },
           {
+            name: 'isChecked',
+            label: 'Checked by Default (for add-on fees)',
+            type: 'boolean',
+            description: 'If this is a dynamic add-on fee, setting this to true will have it selected by default when generating a custom quote.',
+          },
+          {
             name: 'adjustment',
             label: 'Adjustment',
             type: 'number',

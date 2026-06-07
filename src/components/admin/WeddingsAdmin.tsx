@@ -13,6 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
+import { comparePricingEntries } from '../../lib/pricing-order';
 
 const to12HourTime = (time24: string) => {
   const [hourStr, minute] = time24.split(':');
@@ -66,6 +67,7 @@ interface PricingCollectionEntry {
   id: string;
   name: string;
   feeType: 'static' | 'dynamic';
+  isChecked: boolean;
   perUnit: boolean;
   maxUnits?: number;
   billingTreatment?: 'includedInTotals' | 'returnedLater' | 'informationalOnly';
@@ -93,6 +95,7 @@ interface WeddingPricingItem {
   value: number;
   quantity: number;
   billingTreatment: 'includedInTotals' | 'returnedLater' | 'informationalOnly';
+  isChecked: boolean;
 }
 
 interface WeddingPaymentReceived {
@@ -202,9 +205,22 @@ const isOmittedFromTotal = (billingTreatment?: 'includedInTotals' | 'returnedLat
   billingTreatment === 'informationalOnly';
 
 export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
-  const staticDefaultEntryIds = useMemo(
-    () => pricingEntries.filter((entry) => entry.feeType === 'static').map((entry) => entry.id),
+  const orderedPricingEntries = useMemo(
+    () => [...pricingEntries].sort(comparePricingEntries),
     [pricingEntries],
+  );
+
+  const staticDefaultEntryIds = useMemo(
+    () => orderedPricingEntries.filter((entry) => entry.feeType === 'static').map((entry) => entry.id),
+    [orderedPricingEntries],
+  );
+  const checkedDefaultEntryIds = useMemo(
+    () => orderedPricingEntries.filter((entry) => entry.feeType === 'dynamic' && entry.isChecked).map((entry) => entry.id),
+    [orderedPricingEntries],
+  );
+  const defaultSelectedEntryIds = useMemo(
+    () => Array.from(new Set([...staticDefaultEntryIds, ...checkedDefaultEntryIds])),
+    [staticDefaultEntryIds, checkedDefaultEntryIds],
   );
 
   const [initialized, setInitialized] = useState(false);
@@ -224,7 +240,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   const [weddingTime, setWeddingTime] = useState('');
   const [notes, setNotes] = useState('');
   const [activities, setActivities] = useState<WeddingActivity[]>([]);
-  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>(staticDefaultEntryIds);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>(defaultSelectedEntryIds);
   const [entryQuantities, setEntryQuantities] = useState<Record<string, number>>({});
   const [customPricing, setCustomPricing] = useState<Array<{ label: string; value: string }>>([]);
   const [paymentsReceived, setPaymentsReceived] = useState<Array<{ label: string; value: string; dateReceived: string }>>([]);
@@ -342,8 +358,8 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   }, [globalFilter]);
 
   const selectedCollectionPricing = useMemo(
-    () => pricingEntries.filter((entry) => selectedEntryIds.includes(entry.id)),
-    [pricingEntries, selectedEntryIds],
+    () => orderedPricingEntries.filter((entry) => selectedEntryIds.includes(entry.id)),
+    [orderedPricingEntries, selectedEntryIds],
   );
 
   const normalizedCustomPricing = useMemo(
@@ -376,6 +392,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
         value: Number(entry.value || 0),
         quantity: entry.perUnit ? Math.max(1, entryQuantities[entry.id] ?? 1) : 1,
         billingTreatment: entry.billingTreatment ?? 'includedInTotals',
+        isChecked: entry.isChecked,
       })),
       ...normalizedCustomPricing.map((entry) => ({
         sourceType: 'custom' as const,
@@ -383,6 +400,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
         value: Number(entry.value),
         quantity: 1,
         billingTreatment: 'includedInTotals' as const,
+        isChecked: true,
       })),
     ],
     [selectedCollectionPricing, normalizedCustomPricing, entryQuantities],
@@ -442,12 +460,18 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
     setWeddingTime('');
     setNotes('');
     setActivities([]);
-    setSelectedEntryIds(staticDefaultEntryIds);
+    setSelectedEntryIds(defaultSelectedEntryIds);
     setEntryQuantities({});
     setCustomPricing([]);
     setPaymentsReceived([]);
     setWeddingFormErrors({ activityLabels: {}, activityDates: {}, paymentLabels: {}, paymentValues: {} });
   };
+
+  useEffect(() => {
+    if (!editingId) {
+      setSelectedEntryIds(defaultSelectedEntryIds);
+    }
+  }, [defaultSelectedEntryIds, editingId]);
 
   const fillFormForEdit = (wedding: Wedding) => {
     setEditingId(wedding._id);
@@ -1247,7 +1271,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
               <div>
                 <div className="admin-manager__actions-row">
                   <div className="form-group checks-vertical">
-                    {pricingEntries.map((entry) => (
+                    {orderedPricingEntries.map((entry) => (
                       <label key={entry.id} className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <input
                           type="checkbox"

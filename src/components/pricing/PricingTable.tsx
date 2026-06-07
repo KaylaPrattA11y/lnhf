@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { NOTES } from '../../data/pricing';
+import { comparePricingEntries } from '../../lib/pricing-order';
 
 interface PricingTableEntry {
   id: string;
   name: string;
   feeType: 'static' | 'dynamic';
+  isChecked: boolean;
   adjustment: number;
   perUnit: boolean;
   sortOrder: number;
@@ -17,18 +19,36 @@ interface PricingTableProps {
   entries: PricingTableEntry[];
 }
 
+function buildDefaultChecked(entries: PricingTableEntry[]) {
+  return entries.reduce<Record<string, boolean>>((acc, ent) => {
+    if (ent.feeType === 'dynamic') {
+      acc[ent.name] = ent.isChecked;
+    }
+    return acc;
+  }, {});
+}
+
 export default function PricingTable({ entries }: PricingTableProps) {
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const orderedEntries = useMemo(
+    () => [...entries].sort(comparePricingEntries),
+    [entries],
+  );
+
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => buildDefaultChecked(orderedEntries));
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const getBillingTreatment = (ent: PricingTableEntry) => {
     return ent.billingTreatment ?? 'includedInTotals';
   };
 
-  const selectedEntries = entries.filter((ent) => {
-    if (getBillingTreatment(ent) === 'informationalOnly') return false;
+  const isEntryChecked = (ent: PricingTableEntry) => {
     if (ent.feeType === 'static') return true;
-    return Boolean(checked[ent.name]);
+    return checked[ent.name] ?? ent.isChecked;
+  };
+
+  const selectedEntries = orderedEntries.filter((ent) => {
+    if (getBillingTreatment(ent) === 'informationalOnly') return false;
+    return isEntryChecked(ent);
   });
 
   const totalCost = selectedEntries.reduce((sum, ent) => {
@@ -45,8 +65,9 @@ export default function PricingTable({ entries }: PricingTableProps) {
   const netCost = totalCost - refundableTotal;
 
   const toggle = (entry: PricingTableEntry) => {
-    setChecked(prev => ({ ...prev, [entry.name]: !prev[entry.name] }));
-    if (!checked[entry.name] && !quantities[entry.name]) {
+    const wasChecked = isEntryChecked(entry);
+    setChecked(prev => ({ ...prev, [entry.name]: !wasChecked }));
+    if (!wasChecked && !quantities[entry.name]) {
       setQuantities(prev => ({ ...prev, [entry.name]: 1 }));
     }
   };
@@ -59,28 +80,151 @@ export default function PricingTable({ entries }: PricingTableProps) {
   const fmt = (n: number) =>
     n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
-  const handlePrint = () => window.print();
+  const getEntryQuantity = (entry: PricingTableEntry) => (
+    entry.perUnit && entry.feeType === 'dynamic' ? (quantities[entry.name] ?? 1) : 1
+  );
+
+  const getEntryTotal = (entry: PricingTableEntry) => entry.adjustment * getEntryQuantity(entry);
+
+  const selectedLineItems = selectedEntries.map((entry) => ({
+    name: entry.name,
+    quantity: getEntryQuantity(entry),
+    total: getEntryTotal(entry),
+  }));
+
+  const canShareEstimate = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  const escapeHtml = (value: string) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+  const handlePrint = () => {
+    const win = window.open('about:blank', '_blank');
+    if (!win) return;
+
+    const rows = selectedLineItems.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.name)}${item.quantity > 1 ? ` x ${item.quantity}` : ''}</td>
+        <td>${escapeHtml(fmt(item.total))}</td>
+      </tr>
+    `).join('');
+
+    win.document.open();
+    win.document.write(`
+      <!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Lower Notley Hall Farm - Custom Estimate</title>
+          <style>
+            body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #1f2937; }
+            .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+            .header img { width: 44px; height: 44px; object-fit: contain; }
+            .header-title { font-weight: 700; font-size: 16px; line-height: 1.3; }
+            .header-subtitle { font-weight: 700; font-size: 18px; margin-top: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; }
+            th:last-child, td:last-child { text-align: right; white-space: nowrap; }
+            tfoot td { font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <img src="${window.location.origin}/images/logo.svg" alt="Lower Notley Hall Farm" />
+            <div>
+              <div class="header-title">Lower Notley Hall Farm: Southern Maryland Waterfront Weddings</div>
+              <div class="header-subtitle">Custom Estimate</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Total Amount Due (including refundable items)</td>
+                <td>${escapeHtml(fmt(totalCost))}</td>
+              </tr>
+              <tr>
+                <td>Net Cost After Refundable Amounts Are Returned</td>
+                <td>${escapeHtml(fmt(netCost))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </body>
+      </html>
+    `);
+    win.document.close();
+
+    const triggerPrint = () => {
+      win.focus();
+      win.print();
+    };
+
+    // Print after the new document is fully parsed/rendered to avoid blank-tab prints.
+    win.addEventListener('load', triggerPrint, { once: true });
+    win.addEventListener('afterprint', () => win.close(), { once: true });
+
+    // Fallback for browsers where load does not fire reliably for document.write content.
+    window.setTimeout(triggerPrint, 250);
+  };
+
+  const shareEstimate = async () => {
+    if (!canShareEstimate) return;
+
+    const lines = [
+      'Lower Notley Hall Farm: Southern Maryland Waterfront Weddings',
+      'Custom Estimate',
+      '',
+      ...selectedLineItems.map((item) => `- ${item.name}${item.quantity > 1 ? ` x ${item.quantity}` : ''}: ${fmt(item.total)}`),
+      '',
+      `Total Amount Due: ${fmt(totalCost)}`,
+      `Net Cost: ${fmt(netCost)}`,
+    ];
+
+    try {
+      await navigator.share({
+        title: 'Lower Notley Hall Farm: Custom Estimate',
+        text: lines.join('\n'),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+      console.error('Unable to share estimate:', error);
+    }
+  };
 
   return (
     <div className="pricing-tool">
       <div className="pricing-tool__table-wrap">
         <table className="pricing-table" aria-label="Wedding pricing estimator">
-          <caption className="sr-only">
-            Adjust the options below to estimate the cost of your event at Lower Notley Hall Farm.
+          <caption>
+            Check and uncheck the features below to estimate the cost of your event at Lower Notley Hall Farm.
           </caption>
           <thead>
             <tr>
-              <th scope="col" className="pricing-table__col--option">Option</th>
+              <th scope="col" className="pricing-table__col--option">Feature</th>
               <th scope="col" className="pricing-table__col--amount">Adjustment</th>
               <th scope="col" className="pricing-table__col--qty">Qty</th>
             </tr>
           </thead>
           <tbody>
             {/* Adjustable rows */}
-            {entries.map(ent => (
+            {orderedEntries.map(ent => (
               <tr
                 key={ent.name}
-                className={`pricing-table__row${checked[ent.name] ? ' is-checked' : ''}${ent.feeType === 'static' ? ' is-static' : ''}`}
+                className={`pricing-table__row${isEntryChecked(ent) ? ' is-checked' : ''}${ent.feeType === 'static' ? ' is-static' : ''}`}
               >
                 <td className="pricing-table__label">
                   {ent.feeType === 'static' ? (
@@ -91,7 +235,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
                       type="checkbox"
                       className="pricing-table__checkbox"
                       value={ent.adjustment}
-                      checked={checked[ent.name] ?? false}
+                      checked={isEntryChecked(ent)}
                       onChange={() => toggle(ent)}
                       aria-describedby={ent.description ? `desc-${ent.name}` : undefined}
                     />
@@ -105,12 +249,12 @@ export default function PricingTable({ entries }: PricingTableProps) {
                 <td className="pricing-table__amount" aria-live="polite">
                   <span className={ent.adjustment < 0 ? 'is-discount' : 'is-surcharge'}>
                     {ent.adjustment < 0 ? '−' : '+'}{fmt(Math.abs(ent.adjustment))}
-                    {ent.perUnit && checked[ent.name] && ` × ${quantities[ent.name] ?? 1}`}
+                    {ent.perUnit && isEntryChecked(ent) && ` × ${quantities[ent.name] ?? 1}`}
                   </span>
                   {getBillingTreatment(ent) === 'returnedLater' && <span className="pricing-table__refundable">Refundable</span>}
                 </td>
                 <td className="pricing-table__qty">
-                  {ent.perUnit && checked[ent.name] && (
+                  {ent.perUnit && isEntryChecked(ent) && (
                     <input
                       type="number"
                       className="pricing-table__qty-input"
@@ -166,10 +310,23 @@ export default function PricingTable({ entries }: PricingTableProps) {
           </svg>
           Print / Save as PDF
         </button>
+        {canShareEstimate && (
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={shareEstimate}
+            aria-label="Share this estimate"
+          >
+            Share Estimate
+          </button>
+        )}
         <button
           type="button"
           className="btn btn--secondary"
-          onClick={() => { setChecked({}); setQuantities({}); }}
+          onClick={() => {
+            setChecked(buildDefaultChecked(orderedEntries));
+            setQuantities({});
+          }}
           aria-label="Reset pricing estimator"
         >
           Reset

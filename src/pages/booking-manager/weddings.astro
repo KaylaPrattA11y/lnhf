@@ -5,6 +5,7 @@ import Footer from '@components/layout/Footer.astro';
 import WeddingsAdmin from '@components/admin/WeddingsAdmin';
 import AdminManagerStyles from '@components/admin/AdminManagerStyles.astro';
 import { getCollection } from 'astro:content';
+import { comparePricingEntries } from '@lib/pricing-order';
 
 const entries = await getCollection('pricing');
 const pricingEntries = entries
@@ -12,6 +13,7 @@ const pricingEntries = entries
     id: entry.id,
     name: entry.data.name,
     feeType: entry.data.feeType ?? 'static',
+    isChecked: entry.data.isChecked === true,
     perUnit: entry.data.perUnit ?? false,
     maxUnits: entry.data.maxUnits,
     billingTreatment: entry.data.billingTreatment ?? 'includedInTotals',
@@ -19,13 +21,7 @@ const pricingEntries = entries
     description: entry.data.description ?? '',
     sortOrder: Number(entry.data.sortOrder ?? 99),
   }))
-  // sort  by static first (alphabetically), then dynamic (also alphabetically) --- this ensures a consistent order for the default static entries, while allowing dynamic entries to be sorted as needed
-  .sort((a, b) => {
-    if (a.feeType === b.feeType) {
-      return a.name.localeCompare(b.name);
-    }
-    return a.feeType === 'static' ? -1 : 1;
-  })
+  .sort(comparePricingEntries)
   .map(({ sortOrder, ...rest }) => rest);
 ---
 
