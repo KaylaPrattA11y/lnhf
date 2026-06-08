@@ -22,6 +22,8 @@ interface TourSlot {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'blocked';
+  visitorVisibility?: 'visible' | 'holiday_mode' | 'booking_buffer' | 'not_applicable';
+  visitorVisibilityDetail?: string | null;
   tour?: {
     name: string;
     email: string;
@@ -54,11 +56,37 @@ interface SeedSyncResult {
   syncedAt: string;
 }
 
+interface TourCalendarSettings {
+  bookingBufferHours: 12 | 24 | 36 | 48;
+  holidayMode: 'off' | 'range' | 'indefinite';
+  holidayStartAt: string | null;
+  holidayEndAt: string | null;
+  holidayMessageHtml: string | null;
+}
+
 const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
   { tourStart: '13:00', tourEnd: '14:00' },
   { tourStart: '14:00', tourEnd: '15:00' },
   { tourStart: '15:00', tourEnd: '16:00' },
 ];
+
+function toDateTimeLocalValue(isoValue: string | null) {
+  if (!isoValue) return '';
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) return '';
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+function fromDateTimeLocalValue(localValue: string) {
+  if (!localValue) return null;
+  const dt = new Date(localValue);
+  return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+}
 
 function fmtDate(d: string) {
   return new Date(`${d}T00:00:00`).toLocaleDateString('en-US', {
@@ -127,6 +155,18 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   const [exporting, setExporting] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SeedSyncResult | null>(null);
+
+  const [calendarSettings, setCalendarSettings] = useState<TourCalendarSettings>({
+    bookingBufferHours: 24,
+    holidayMode: 'off',
+    holidayStartAt: null,
+    holidayEndAt: null,
+    holidayMessageHtml: null,
+  });
+  const [holidayStartInput, setHolidayStartInput] = useState('');
+  const [holidayEndInput, setHolidayEndInput] = useState('');
+  const [holidayMessageHtmlInput, setHolidayMessageHtmlInput] = useState('');
+  const [savingCalendarSettings, setSavingCalendarSettings] = useState(false);
 
   useEffect(() => {
     const hasMatchingSelection = sortedTimeSlotOptions.some(
@@ -208,9 +248,84 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     }
   };
 
+  const fetchCalendarSettings = async () => {
+    try {
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-calendar-settings`, {
+        headers: authHeader() as HeadersInit,
+      });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      if (!res.ok) throw new Error('Could not load tour calendar settings');
+      const data = await res.json();
+      const settings = (data?.settings ?? null) as TourCalendarSettings | null;
+      if (!settings) return;
+
+      setCalendarSettings(settings);
+      setHolidayStartInput(toDateTimeLocalValue(settings.holidayStartAt));
+      setHolidayEndInput(toDateTimeLocalValue(settings.holidayEndAt));
+      setHolidayMessageHtmlInput(settings.holidayMessageHtml ?? '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error while loading tour calendar settings');
+    }
+  };
+
   useEffect(() => {
-    if (user) fetchSlots();
+    if (user) {
+      fetchSlots();
+      fetchCalendarSettings();
+    }
   }, [user]);
+
+  const saveCalendarSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingCalendarSettings(true);
+
+    try {
+      if (calendarSettings.holidayMode === 'range' && (!holidayStartInput || !holidayEndInput)) {
+        throw new Error('Holiday range mode requires both a start and end date-time.');
+      }
+
+      const payload = {
+        bookingBufferHours: Number(calendarSettings.bookingBufferHours),
+        holidayMode: calendarSettings.holidayMode,
+        holidayStartAt: calendarSettings.holidayMode === 'range' ? fromDateTimeLocalValue(holidayStartInput) : null,
+        holidayEndAt: calendarSettings.holidayMode === 'range' ? fromDateTimeLocalValue(holidayEndInput) : null,
+        holidayMessageHtml: holidayMessageHtmlInput.trim() || null,
+      };
+
+      const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-calendar-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Unable to save tour calendar settings');
+
+      const settings = (data?.settings ?? null) as TourCalendarSettings | null;
+      if (settings) {
+        setCalendarSettings(settings);
+        setHolidayStartInput(toDateTimeLocalValue(settings.holidayStartAt));
+        setHolidayEndInput(toDateTimeLocalValue(settings.holidayEndAt));
+        setHolidayMessageHtmlInput(settings.holidayMessageHtml ?? '');
+      }
+
+      flash('Tour calendar settings updated');
+    } catch (err) {
+      flash(`Error: ${err instanceof Error ? err.message : 'Unable to save tour calendar settings.'}`);
+    } finally {
+      setSavingCalendarSettings(false);
+    }
+  };
 
   const updateSlot = async (id: string, body: Record<string, unknown>) => {
     const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
@@ -419,7 +534,28 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     }),
     columnHelper.accessor('status', {
       header: 'Status',
-      cell: (info) => <span className={`admin-badge admin-badge--${info.getValue()}`}>{info.getValue()}</span>,
+      cell: (info) => {
+        const slot = info.row.original;
+
+        return (
+          <>
+          <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'repeat(auto-fit, minmax(50px, max-content))', gap: '0.35rem' }}>
+            <span className={`admin-badge admin-badge--${info.getValue()}`}>{info.getValue()}</span>
+            {slot.status === 'available' && slot.visitorVisibility === 'holiday_mode' && (
+              <span className="admin-badge admin-badge--visitor-hidden">Hidden</span>
+            )}
+            {slot.status === 'available' && slot.visitorVisibility === 'booking_buffer' && (
+              <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
+            )}
+          </div>
+          {slot.visitorVisibilityDetail && (
+            <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', lineHeight: 1.4 }}>
+              {slot.visitorVisibilityDetail}
+            </span>
+          )}
+          </>
+        );
+      },
       filterFn: 'equals',
     }),
     columnHelper.accessor((row) => row.tour?.name ?? '', {
@@ -527,8 +663,11 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       </div>
 
       <section className="admin-manager__section">
-        <h2 className="admin-manager__section-title">Add Tour Slot</h2>
-        <form className="admin-manager__add-form" onSubmit={addSlot} noValidate>
+        <details className="admin-manager__export">
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">Add Tour Slot</h2>
+          </summary>
+          <form className="admin-manager__add-form admin-manager__export-controls" onSubmit={addSlot} noValidate>
           <div className="form-group">
             <label className="form-label" htmlFor="tour-date">Date</label>
             <input
@@ -589,70 +728,196 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           </div>
 
           {newStatus === 'booked' && (
-            <fieldset className="admin-manager__fieldset">
+            <fieldset className="admin-manager__fieldset admin-manager__add-form-guest-fieldset">
               <legend className="form-label">Guest Details</legend>
-              <div className="form-group">
-                <label className="form-label" htmlFor="tour-guest-name">Name *</label>
-                <input
-                  className={`form-input${tourFormErrors.guestName ? ' is-invalid' : ''}`}
-                  type="text"
-                  id="tour-guest-name"
-                  required
-                  value={newTour.name}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setNewTour((prev) => ({ ...prev, name: value }));
-                    if (value.trim()) {
-                      setTourFormErrors((prev) => ({ ...prev, guestName: undefined }));
-                    }
-                  }}
-                  aria-invalid={Boolean(tourFormErrors.guestName)}
-                  aria-describedby={tourFormErrors.guestName ? 'tour-guest-name-error' : undefined}
-                />
-                {tourFormErrors.guestName && <p className="admin-field-error" id="tour-guest-name-error">{tourFormErrors.guestName}</p>}
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="tour-guest-email">Email *</label>
-                <input
-                  className={`form-input${tourFormErrors.guestEmail ? ' is-invalid' : ''}`}
-                  type="email"
-                  id="tour-guest-email"
-                  required
-                  value={newTour.email}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setNewTour((prev) => ({ ...prev, email: value }));
-                    if (value.trim()) {
-                      setTourFormErrors((prev) => ({ ...prev, guestEmail: undefined }));
-                    }
-                  }}
-                  aria-invalid={Boolean(tourFormErrors.guestEmail)}
-                  aria-describedby={tourFormErrors.guestEmail ? 'tour-guest-email-error' : undefined}
-                />
-                {tourFormErrors.guestEmail && <p className="admin-field-error" id="tour-guest-email-error">{tourFormErrors.guestEmail}</p>}
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="tour-guest-phone">Phone</label>
-                <input className="form-input" type="tel" id="tour-guest-phone" value={newTour.phone} onChange={(e) => setNewTour((prev) => ({ ...prev, phone: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="tour-guest-party">Party Size</label>
-                <input className="form-input" type="number" id="tour-guest-party" min={1} value={newTour.partySize} onChange={(e) => setNewTour((prev) => ({ ...prev, partySize: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" htmlFor="tour-guest-msg">Notes</label>
-                <textarea className="form-input" id="tour-guest-msg" rows={3} value={newTour.message} onChange={(e) => setNewTour((prev) => ({ ...prev, message: e.target.value }))} />
+              <div className="admin-manager__other-contacts-collection">
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tour-guest-name">Name *</label>
+                  <input
+                    className={`form-input${tourFormErrors.guestName ? ' is-invalid' : ''}`}
+                    type="text"
+                    id="tour-guest-name"
+                    required
+                    value={newTour.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewTour((prev) => ({ ...prev, name: value }));
+                      if (value.trim()) {
+                        setTourFormErrors((prev) => ({ ...prev, guestName: undefined }));
+                      }
+                    }}
+                    aria-invalid={Boolean(tourFormErrors.guestName)}
+                    aria-describedby={tourFormErrors.guestName ? 'tour-guest-name-error' : undefined}
+                  />
+                  {tourFormErrors.guestName && <p className="admin-field-error" id="tour-guest-name-error">{tourFormErrors.guestName}</p>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tour-guest-email">Email *</label>
+                  <input
+                    className={`form-input${tourFormErrors.guestEmail ? ' is-invalid' : ''}`}
+                    type="email"
+                    id="tour-guest-email"
+                    required
+                    value={newTour.email}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewTour((prev) => ({ ...prev, email: value }));
+                      if (value.trim()) {
+                        setTourFormErrors((prev) => ({ ...prev, guestEmail: undefined }));
+                      }
+                    }}
+                    aria-invalid={Boolean(tourFormErrors.guestEmail)}
+                    aria-describedby={tourFormErrors.guestEmail ? 'tour-guest-email-error' : undefined}
+                  />
+                  {tourFormErrors.guestEmail && <p className="admin-field-error" id="tour-guest-email-error">{tourFormErrors.guestEmail}</p>}
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tour-guest-phone">Phone</label>
+                  <input className="form-input" type="tel" id="tour-guest-phone" value={newTour.phone} onChange={(e) => setNewTour((prev) => ({ ...prev, phone: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tour-guest-party">Party Size</label>
+                  <input className="form-input" type="number" id="tour-guest-party" min={1} value={newTour.partySize} onChange={(e) => setNewTour((prev) => ({ ...prev, partySize: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="tour-guest-msg">Notes</label>
+                  <textarea className="form-input" id="tour-guest-msg" rows={3} value={newTour.message} onChange={(e) => setNewTour((prev) => ({ ...prev, message: e.target.value }))} />
+                </div>
               </div>
             </fieldset>
           )}
 
-          <div className="form-group">
-            <button type="submit" className="btn btn--primary" disabled={adding}>
-              {adding ? 'Adding...' : 'Add Slot'}
-            </button>
-          </div>
-        </form>
+            <div className="form-group is-button">
+              <button type="submit" className="btn btn--primary" disabled={adding}>
+                {adding ? 'Adding...' : 'Add Slot'}
+              </button>
+            </div>
+          </form>
+        </details>
       </section>
+
+      <section className="admin-manager__section">
+        <details className="admin-manager__export">
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">Tour Calendar</h2>
+          </summary>
+          <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveCalendarSettings}>
+            <fieldset className="admin-manager__fieldset">
+              <legend>Booking Window Buffer</legend>
+              <p className="admin-manager__subtitle">
+                This controls when visitors stop seeing a slot as available online. You can still manually add or book slots at any time.
+              </p>
+              <div className="form-group checks-vertical">
+                {[12, 24, 36, 48].map((hours) => (
+                  <label key={hours} className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="radio"
+                      name="booking-buffer-hours"
+                      value={hours}
+                      checked={Number(calendarSettings.bookingBufferHours) === hours}
+                      onChange={() => setCalendarSettings((prev) => ({ ...prev, bookingBufferHours: hours as 12 | 24 | 36 | 48 }))}
+                    />
+                    {hours} hours
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="admin-manager__fieldset">
+              <legend>Holiday Mode</legend>
+              <p className="admin-manager__subtitle">
+                Holiday mode disables the Tour Booking Calendar for visitors without deleting or changing saved slots and bookings that you or a visitor have already made.
+              </p>
+
+              <div className="form-group checks-vertical">
+                <label className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="holiday-mode"
+                    value="off"
+                    checked={calendarSettings.holidayMode === 'off'}
+                    onChange={() => setCalendarSettings((prev) => ({ ...prev, holidayMode: 'off' }))}
+                  />
+                  Off (normal calendar behavior)
+                </label>
+                <label className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="holiday-mode"
+                    value="range"
+                    checked={calendarSettings.holidayMode === 'range'}
+                    onChange={() => setCalendarSettings((prev) => ({ ...prev, holidayMode: 'range' }))}
+                  />
+                  Disable booking for a date-time range
+                </label>
+                <label className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="holiday-mode"
+                    value="indefinite"
+                    checked={calendarSettings.holidayMode === 'indefinite'}
+                    onChange={() => setCalendarSettings((prev) => ({ ...prev, holidayMode: 'indefinite' }))}
+                  />
+                  Disable booking indefinitely
+                </label>
+              </div>
+
+              {calendarSettings.holidayMode === 'range' && (
+                <div className="admin-manager__other-contacts-collection">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-holiday-start">Holiday start (date and time)</label>
+                    <input
+                      className="form-input"
+                      type="datetime-local"
+                      id="tour-holiday-start"
+                      value={holidayStartInput}
+                      onChange={(e) => setHolidayStartInput(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-holiday-end">Holiday end (date and time)</label>
+                    <input
+                      className="form-input"
+                      type="datetime-local"
+                      id="tour-holiday-end"
+                      value={holidayEndInput}
+                      onChange={(e) => setHolidayEndInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </fieldset>
+
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-notes">
+              <legend>Holiday Message to Website Visitors (Optional)</legend>
+              <p className="admin-manager__subtitle">
+                This message appears above the public Tours Calendar when present. Plain text only.
+              </p>
+              <div className="form-group">
+                <label className="form-label" htmlFor="tour-holiday-message">Holiday message</label>
+                <textarea
+                  className="form-input"
+                  id="tour-holiday-message"
+                  rows={6}
+                  value={holidayMessageHtmlInput}
+                  onChange={(e) => setHolidayMessageHtmlInput(e.target.value)}
+                />
+              </div>
+              {holidayMessageHtmlInput.trim() && (
+                <div className="admin-manager__msg" style={{ whiteSpace: 'pre-line' }}>{holidayMessageHtmlInput}</div>
+              )}
+            </fieldset>
+
+            <div className="admin-manager__actions-row">
+              <button className="btn btn--primary" type="submit" disabled={savingCalendarSettings}>
+                {savingCalendarSettings ? 'Saving...' : 'Save Tour Calendar Settings'}
+              </button>
+            </div>
+          </form>
+        </details>
+      </section>
+
+      <hr className="admin-manager__divider" />
 
       <section className="admin-manager__section">
         <div className="admin-manager__section-header">
@@ -667,7 +932,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                 <p>This will add future tour slots based on the templates you have set up (see the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a>) and remove any future slots that no longer fit the templates. It will not modify any past or currently booked slots.</p>
               </details>
             </div>
-            <button className="btn btn--ghost btn--sm" onClick={fetchSlots} disabled={loading || seeding}>
+            <button className="btn btn--secondary btn--sm" onClick={fetchSlots} disabled={loading || seeding}>
               {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>

@@ -4,6 +4,7 @@ interface BookingModalProps {
   slot: { _id: string; date: string; startTime: string; endTime: string } | null;
   onClose: () => void;
   onSuccess: (slotId: string) => void;
+  bookingBufferHours?: number;
 }
 
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
@@ -21,13 +22,14 @@ function formatDate(d: string): string {
   });
 }
 
-export default function BookingModal({ slot, onClose, onSuccess }: BookingModalProps) {
+export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHours }: BookingModalProps) {
   const [form, setForm] = useState({
     name: '', email: '', phone: '', partySize: '', message: '',
   });
   const [errors, setErrors] = useState({ name: '', email: '' });
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'apology' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [apologyMsg, setApologyMsg] = useState('');
   // Defer close capability by one frame so the click that opened the modal
   // cannot immediately trigger the backdrop's onClose handler.
   const [canClose, setCanClose] = useState(false);
@@ -83,8 +85,17 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
       });
 
       if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        if (data?.code === 'BOOKING_WINDOW_ELAPSED' || data?.code === 'HOLIDAY_MODE_ACTIVE') {
+          setStatus('apology');
+          setApologyMsg(
+            `We're sorry, this tour time is no longer available for online booking. Please contact Jack and Cindy on the contact page and they will help you directly.${bookingBufferHours ? ` (Current booking window: ${bookingBufferHours} hours.)` : ''}`,
+          );
+          return;
+        }
+
         setStatus('error');
-        setErrorMsg('This time slot was just booked by someone else. Please select another time.');
+        setErrorMsg(data?.error || 'This time slot was just booked by someone else. Please select another time.');
         return;
       }
 
@@ -146,6 +157,16 @@ export default function BookingModal({ slot, onClose, onSuccess }: BookingModalP
               <strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong>.
             </p>
             <p>We'll follow up at <strong>{form.email}</strong> to confirm. See you soon!</p>
+            <button className="btn btn--primary" onClick={onClose}>Done</button>
+          </div>
+        ) : status === 'apology' ? (
+          <div className="booking-modal__success" role="status">
+            <div className="booking-modal__success-icon" aria-hidden="true">!</div>
+            <h2 className="booking-modal__success-title">We're Sorry</h2>
+            <p>{apologyMsg}</p>
+            <p>
+              Please visit <a href="/contact/">/contact/</a> to reach Jack and Cindy.
+            </p>
             <button className="btn btn--primary" onClick={onClose}>Done</button>
           </div>
         ) : (

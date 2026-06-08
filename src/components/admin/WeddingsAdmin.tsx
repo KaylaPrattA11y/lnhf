@@ -1059,12 +1059,11 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       </div>
 
       <section className="admin-manager__section">
-        <details ref={detailsRef}>
-          <summary>
-            {plusIcon}
+        <details className="admin-manager__export" ref={detailsRef}>
+          <summary className="admin-manager__export-summary">
             <h2 className="admin-manager__section-title">{editingId ? 'Edit Existing Wedding' : 'Add New Wedding'}</h2>
           </summary>
-          <form className="admin-manager__grid" onSubmit={saveWedding} noValidate>
+          <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveWedding} noValidate>
           <fieldset className="admin-manager__fieldset">
             <legend>Bride</legend>
             <div className="form-group">
@@ -1463,14 +1462,16 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
       </section>
 
+      <hr className="admin-manager__divider" />
+
       <section className="admin-manager__section">
         <div className="admin-manager__section-header">
           <h2 className="admin-manager__section-title">All Weddings</h2>
           <div className="admin-manager__actions-row">
-            <button className="btn btn-secondary btn--sm" onClick={printAllWeddings} disabled={totalFiltered === 0}>
+            <button className="btn btn--secondary btn--sm" onClick={printAllWeddings} disabled={totalFiltered === 0}>
               Print All
             </button>
-            <button className="btn btn-secondary btn--sm" onClick={fetchWeddings} disabled={loading}>
+            <button className="btn btn--secondary btn--sm" onClick={fetchWeddings} disabled={loading}>
               {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
@@ -1509,7 +1510,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                 <option value="ods">OpenDocument (.ods)</option>
               </select>
             </div>
-            <div className="form-group">
+            <div className="form-group is-button">
               <button className="btn btn--primary btn--sm" onClick={exportWeddings} disabled={exporting || filteredExportWeddings.length === 0}>
                 {exporting ? 'Exporting...' : 'Download'}
               </button>

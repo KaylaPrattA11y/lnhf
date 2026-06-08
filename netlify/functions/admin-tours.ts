@@ -1,6 +1,12 @@
 import type { Handler, HandlerContext } from '@netlify/functions';
 import { getDb } from './utils/db';
 import { isAuthenticated } from './utils/auth';
+import {
+  getTourCalendarSettings,
+  isHolidayModeActiveNow,
+  isSlotInsideBuffer,
+  isSlotInsideHolidayRange,
+} from './utils/tour-calendar';
 
 /**
  * GET /.netlify/functions/admin-tours
@@ -27,6 +33,9 @@ export const handler: Handler = async (event, context: HandlerContext) => {
   const { startDate, endDate } = event.queryStringParameters ?? {};
 
   try {
+    const settings = await getTourCalendarSettings();
+    const calendarDisabledIndefinitely = settings.holidayMode === 'indefinite' && isHolidayModeActiveNow(settings);
+
     const slots = startDate && endDate
       ? await getDb().sql`
           SELECT
@@ -66,7 +75,33 @@ export const handler: Handler = async (event, context: HandlerContext) => {
           ORDER BY date, start_time
         `;
 
-    return { statusCode: 200, headers, body: JSON.stringify(slots) };
+    const now = new Date();
+    const transformedSlots = slots.map((slot) => {
+      const visitorBlockedByHoliday = slot.status === 'available' && isSlotInsideHolidayRange(slot.date, slot.startTime, settings);
+      const visitorBlockedByBuffer = slot.status === 'available' && !visitorBlockedByHoliday && isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now);
+
+      return {
+        ...slot,
+        visitorVisibility: slot.status !== 'available'
+          ? 'not_applicable'
+          : visitorBlockedByHoliday
+            ? 'holiday_mode'
+            : visitorBlockedByBuffer
+              ? 'booking_buffer'
+              : 'visible',
+        visitorVisibilityDetail: slot.status !== 'available'
+          ? null
+          : visitorBlockedByHoliday
+            ? (calendarDisabledIndefinitely
+              ? 'Hidden from visitors: Holiday Mode is disabling the calendar indefinitely.'
+              : 'Hidden from visitors: This slot falls inside the configured Holiday Mode date range.')
+            : visitorBlockedByBuffer
+              ? `Hidden from visitors: Inside the ${settings.bookingBufferHours}-hour Booking Buffer.`
+              : 'Visible to visitors for online booking.',
+      };
+    });
+
+    return { statusCode: 200, headers, body: JSON.stringify(transformedSlots) };
   } catch (err) {
     console.error('[admin-tours] Error:', err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) };

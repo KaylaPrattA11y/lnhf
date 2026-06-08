@@ -276,9 +276,12 @@ input {
 }
 
 .form-group {
+  --label-height: 13px;
+  --gap-y: var(--space-1);
+  --gap-x: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1) var(--space-2);
+  gap: var(--gap-y) var(--gap-x);
   margin-bottom: var(--space-5);
   flex-basis: 100%;
 }
@@ -288,6 +291,10 @@ input {
   color: var(--color-text-muted);
 }
 
+.form-group.is-button {
+  margin-block-start: calc(var(--gap-y) + var(--label-height) + 1px);
+}
+
 .form-label {
   font-weight: 400;
   font-size: var(--text-xs);
@@ -295,6 +302,7 @@ input {
   letter-spacing: 0.20em;
   color: var(--color-text-muted);
   line-height: 1.2;
+  min-block-size: var(--label-height);
 }
 .form-label .required { color: #c0392b; margin-left: 2px; }
 

@@ -1,5 +1,10 @@
 import type { Handler } from '@netlify/functions';
 import { getDb } from './utils/db';
+import {
+  getTourCalendarSettings,
+  isSlotInsideHolidayRange,
+  isSlotInsideBuffer,
+} from './utils/tour-calendar';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -64,6 +69,52 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    const settings = await getTourCalendarSettings();
+
+    const [slotRecord] = await getDb().sql`
+      SELECT
+        id,
+        date,
+        start_time AS "startTime",
+        end_time AS "endTime",
+        status
+      FROM tour_slots
+      WHERE id = ${slotId}
+      LIMIT 1
+    `;
+
+    if (!slotRecord) {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: 'That time slot no longer exists. Please pick another time.' }),
+      };
+    }
+
+    const blockedByHoliday = isSlotInsideHolidayRange(slotRecord.date, slotRecord.startTime, settings);
+    if (blockedByHoliday) {
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: 'Tour booking is temporarily unavailable right now. Please contact Jack and Cindy on the contact page.',
+          code: 'HOLIDAY_MODE_ACTIVE',
+        }),
+      };
+    }
+
+    const blockedByBuffer = isSlotInsideBuffer(slotRecord.date, slotRecord.startTime, settings.bookingBufferHours);
+    if (blockedByBuffer) {
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: `This tour slot is inside the ${settings.bookingBufferHours}-hour booking window and can no longer be booked online.`,
+          code: 'BOOKING_WINDOW_ELAPSED',
+        }),
+      };
+    }
+
     const [slot] = await getDb().sql`
       UPDATE tour_slots
       SET
@@ -88,6 +139,7 @@ export const handler: Handler = async (event) => {
         headers,
         body: JSON.stringify({
           error: 'This slot was just booked by someone else. Please select another time.',
+          code: 'SLOT_UNAVAILABLE',
         }),
       };
     }

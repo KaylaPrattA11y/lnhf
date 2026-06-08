@@ -14,6 +14,15 @@ interface TourTimeSlotOption {
   tourEnd: string;
 }
 
+interface CalendarSettings {
+  bookingBufferHours: 12 | 24 | 36 | 48;
+  holidayMode: 'off' | 'range' | 'indefinite';
+  holidayStartAt: string | null;
+  holidayEndAt: string | null;
+  holidayMessageHtml: string | null;
+  isCalendarDisabled?: boolean;
+}
+
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
 
 const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
@@ -54,6 +63,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [slots,  setSlots]  = useState<Slot[]>([]);
+  const [settings, setSettings] = useState<CalendarSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -83,6 +93,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
       if (!res.ok) throw new Error('Unable to load availability');
       const data = await res.json();
       setSlots(Array.isArray(data) ? data : (data.slots ?? []));
+      setSettings(Array.isArray(data) ? null : (data.settings ?? null));
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : 'Failed to load calendar');
     } finally {
@@ -105,10 +116,13 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
 
   const slotsForDate = (date: string) => slots.filter(s => s.date === date);
 
+  const isCalendarFullyDisabled = Boolean(settings?.isCalendarDisabled);
+
   const getSlotForRange = (date: string, startTime: string, endTime: string): Slot | undefined =>
     slots.find((slot) => slot.date === date && slot.startTime === startTime && slot.endTime === endTime);
 
   const handleDayClick = (date: string) => {
+    if (isCalendarFullyDisabled) return;
     setSelectedDate(prev => prev === date ? null : date);
   };
 
@@ -120,6 +134,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
   }, [selectedDate]);
 
   const handleSlotClick = (slot: Slot) => {
+    if (isCalendarFullyDisabled) return;
     if (slot.status === 'available') setSelectedSlot(slot);
   };
 
@@ -141,6 +156,19 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
 
   return (
     <div className="booking-cal" aria-label="Tour booking calendar">
+
+      {settings?.holidayMessageHtml && (
+        <div className="booking-cal__holiday-note" role="note">
+          {settings.holidayMessageHtml}
+        </div>
+      )}
+
+      {isCalendarFullyDisabled && (
+        <div className="booking-cal__error" role="alert">
+          Online tour booking is currently paused. Please use the <a href="/contact">contact page</a> to reach Jack and Cindy.
+        </div>
+      )}
+
       {/* Month nav */}
       <div className="booking-cal__header">
         <button
@@ -193,7 +221,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
           const past   = date < todayIso;
           const active = date === selectedDate;
           const daySlots = slotsForDate(date);
-          const hasAvailable = daySlots.some(s => s.status === 'available');
+          const hasAvailable = !isCalendarFullyDisabled && daySlots.some(s => s.status === 'available');
 
           let cellClass = 'booking-cal__cell';
           if (past)  cellClass += ' booking-cal__cell--disabled';
@@ -206,8 +234,8 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
             <div key={date} className={cellClass} role="gridcell">
               <button
                 className="booking-cal__day-btn"
-                onClick={() => !past && handleDayClick(date)}
-                disabled={past}
+                onClick={() => !past && !isCalendarFullyDisabled && handleDayClick(date)}
+                disabled={past || isCalendarFullyDisabled}
                 aria-label={`${date}${hasAvailable ? ', tours available' : !past ? ', no tours listed' : ''}`}
                 aria-selected={active}
                 aria-pressed={active}
@@ -283,6 +311,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
           slot={selectedSlot}
           onClose={() => setSelectedSlot(null)}
           onSuccess={handleBookingSuccess}
+          bookingBufferHours={settings?.bookingBufferHours}
         />
       )}
 
@@ -466,6 +495,18 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
           font-size: var(--text-sm);
           color: var(--color-text-muted);
           margin: 0;
+        }
+        .booking-cal__holiday-note {
+          margin: 0 0 var(--space-5);
+          padding: var(--space-4);
+          background: #fff7ed;
+          color: #9a3412;
+          border: 1px solid #fdba74;
+          border-radius: var(--radius-md);
+          white-space: pre-line;
+          position: sticky;
+          top: 75px;
+          z-index: 1;
         }
         @container main (width < 600px) {
           .booking-calendar-wrap {

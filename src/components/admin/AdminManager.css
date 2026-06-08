@@ -30,6 +30,13 @@
   overflow-x: clip;
 }
 
+.admin-manager__divider {
+  margin-block: var(--space-12);
+  border: 0;
+  background: var(--color-border);
+  block-size: 2px;
+}
+
 .admin-manager__topbar {
   display: flex;
   flex-wrap: wrap;
@@ -50,7 +57,7 @@
 }
 
 .admin-manager__subtitle {
-  margin: var(--space-2) 0 0;
+  margin-block: 0 var(--space-2);
   color: var(--color-text-muted);
 }
 
@@ -82,7 +89,7 @@
 
 .admin-manager__section {
   container: section / inline-size;
-  margin-block-end: var(--space-12);
+  margin-block-end: var(--space-2);
 }
 
 .admin-manager__section-header {
@@ -137,6 +144,13 @@
   border: 1px solid var(--color-border, #d1d5db);
   border-radius: var(--radius-md);
   padding: var(--space-4);
+}
+
+.admin-manager__add-form-guest-fieldset {
+  /* @container (width > 600px) { */
+    grid-column: 1 / 4;
+    grid-template-columns: repeat(2, 1fr);
+  /* } */
 }
 
 .admin-manager__fieldset--wedding-pricing {
@@ -251,6 +265,16 @@
 .admin-badge--cancelled {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.admin-badge--visitor-hidden {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.admin-badge--visitor-limited {
+  background: #fefce8;
+  color: #854d0e;
 }
 
 .admin-td-actions {
@@ -416,11 +440,12 @@ summary > * {
 }
 
 .admin-manager__export-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-  gap: var(--space-4);
-  align-items: end;
   padding: var(--space-4);
+  @container (width >= 600px) {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+  }
 }
 
 .admin-manager__export-count {
