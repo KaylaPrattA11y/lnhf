@@ -205,6 +205,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   };
 
   const handleUnauthorized = () => {
+    setUser(null);
     const maybeRefresh = (netlifyIdentity as unknown as { refresh?: () => Promise<unknown> }).refresh;
     if (maybeRefresh) {
       maybeRefresh().catch(() => netlifyIdentity.open('login'));
