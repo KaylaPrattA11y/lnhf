@@ -1,4 +1,6 @@
 ---
+import Share from "./Share.astro";
+
 // BlogCard.astro
 interface Props {
   title: string;
@@ -41,6 +43,8 @@ const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month:
     <a href={`/blog/${slug}/`} class="blog-card__read-more" aria-label={`Read more: ${title}`}>
       Read More <span aria-hidden="true">→</span>
     </a>
+    <br />
+    <Share blog={{ title, slug, excerpt }} />
   </div>
 </article>
 

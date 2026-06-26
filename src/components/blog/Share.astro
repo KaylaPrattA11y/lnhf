@@ -1,0 +1,139 @@
+---
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  WhatsAppShareButton,
+  SocialShare
+} from "astro-social-share";
+import { Icon } from "astro-icon/components";
+
+interface BlogProps {
+  title: string;
+  slug: string;
+  excerpt?: string;
+}
+
+const BUTTONS = [TwitterShareButton, FacebookShareButton, WhatsAppShareButton];
+const blog = Astro.props.blog as BlogProps;
+---
+
+<div class="blog-card__share">
+  Share: 
+  <div>
+    <button 
+      type="button" 
+      aria-label={`Share post: ${blog.title}`} 
+      title={`Share post: ${blog.title}`} 
+      id={`share-via-api-${blog.slug}`} 
+      hidden
+    >
+      <Icon name="share-line-duotone" size="16px" />
+    </button>
+    <button 
+      type="button" 
+      aria-label={`Copy link: ${blog.title}`} 
+      title={`Copy link: ${blog.title}`} 
+      id={`copy-link-${blog.slug}`}
+      hidden
+    >
+      <Icon name="link-line-duotone" size="16px" />
+    </button>
+  </div>
+  <SocialShare
+    buttons={BUTTONS}
+    url={`${import.meta.env.SITE.replace(/\/$/, '')}/blog/${blog.slug}/`}
+    title={blog.title}
+    description={blog.excerpt}
+  />
+  <slot name="astro-social-share-css">
+    <style is:global>
+      .astro-social-share { 
+        margin: 0;
+        height: auto;
+      }
+      .astro-social-share svg {
+        height: 16px;
+      }
+      .astro-social-share a {
+        margin: 0;
+      }
+    </style>
+  </slot>
+</div>
+
+
+<script define:vars={{ blogTitle: blog.title, blogSlug: blog.slug }} is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const copyLinkButton = document.getElementById(`copy-link-${blogSlug}`);
+    const shareViaApiButton = document.getElementById(`share-via-api-${blogSlug}`);
+
+    if (copyLinkButton) {
+      copyLinkButton.hidden = navigator.canShare !== undefined;
+      copyLinkButton.addEventListener('click', () => {
+        if (blogSlug) {
+          navigator.clipboard.writeText(window.location.origin + `/blog/${blogSlug}/`).then(() => {
+            const successMessage = document.createElement('small');
+            successMessage.textContent = 'Link copied!';
+            successMessage.style.position = 'absolute';
+            successMessage.style.top = '100%';
+            successMessage.style.left = '0';
+            copyLinkButton.parentNode?.appendChild(successMessage);
+            setTimeout(() => successMessage.remove(), 3000);
+          }).catch((error) => {
+            console.error('Error copying link:', error);
+          });
+        }
+      });
+    }
+
+    if (shareViaApiButton) {
+      shareViaApiButton.hidden = navigator.canShare === undefined;
+      shareViaApiButton.addEventListener('click', async () => {
+        try {
+          const shareData = {
+            title: blogTitle,
+            url: window.location.origin + `/blog/${blogSlug}/`
+          };
+          if (navigator.canShare && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+          } else {
+            console.error('Cannot share: shareData is invalid for this browser');
+          }
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            console.error('Error sharing:', error);
+          }
+        }
+      });
+    }
+  });
+</script>
+
+<style is:global>
+  .blog-card__share {
+    position: relative;
+    margin-block-start: var(--space-2);
+  }
+  .blog-card__share,
+  .blog-card__share > div {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+  }
+  .blog-card__share button {
+    background: none;
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+  }
+  .parallax .blog-card__share {
+    color: white;
+  }
+  .parallax .blog-card__share svg {
+    color: white;
+    fill: white;
+  }
+  .parallax .blog-card__share {
+    font-size: 16px;
+  }
+</style>

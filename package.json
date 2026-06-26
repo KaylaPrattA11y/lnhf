@@ -13,33 +13,33 @@
     "db:migrate:neon": "node scripts/apply-neon-migrations.mjs"
   },
   "dependencies": {
-    "@astrojs/mdx": "^5.0.4",
+    "@astrojs/mdx": "^6.0.3",
     "@astrojs/partytown": "^2.1.7",
     "@astrojs/react": "^4.2.0",
-    "@astrojs/sitemap": "^3.3.0",
+    "@astrojs/sitemap": "^3.7.3",
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
     "@fontsource-variable/jost": "^5.2.8",
     "@netlify/database": "^1.0.0",
     "@tanstack/react-table": "^8.21.3",
-    "@tinacms/cli": "^2.2.6",
-    "@yeskunall/astro-umami": "^0.0.8",
-    "astro": "^6.3.1",
+    "@tinacms/cli": "^2.5.1",
+    "@yeskunall/astro-umami": "^0.0.9",
+    "astro": "^6.4.7",
     "astro-icon": "^1.1.5",
-    "astro-pagefind": "^1.8.6",
     "astro-seo": "^1.1.0",
+    "astro-social-share": "^2.2.0",
     "netlify-identity-widget": "^2.0.3",
     "pg": "^8.21.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tinacms": "^2.6.4",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tinacms": "^3.9.3",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@netlify/functions": "^5.2.0",
-    "@types/netlify-identity-widget": "^1.9.6",
-    "@types/node": "^25.6.2",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "typescript": "^5.8.3"
+    "@netlify/functions": "^5.3.0",
+    "@types/netlify-identity-widget": "^1.9.7",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
   }
 }
