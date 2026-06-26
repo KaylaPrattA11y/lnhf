@@ -1,0 +1,124 @@
+---
+import { getCollection } from 'astro:content';
+import type { CollectionEntry } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Nav from '@components/layout/Nav.astro';
+import Footer from '@components/layout/Footer.astro';
+import BlogCard from '@components/blog/BlogCard.astro';
+import Pagination from "../../components/blog/Pagination.astro";
+
+export const getStaticPaths: GetStaticPaths = async ({ paginate }) => {
+  const posts = await getCollection("blog");
+  const sortedPosts = posts.sort(
+    (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
+      new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime()
+  );
+
+  return paginate(sortedPosts, { pageSize: 6 });
+};
+
+const { page } = Astro.props as { 
+  page: {
+    data: CollectionEntry<"blog">[];
+    currentPage: number;
+    lastPage: number;
+    url: {
+      prev?: string | null;
+      next?: string | null;
+    };
+  };
+};
+
+const posts = page.data;
+---
+
+<BaseLayout
+  title="Blog"
+  description="News, updates, and stories from Lower Notley Hall Farm — a Southern Maryland waterfront wedding venue."
+>
+  <Nav slot="nav" />
+
+  <section class="blog-hero section section--sm" aria-label="Blog hero">
+    <div class="container" style="text-align: center; max-width: 700px;">
+      <span class="section-header__eyebrow">From the Farm</span>
+      <h1 class="blog-hero__title">Our Blog</h1>
+      <hr class="divider" aria-hidden="true" />
+      <p class="blog-hero__lead">
+        Venue news, wedding inspiration, seasonal updates, and stories from the people who call
+        Lower Notley Hall Farm home.
+      </p>
+    </div>
+  </section>
+
+  <section class="section bg-arabesque" aria-label="Blog post list">
+    <div class="container blog-container">
+      {posts.length === 0 ? (
+        <div class="blog-empty">
+          <p>No posts yet — check back soon!</p>
+          <a href="/" class="btn btn--secondary">Back to Home</a>
+        </div>
+      ) : (
+        <div class="blog-grid" role="list">
+          {posts.map(post => (
+            <div role="listitem">
+              <BlogCard
+                title={post.data.title}
+                date={post.data.pubDate}
+                author={post.data.author}
+                excerpt={post.data.excerpt}
+                featuredImage={post.data.featuredImage}
+                slug={post.id.replace(/\.mdx?$/, '')}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    <Pagination
+      page={page}
+    />
+  </section>
+
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .blog-hero { background: var(--color-primary-dark); color: var(--color-white); }
+  .blog-hero__title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    color: var(--color-white);
+    margin-bottom: var(--space-5);
+  }
+  .blog-hero__lead {
+    font-size: var(--text-lg);
+    color: rgba(255,255,255,0.85);
+    line-height: var(--leading-relaxed);
+  }
+  .blog-hero .section-header__eyebrow { color: var(--color-accent); }
+  .blog-hero .divider { border-color: rgba(255,255,255,0.2); }
+
+  .blog-container { max-width: 1100px; }
+  .blog-grid {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: 1fr;
+  }
+  @container main (width < 600px) {
+    .blog-container {
+      --padding-x: 0;
+    }
+  }
+  @media (min-width: 640px)  { .blog-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .blog-grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .blog-empty {
+    text-align: center;
+    padding: var(--space-16) 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-lg);
+  }
+  .blog-empty p { margin-bottom: var(--space-6); }
+</style>

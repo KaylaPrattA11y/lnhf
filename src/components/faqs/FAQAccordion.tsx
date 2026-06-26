@@ -35,6 +35,7 @@ export default function FAQAccordion({ items }: FAQAccordionProps) {
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 onClick={() => toggle(item.id)}
+                data-umami-event={`FAQ Click: ${item.question}`}
               >
                 <span className="faq-item__question">{item.question}</span>
                 <span className="faq-item__icon" aria-hidden="true">

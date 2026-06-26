@@ -108,12 +108,13 @@ export default function Testimonials({ testimonials }: { testimonials: Testimoni
         }
         .testimonials__slide {
           container: testimonial / inline-size;
-          background: var(--color-bark-deep);
+          background: rgb(38 28 16 / 90%);
           transition: opacity 0.3s ease;
           color: white;
           padding: var(--space-10) var(--space-5) var(--space-5) var(--space-5);
           border-radius: var(--space-5);
           corner-shape: bevel;
+          backdrop-filter: blur(4px);
         }
         .testimonials__slide.is-animating {
           opacity: 0;

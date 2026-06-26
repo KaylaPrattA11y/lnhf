@@ -12,6 +12,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@astrojs/mdx@^5.0.4",
+        "npm:@astrojs/partytown@^2.1.7",
         "npm:@astrojs/react@^4.2.0",
         "npm:@astrojs/sitemap@^3.3.0",
         "npm:@fontsource-variable/cormorant-garamond@^5.2.6",
@@ -24,6 +25,7 @@
         "npm:@types/node@^25.6.2",
         "npm:@types/react-dom@^19.1.2",
         "npm:@types/react@^19.1.2",
+        "npm:@yeskunall/astro-umami@^0.0.8",
         "npm:astro-icon@^1.1.5",
         "npm:astro-pagefind@^1.8.6",
         "npm:astro-seo@^1.1.0",

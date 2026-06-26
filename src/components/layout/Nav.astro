@@ -30,9 +30,9 @@ const currentPath = Astro.url.pathname;
     <nav class="nav--links" aria-label="Primary navigation" id="nav-menu">
       <ul role="menubar" aria-orientation="horizontal">
         <li role="menuitem" aria-current={currentPath === '/' ? 'page' : undefined}><a href="/">Home</a></li>
-        <li class="nav--links-na" role="menuitem" aria-current={currentPath === '/tours' ? 'page' : undefined}><a href="/tours/">Book a Tour</a></li>
+        <li class="nav--links-na" role="menuitem" aria-current={currentPath === '/tours' ? 'page' : undefined}><a href="/tours/" data-umami-event="Tour Link Click" data-umami-event-location="Nav">Book a Tour</a></li>
         <li role="menuitem" aria-current={currentPath === '/about' ? 'page' : undefined}><a href="/about/">About</a></li>
-        <li role="menuitem" aria-current={currentPath === '/pricing' ? 'page' : undefined}><a href="/pricing/">Pricing</a></li>
+        <li role="menuitem" aria-current={currentPath === '/pricing' ? 'page' : undefined}><a href="/pricing/" data-umami-event="Pricing Link Click" data-umami-event-location="Nav">Pricing</a></li>
         <li role="menuitem" aria-current={currentPath === '/faqs' ? 'page' : undefined}><a href="/faqs/">FAQs</a></li>
         <li role="menuitem" aria-current={currentPath === '/blog' ? 'page' : undefined}><a href="/blog/">Blog</a></li>
         <li role="menuitem" aria-current={currentPath === '/vendors' ? 'page' : undefined}><a href="/vendors/">Vendors</a></li>
@@ -41,7 +41,7 @@ const currentPath = Astro.url.pathname;
     </nav>
     <div class="nav--actions">
       <!-- Book Now CTA -->
-      <a href="/tours/" class="btn btn--primary btn--sm">Book a Tour</a>
+      <a href="/tours/" class="btn btn--primary btn--sm" data-umami-event="Tour Link Click" data-umami-event-location="Nav">Book a Tour</a>
     </div>
   </div>
 </header>

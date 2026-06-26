@@ -43,8 +43,7 @@ import Waves from '../Waves.astro';
             <ul class="footer__link-list">
               <li><a href="/">Home</a></li>
               <li><a href="/about/">About</a></li>
-              <li><a href="/tours/">Book a Tour</a></li>
-              <li><a href="/pricing/">Pricing</a></li>
+              <li><a href="/pricing/" data-umami-event="Pricing Link Click" data-umami-event-location="Footer">Pricing</a></li>
               <li><a href="/faqs/">FAQs</a></li>
               <li><a href="/blog/">Blog</a></li>
               <li><a href="/vendors/">Vendors</a></li>
@@ -79,7 +78,7 @@ import Waves from '../Waves.astro';
           </ul>
 
           <div class="footer__cta">
-            <a href="/tours/" class="btn btn--primary btn--sm">Book a Tour</a>
+            <a href="/tours/" class="btn btn--primary btn--sm" data-umami-event="Tour Link Click" data-umami-event-location="Footer">Book a Tour</a>
           </div>
         </div>
       </div>

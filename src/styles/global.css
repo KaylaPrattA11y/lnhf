@@ -24,10 +24,13 @@ body {
   font-family: var(--font-body);
   font-weight: 300;
   font-size: var(--text-base);
-  line-height: var(--leading-normal);
   color: var(--color-text);
   background-color: var(--color-bg);
   min-height: 100vh;
+}
+
+body :where(p a, p, ul, ol, li, strong, em) {
+  line-height: var(--leading-normal);
 }
 
 main {
@@ -203,9 +206,14 @@ blockquote {
   cursor: pointer;
   border: 1px solid transparent;
   transition: background var(--transition-base),
-              color var(--transition-base),
-              border-color var(--transition-base),
-              transform var(--transition-fast);
+  color var(--transition-base),
+  border-color var(--transition-base),
+  transform var(--transition-fast);
+  @supports (corner-shape: scoop) {
+    --border-radius: 0.45rem;
+    border-radius: var(--border-radius);
+    corner-shape: scoop;
+  }
 }
 
 .btn:focus-visible {
@@ -261,11 +269,25 @@ blockquote {
   padding: 0.55rem 1.2rem;
   font-size: 0.64rem;
   letter-spacing: 0.18em;
+  @supports (corner-shape: scoop) {
+    --border-radius: 0.45rem;
+  }
+}
+.btn--xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.52rem;
+  letter-spacing: 0.15em;
+  @supports (corner-shape: scoop) {
+    --border-radius: 0.35rem;
+  }
 }
 .btn--lg {
   padding: 1rem 2.4rem;
   font-size: 0.72rem;
   letter-spacing: 0.25em;
+  @supports (corner-shape: scoop) {
+    --border-radius: 0.5rem;
+  }
 }
 
 /* ============================================================
@@ -489,6 +511,10 @@ input {
     radial-gradient(var(--_r) left  var(--_g0)) calc(var(--_s)/ 2) var(--s),
     linear-gradient(90deg,var(--c2) 50%,var(--c3) 0);
   background-size: var(--_s) calc(4*var(--s));
+}
+
+[id] {
+  scroll-margin-top: var(--space-20);
 }
 
 /* ============================================================

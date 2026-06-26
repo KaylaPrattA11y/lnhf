@@ -226,7 +226,7 @@ export default defineConfig({
         ],
       },
       {
-        label: 'Home Page Slide Show',
+        label: 'Home Page Slide Show (5 max)',
         name: 'carousel',
         path: 'src/content/carousel',
         format: 'mdx',

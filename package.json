@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",
+    "@astrojs/partytown": "^2.1.7",
     "@astrojs/react": "^4.2.0",
     "@astrojs/sitemap": "^3.3.0",
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
@@ -21,6 +22,7 @@
     "@netlify/database": "^1.0.0",
     "@tanstack/react-table": "^8.21.3",
     "@tinacms/cli": "^2.2.6",
+    "@yeskunall/astro-umami": "^0.0.8",
     "astro": "^6.3.1",
     "astro-icon": "^1.1.5",
     "astro-pagefind": "^1.8.6",

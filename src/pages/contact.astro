@@ -10,7 +10,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 >
   <p class="interior-hero__lead" slot="hero">
     Have a question before you book? Curious about pricing or availability?
-    Check our <a href="/pricing/">Pricing Estimator</a> and <a href="/faqs/">FAQs</a> first — you may find your answer in seconds.
+    Check our <a href="/pricing/" data-umami-event="Pricing Link Click" data-umami-event-location="Contact">Pricing Estimator</a> and <a href="/faqs/">FAQs</a> first — you may find your answer in seconds.
     Otherwise, fill out the form or give us a call.
   </p>
 
@@ -64,7 +64,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
         </ul>
 
         <div class="contact-info__cta">
-          <a href="/tours/" class="btn btn--primary">Book a Tour</a>
+          <a href="/tours/" class="btn btn--primary" data-umami-event="Tour Link Click" data-umami-event-location="Contact">Book a Tour</a>
         </div>
       </aside>
 

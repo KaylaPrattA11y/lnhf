@@ -160,5 +160,8 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
     text-align: center;
     font-size: var(--text-base);
   }
+  .faqs-footer-note p:last-child {
+    margin-bottom: 0;
+  }
   .faqs-footer-note a { color: var(--color-primary); font-weight: 700; }
 </style>

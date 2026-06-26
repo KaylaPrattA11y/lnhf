@@ -230,8 +230,23 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
           Looking for pricing? Visit our pricing page and use the estimator to build your package before you submit the contact form.
         </p>
         <div class="pricing-recommendation__actions">
-          <a class="btn btn--primary btn--sm" href="/pricing/">Use Pricing Estimator</a>
-          <button class="btn btn--ghost btn--sm" type="button" data-pricing-recommendation-close>Dismiss</button>
+          <a 
+            class="btn btn--primary btn--sm" 
+            href="/pricing/"
+            data-umami-event="Pricing Banner CTA Click"
+            data-umami-event-choice="View Pricing Page"
+          >
+            Use Pricing Estimator
+          </a>
+          <button 
+            class="btn btn--ghost btn--sm" 
+            type="button" 
+            data-pricing-recommendation-close
+            data-umami-event="Pricing Banner CTA Click"
+            data-umami-event-choice="Dismiss Banner"
+          >
+            Dismiss
+          </button>
         </div>
       </div>
     </aside>
@@ -245,7 +260,10 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
     </slot>
 
     <!-- Netlify Identity widget — required for admin auth -->
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script 
+      is:inline
+      src="https://identity.netlify.com/v1/netlify-identity-widget.js" 
+      defer></script>
     <script>
       // Redirect after login/signup — prevents staying on netlify's modal page
       const identity = window.netlifyIdentity;

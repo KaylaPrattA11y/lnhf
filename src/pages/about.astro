@@ -25,7 +25,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
   </p>
 
   <!-- Location & Setting -->
-  <section class="section bg-arabesque" aria-labelledby="location-title">
+  <section class="section bg-arabesque" aria-labelledby="location-title" id="reception-barn">
     <div class="container about-split">
       <div class="about-split__text">
         <span class="section-header__eyebrow">Where We Are</span>
@@ -71,7 +71,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
   </section>
 
   <!-- History -->
-  <section class="section" aria-labelledby="history-title">
+  <section class="section" aria-labelledby="history-title" id="manor-house">
     <div class="container about-split about-split--reverse">
       <div class="about-split__text">
         <span class="section-header__eyebrow">400 Years of History</span>
@@ -177,7 +177,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
 
   <!-- Photo Gallery -->
   {latestImages.length > 0 && (
-    <section class="section bg-arabesque" aria-labelledby="gallery-title">
+    <section class="section bg-arabesque" aria-labelledby="gallery-title" id="waterfront">
       <div class="container">
         <div class="section-header">
           <span class="section-header__eyebrow">Photo Gallery</span>
@@ -201,8 +201,8 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
       <h2 class="about-cta__title" id="about-cta-title">Ready to See It in Person?</h2>
       <p class="about-cta__sub">Schedule a private Sunday tour with Jack and Cindy.</p>
       <div class="about-cta__btns">
-        <a href="/tours/" class="btn btn--primary btn--lg">Book a Tour</a>
-        <a href="/pricing/" class="btn btn--primary btn--lg">See Pricing</a>
+        <a href="/tours/" class="btn btn--primary btn--lg" data-umami-event="Tour Link Click" data-umami-event-location="About">Book a Tour</a>
+        <a href="/pricing/" class="btn btn--primary btn--lg" data-umami-event="Pricing Link Click" data-umami-event-location="About">See Pricing</a>
       </div>
     </div>
   </section>
