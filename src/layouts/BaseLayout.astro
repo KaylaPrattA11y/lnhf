@@ -205,11 +205,14 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
     />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(schemaGraph)}></script>
     <script 
-      is:inline 
-      defer 
+      async
+      defer
+      is:inline
+      data-auto-track="true"
+      data-do-not-track="false"
+      data-cache="true"
       src="https://cloud.umami.is/script.js" 
       data-website-id="82637cef-cb45-4868-9db0-8e287014695d"
-      type="text/partytown"
     ></script>
     <slot name="head" />
   </head>

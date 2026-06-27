@@ -12,7 +12,6 @@
     "packageJson": {
       "dependencies": [
         "npm:@astrojs/mdx@7",
-        "npm:@astrojs/partytown@^2.1.7",
         "npm:@astrojs/react@^4.2.0",
         "npm:@astrojs/sitemap@^3.7.3",
         "npm:@fontsource-variable/cormorant-garamond@^5.2.6",

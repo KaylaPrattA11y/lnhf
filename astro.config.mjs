@@ -4,16 +4,13 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import icon from 'astro-icon';
 
-import partytown from '@astrojs/partytown';
-
 export default defineConfig({
   site: 'https://lowernotleyhallfarm.netlify.app/',
   integrations: [
     react(), 
     mdx(), 
     sitemap(), 
-    icon(), 
-    partytown()
+    icon()
   ],
   output: 'static',
   trailingSlash: 'always',
