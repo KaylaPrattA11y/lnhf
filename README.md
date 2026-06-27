@@ -78,8 +78,6 @@ lnhf/
 │   │   ├── booking/
 │   │   │   ├── BookingCalendar.tsx   # Monthly calendar, Sundays-only
 │   │   │   └── BookingModal.tsx      # Booking form dialog
-│   │   ├── faqs/
-│   │   │   └── FAQAccordion.tsx      # Accessible accordion
 │   │   ├── home/
 │   │   │   ├── Blockquote.astro
 │   │   │   ├── Hero.astro
