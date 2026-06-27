@@ -294,6 +294,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
                   className="btn btn--primary"
                   disabled={status === 'loading'}
                   aria-busy={status === 'loading'}
+                  data-umami-event="Confirm Tour Booking"
                 >
                   {status === 'loading' ? 'Booking…' : 'Confirm Booking'}
                 </button>

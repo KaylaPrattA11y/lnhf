@@ -33,6 +33,8 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
                   aria-expanded="false"
                   aria-controls={panelId}
                   data-faq-trigger
+                  data-umami-event="Toggle FAQ"
+                  data-umami-event-value={entry.data.question} 
                 >
                   <span class="faq-item__question">{entry.data.question}</span>
                   <span class="faq-item__icon" aria-hidden="true">

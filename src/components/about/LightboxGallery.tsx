@@ -60,6 +60,8 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
             role="listitem"
             onClick={() => open(i)}
             aria-label={`Open photo: ${img.data.title}`}
+            data-umami-event="Open photo"
+            data-umami-event-value={img.data.title} 
           >
             <img
               src={img.data.image}

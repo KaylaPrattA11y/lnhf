@@ -2,8 +2,7 @@
 import {
   FacebookShareButton,
   TwitterShareButton,
-  WhatsAppShareButton,
-  SocialShare
+  WhatsAppShareButton
 } from "astro-social-share";
 import { Icon } from "astro-icon/components";
 
@@ -13,7 +12,6 @@ interface BlogProps {
   excerpt?: string;
 }
 
-const BUTTONS = [TwitterShareButton, FacebookShareButton, WhatsAppShareButton];
 const blog = Astro.props.blog as BlogProps;
 ---
 
@@ -25,7 +23,7 @@ const blog = Astro.props.blog as BlogProps;
       aria-label={`Share post: ${blog.title}`} 
       title={`Share post: ${blog.title}`} 
       id={`share-via-api-${blog.slug}`} 
-      data-umami-event="share-via-api"
+      data-umami-event="Share blog post: Native"
       data-umami-event-value={blog.title} 
       hidden
     >
@@ -34,23 +32,51 @@ const blog = Astro.props.blog as BlogProps;
     <button 
       type="button" 
       aria-label={`Copy link: ${blog.title}`} 
-      title={`Copy link: ${blog.title}`} 
+      title="Copy link to blog post" 
       id={`copy-link-${blog.slug}`}
-      data-umami-event="copy-link"
+      data-umami-event="Copy link: blog post"
       data-umami-event-value={blog.title} 
       hidden
     >
       <Icon name="link-line-duotone" size="16px" />
     </button>
   </div>
-  <SocialShare
-    data-umami-event="share-via-social"
-    data-umami-event-value={blog.title} 
-    buttons={BUTTONS}
+  <TwitterShareButton
     url={`${import.meta.env.SITE.replace(/\/$/, '')}/blog/${blog.slug}/`}
     title={blog.title}
     description={blog.excerpt}
-  />
+  >
+    <Icon 
+      data-umami-event="Share blog post: X (Twitter)"
+      data-umami-event-value={blog.title} 
+      name="x-twitter" 
+      title="Share to X (Twitter)"
+      size="18px" />
+  </TwitterShareButton>
+  <FacebookShareButton
+    url={`${import.meta.env.SITE.replace(/\/$/, '')}/blog/${blog.slug}/`}
+    title={blog.title}
+    description={blog.excerpt}
+  >
+    <Icon 
+      data-umami-event="Share blog post: Facebook"
+      data-umami-event-value={blog.title} 
+      name="twotone-facebook" 
+      title="Share to Facebook"
+      size="18px" />
+  </FacebookShareButton>
+  <WhatsAppShareButton
+    url={`${import.meta.env.SITE.replace(/\/$/, '')}/blog/${blog.slug}/`}
+    title={blog.title}
+    description={blog.excerpt}
+  >
+    <Icon 
+      data-umami-event="Share blog post: WhatsApp"
+      data-umami-event-value={blog.title} 
+      name="twotone-whatsapp" 
+      title="Share to WhatsApp"
+      size="18px" />
+  </WhatsAppShareButton>
   <slot name="astro-social-share-css">
     <style is:global>
       .astro-social-share { 
