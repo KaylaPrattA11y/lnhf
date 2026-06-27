@@ -25,6 +25,8 @@ const blog = Astro.props.blog as BlogProps;
       aria-label={`Share post: ${blog.title}`} 
       title={`Share post: ${blog.title}`} 
       id={`share-via-api-${blog.slug}`} 
+      data-umami-event="share-via-api"
+      data-umami-event-value={blog.title} 
       hidden
     >
       <Icon name="share-line-duotone" size="16px" />
@@ -34,12 +36,16 @@ const blog = Astro.props.blog as BlogProps;
       aria-label={`Copy link: ${blog.title}`} 
       title={`Copy link: ${blog.title}`} 
       id={`copy-link-${blog.slug}`}
+      data-umami-event="copy-link"
+      data-umami-event-value={blog.title} 
       hidden
     >
       <Icon name="link-line-duotone" size="16px" />
     </button>
   </div>
   <SocialShare
+    data-umami-event="share-via-social"
+    data-umami-event-value={blog.title} 
     buttons={BUTTONS}
     url={`${import.meta.env.SITE.replace(/\/$/, '')}/blog/${blog.slug}/`}
     title={blog.title}

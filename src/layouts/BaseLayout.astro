@@ -6,6 +6,7 @@ import '@fontsource-variable/jost/wght.css';
 import { createHash } from 'node:crypto';
 import { getCollection } from 'astro:content';
 import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
+import type { SortablePricingEntry } from '../lib/pricing-order';
 
 export interface BaseLayoutProps {
   title: string;
@@ -161,7 +162,7 @@ const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
 
 const pricingEntries = await getCollection('pricing');
 const pricingVersionSeed = pricingEntries
-  .map((entry) => `${entry.id}:${JSON.stringify(entry.data)}`)
+  .map((entry: Object & { id: string; data: SortablePricingEntry }) => `${entry.id}:${JSON.stringify(entry.data)}`)
   .sort()
   .join('|');
 const pricingCookieVersion = createHash('sha256')
@@ -203,6 +204,13 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
       }}
     />
     <script is:inline type="application/ld+json" set:html={JSON.stringify(schemaGraph)}></script>
+    <script 
+      is:inline 
+      defer 
+      src="https://cloud.umami.is/script.js" 
+      data-website-id="82637cef-cb45-4868-9db0-8e287014695d"
+      type="text/partytown"
+    ></script>
     <slot name="head" />
   </head>
 
