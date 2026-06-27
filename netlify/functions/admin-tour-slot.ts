@@ -24,25 +24,30 @@ export const handler: Handler = async (event, context: HandlerContext) => {
   }
 
   if (!(await isAuthenticated(event, context))) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+    return { 
+      statusCode: 401, 
+      headers, 
+      body: JSON.stringify({ error: 'Unauthorized' }) 
+    };
   }
 
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(event.body ?? '{}');
-  } catch {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON' }) };
+  // Parse body safely
+  let body: Record<string, unknown> = {};
+  if (event.body) {
+    try {
+      body = JSON.parse(event.body);
+    } catch {
+      return { 
+        statusCode: 400, 
+        headers, 
+        body: JSON.stringify({ error: 'Invalid JSON' }) 
+      };
+    }
   }
 
   try {
     if (event.httpMethod === 'POST') {
-      const { date, startTime, endTime, status = 'available', tour: tourInput } = body as {
-        date: string;
-        startTime: string;
-        endTime: string;
-        status?: string;
-        tour?: { name: string; email: string; phone?: string; partySize?: number; message?: string };
-      };
+      const { date, startTime, endTime, status = 'available', tour: tourInput } = body as any;
 
       if (!date || !startTime || !endTime) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'date, startTime, and endTime are required' }) };
@@ -90,7 +95,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     }
 
     if (event.httpMethod === 'PATCH') {
-      const { id, status, unbook } = body as { id: string; status?: string; unbook?: boolean };
+      const { id, status, unbook } = body as any;
 
       if (!id || !UUID_RE.test(id)) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Valid id is required' }) };
@@ -131,20 +136,52 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     }
 
     if (event.httpMethod === 'DELETE') {
-      const { id } = body as { id: string };
+      console.log('DELETE request received. Query:', event.queryStringParameters);
+      
+      const id = event.queryStringParameters?.id;
 
       if (!id || !UUID_RE.test(id)) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Valid id is required' }) };
+        console.log('DELETE failed: No valid id provided');
+        return { 
+          statusCode: 400, 
+          headers, 
+          body: JSON.stringify({ error: 'Valid id is required' }) 
+        };
       }
 
-      const [deleted] = await getDb().sql`DELETE FROM tour_slots WHERE id = ${id} RETURNING id`;
-      if (!deleted) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Slot not found' }) };
-      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      const [deleted] = await getDb().sql`
+        DELETE FROM tour_slots 
+        WHERE id = ${id} 
+        RETURNING id
+      `;
+
+      if (!deleted) {
+        return { 
+          statusCode: 404, 
+          headers, 
+          body: JSON.stringify({ error: 'Slot not found' }) 
+        };
+      }
+
+      return { 
+        statusCode: 200, 
+        headers, 
+        body: JSON.stringify({ success: true, message: 'Slot deleted successfully' }) 
+      };
     }
 
-    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { 
+      statusCode: 405, 
+      headers, 
+      body: JSON.stringify({ error: 'Method not allowed' }) 
+    };
+
   } catch (err) {
     console.error('[admin-tour-slot] Error:', err);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) };
+    return { 
+      statusCode: 500, 
+      headers, 
+      body: JSON.stringify({ error: 'Internal server error' }) 
+    };
   }
 };

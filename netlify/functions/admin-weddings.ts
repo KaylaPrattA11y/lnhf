@@ -524,15 +524,38 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     }
 
     if (event.httpMethod === 'DELETE') {
-      const payload = JSON.parse(event.body ?? '{}') as { id?: string };
-      if (!payload.id || !UUID_RE.test(payload.id)) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Valid id is required' }) };
+      // Read ID from query string (more reliable with netlify dev)
+      const id = event.queryStringParameters?.id;
+
+      console.log('DELETE wedding request received. ID from query:', id);
+
+      if (!id || !UUID_RE.test(id)) {
+        return { 
+          statusCode: 400, 
+          headers, 
+          body: JSON.stringify({ error: 'Valid id is required' }) 
+        };
       }
 
-      const [deleted] = await db.sql`DELETE FROM wedding_bookings WHERE id = ${payload.id} RETURNING id`;
-      if (!deleted) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Wedding not found' }) };
+      const [deleted] = await db.sql`
+        DELETE FROM wedding_bookings 
+        WHERE id = ${id} 
+        RETURNING id
+      `;
 
-      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      if (!deleted) {
+        return { 
+          statusCode: 404, 
+          headers, 
+          body: JSON.stringify({ error: 'Wedding not found' }) 
+        };
+      }
+
+      return { 
+        statusCode: 200, 
+        headers, 
+        body: JSON.stringify({ success: true, message: 'Wedding deleted successfully' }) 
+      };
     }
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };

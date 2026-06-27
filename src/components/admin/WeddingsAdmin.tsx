@@ -742,22 +742,44 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   };
 
   const deleteWedding = async (id: string) => {
-    if (!confirm('Delete this wedding booking permanently?')) return;
-    const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-weddings`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
-      body: JSON.stringify({ id }),
-    });
-    if (res.status === 401) {
-      handleUnauthorized();
+    if (!id) {
+      flash('Error: Missing wedding ID');
       return;
     }
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || 'Delete failed');
+
+    if (!confirm('Delete this wedding booking permanently?')) return;
+
+    try {
+      console.log('Deleting wedding with ID:', id);
+
+      const res = await fetch(
+        `${SITE_BASE_URL}/.netlify/functions/admin-weddings?id=${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE',
+          headers: authHeader() as HeadersInit,
+        }
+      );
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {}
+
+      if (!res.ok) {
+        throw new Error(data.error || `Failed with status ${res.status}`);
+      }
+
+      await fetchWeddings();
+      flash('Wedding deleted successfully');
+    } catch (err) {
+      console.error('Delete error:', err);
+      flash(`Error: ${err instanceof Error ? err.message : 'Failed to delete wedding'}`);
     }
-    await fetchWeddings();
-    flash('Wedding deleted');
   };
 
   const printStyles = `

@@ -343,19 +343,53 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   };
 
   const deleteSlot = async (id: string) => {
-    if (!confirm('Delete this tour slot permanently?')) return;
-    const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
-      body: JSON.stringify({ id }),
-    });
-    if (res.status === 401) {
-      handleUnauthorized();
+    if (!id) {
+      flash('Error: Missing slot ID');
       return;
     }
-    if (!res.ok) throw new Error((await res.json()).error || 'Delete failed');
-    await fetchSlots();
-    flash('Tour slot deleted');
+
+    const slot = slots.find((s) => s._id === id);
+    if (slot?.status === 'booked') {
+      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
+      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to delete it?`)) return;
+    }
+    
+    if (!confirm('Delete this tour slot permanently?')) return;
+
+    try {
+      console.log('Deleting slot with ID:', id);
+
+      const res = await fetch(
+        `${SITE_BASE_URL}/.netlify/functions/admin-tour-slot?id=${encodeURIComponent(id)}`, 
+        {
+          method: 'DELETE',
+          headers: {
+            ...(authHeader() as HeadersInit)
+            // No need for Content-Type when using query param
+          },
+        }
+      );
+
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {}
+
+      if (!res.ok) {
+        throw new Error(data.error || `Failed with status ${res.status}`);
+      }
+
+      await fetchSlots();
+      flash('Tour slot deleted successfully');
+    } catch (err) {
+      console.error('Delete error:', err);
+      flash(`Error: ${err instanceof Error ? err.message : 'Failed to delete slot'}`);
+    }
   };
 
   const addSlot = async (e: React.FormEvent) => {
