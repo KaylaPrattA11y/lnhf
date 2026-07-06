@@ -16,6 +16,7 @@ interface TourTimeSlotOption {
 
 interface CalendarSettings {
   bookingBufferHours: 12 | 24 | 36 | 48;
+  bookingHorizonMonths: 1 | 2 | 3 | 4 | 5 | 6;
   holidayMode: 'off' | 'range' | 'indefinite';
   holidayStartAt: string | null;
   holidayEndAt: string | null;

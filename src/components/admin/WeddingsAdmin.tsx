@@ -125,6 +125,8 @@ interface WeddingsAdminProps {
   pricingEntries: PricingCollectionEntry[];
 }
 
+type TableDatePreset = '' | 'week' | 'month' | 'year';
+
 interface WeddingFormErrors {
   brideFullName?: string;
   groomFullName?: string;
@@ -161,6 +163,53 @@ function toDateKey(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toISOString().split('T')[0];
+}
+
+function toDateInputValue(value: Date) {
+  const yyyy = value.getFullYear();
+  const mm = String(value.getMonth() + 1).padStart(2, '0');
+  const dd = String(value.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDateRangeForPreset(preset: Exclude<TableDatePreset, ''>, now = new Date()) {
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (preset === 'week') {
+    const day = now.getDay();
+    start.setDate(now.getDate() - day);
+    end.setDate(start.getDate() + 6);
+  }
+
+  if (preset === 'month') {
+    start.setDate(1);
+    end.setMonth(now.getMonth() + 1, 0);
+  }
+
+  if (preset === 'year') {
+    start.setMonth(0, 1);
+    end.setMonth(11, 31);
+  }
+
+  return {
+    fromDate: toDateInputValue(start),
+    toDate: toDateInputValue(end),
+  };
+}
+
+function buildHalfHourTimeOptions() {
+  const options: string[] = [];
+  const minutesInDay = 24 * 60;
+  const startAtNoonMinutes = 12 * 60;
+
+  for (let step = 0; step < 48; step += 1) {
+    const totalMinutes = (startAtNoonMinutes + step * 30) % minutesInDay;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    options.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+  }
+  return options;
 }
 
 function getWeddingTotals(wedding: Pick<Wedding, 'finalCost' | 'pricingItems'>) {
@@ -205,6 +254,8 @@ const isOmittedFromTotal = (billingTreatment?: 'includedInTotals' | 'returnedLat
   billingTreatment === 'informationalOnly';
 
 export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
+  const defaultTableRange = useMemo(() => getDateRangeForPreset('year'), []);
+
   const orderedPricingEntries = useMemo(
     () => [...pricingEntries].sort(comparePricingEntries),
     [pricingEntries],
@@ -253,6 +304,9 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [tableDatePreset, setTableDatePreset] = useState<TableDatePreset>('year');
+  const [tableFromDate, setTableFromDate] = useState(defaultTableRange.fromDate);
+  const [tableToDate, setTableToDate] = useState(defaultTableRange.toDate);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'weddingDate', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
@@ -263,6 +317,13 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   const [exporting, setExporting] = useState(false);
 
   const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  const timeOptions = useMemo(() => buildHalfHourTimeOptions(), []);
+
+  const weddingTimeOptions = useMemo(() => {
+    if (!weddingTime || timeOptions.includes(weddingTime)) return timeOptions;
+    return [weddingTime, ...timeOptions];
+  }, [weddingTime, timeOptions]);
 
   useEffect(() => {
     netlifyIdentity.on('init', (u: unknown) => {
@@ -358,6 +419,10 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [globalFilter]);
 
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [tableFromDate, tableToDate]);
+
   const selectedCollectionPricing = useMemo(
     () => orderedPricingEntries.filter((entry) => selectedEntryIds.includes(entry.id)),
     [orderedPricingEntries, selectedEntryIds],
@@ -451,6 +516,32 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       return true;
     });
   }, [weddings, exportFrom, exportTo]);
+
+  const filteredTableWeddings = useMemo(() => {
+    const fromKey = tableFromDate ? toDateKey(tableFromDate) : '';
+    const toKey = tableToDate ? toDateKey(tableToDate) : '';
+
+    return weddings.filter((wedding) => {
+      const weddingDateKey = toDateKey(wedding.weddingDate);
+      if (!weddingDateKey) return false;
+      if (fromKey && weddingDateKey < fromKey) return false;
+      if (toKey && weddingDateKey > toKey) return false;
+      return true;
+    });
+  }, [weddings, tableFromDate, tableToDate]);
+
+  const applyTableDatePreset = (preset: Exclude<TableDatePreset, ''>) => {
+    const range = getDateRangeForPreset(preset);
+    setTableDatePreset(preset);
+    setTableFromDate(range.fromDate);
+    setTableToDate(range.toDate);
+  };
+
+  const clearTableDateRange = () => {
+    setTableDatePreset('');
+    setTableFromDate('');
+    setTableToDate('');
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -1029,7 +1120,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   ];
 
   const table = useReactTable({
-    data: weddings,
+    data: filteredTableWeddings,
     columns,
     state: { sorting, columnFilters, globalFilter, pagination },
     onSortingChange: setSorting,
@@ -1229,7 +1320,17 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="wedding-time">Wedding Time</label>
-                <input id="wedding-time" className="form-input" type="time" value={weddingTime} onChange={(e) => setWeddingTime(e.target.value)} />
+                <select
+                  id="wedding-time"
+                  className="form-select"
+                  value={weddingTime}
+                  onChange={(e) => setWeddingTime(e.target.value)}
+                >
+                  <option value="">Select time...</option>
+                  {weddingTimeOptions.map((timeValue) => (
+                    <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <button type="button" className="btn btn-secondary" onClick={addActivity}>{plusIcon} Add Related Activity Date</button>
@@ -1273,7 +1374,20 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                   </div>
                   <div className="form-group">
                     <label className="form-label" htmlFor={`wedding-activity-time-${index}`}>Time</label>
-                    <input id={`wedding-activity-time-${index}`} className="form-input" type="time" value={activity.time ?? ''} onChange={(e) => updateActivity(index, 'time', e.target.value)} />
+                    <select
+                      id={`wedding-activity-time-${index}`}
+                      className="form-select"
+                      value={activity.time ?? ''}
+                      onChange={(e) => updateActivity(index, 'time', e.target.value)}
+                    >
+                      <option value="">Select time...</option>
+                      {activity.time && !timeOptions.includes(activity.time) && (
+                        <option value={activity.time}>{to12HourTime(activity.time)}</option>
+                      )}
+                      {timeOptions.map((timeValue) => (
+                        <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
                     <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeActivity(index)}>Remove</button>
@@ -1558,7 +1672,90 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
           </select>
         </div>
 
-        {weddings.length === 0 && !loading ? (
+        <fieldset className="table-date-range" aria-label="Weddings date range filters">
+          <legend className="form-label">Date range</legend>
+          <p className="table-date-range__help">Choose a quick range or set custom From/To dates. Leave both blank to show all dates.</p>
+
+          <div className="table-date-range__grid">
+            <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for weddings">
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="wedding-table-date-preset"
+                checked={tableDatePreset === 'week'}
+                onChange={() => applyTableDatePreset('week')}
+              />
+              This week
+            </label>
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="wedding-table-date-preset"
+                checked={tableDatePreset === 'month'}
+                onChange={() => applyTableDatePreset('month')}
+              />
+              This month
+            </label>
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="wedding-table-date-preset"
+                checked={tableDatePreset === 'year'}
+                onChange={() => applyTableDatePreset('year')}
+              />
+              This year
+            </label>
+          </div>
+
+          <div className="table-date-range__fields">
+            <div className="form-group">
+              <label className="form-label" htmlFor="wedding-table-date-from">From date</label>
+              <input
+                id="wedding-table-date-from"
+                className="form-input table-date-filter"
+                type="date"
+                value={tableFromDate}
+                max={tableToDate || undefined}
+                onChange={(e) => {
+                  setTableDatePreset('');
+                  setTableFromDate(e.target.value);
+                }}
+                aria-label="Filter weddings from date"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="wedding-table-date-to">To date</label>
+              <input
+                id="wedding-table-date-to"
+                className="form-input table-date-filter"
+                type="date"
+                value={tableToDate}
+                min={tableFromDate || undefined}
+                onChange={(e) => {
+                  setTableDatePreset('');
+                  setTableToDate(e.target.value);
+                }}
+                aria-label="Filter weddings to date"
+              />
+            </div>
+            
+          </div>
+          <div className="form-group table-date-range__clear-wrap">
+              <label className="form-label" htmlFor="wedding-table-date-clear">Clear range</label>
+              <button
+                id="wedding-table-date-clear"
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={clearTableDateRange}
+              >
+                Show all dates
+              </button>
+            </div>
+          </div>
+          
+        </fieldset>
+
+        {filteredTableWeddings.length === 0 && !loading ? (
           <p className="admin-manager__empty">No weddings found. Add one above.</p>
         ) : (
           <>

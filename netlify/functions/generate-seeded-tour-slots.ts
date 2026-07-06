@@ -3,8 +3,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { getDb } from './utils/db';
-
-const SEED_MONTHS_AHEAD = 12;
+import { getTourCalendarSettings } from './utils/tour-calendar';
 
 interface TourTimeSlotSeedConfig {
   tourStart: string;
@@ -138,110 +137,112 @@ function getUpcomingDatesByWeekday(weekday: number, from: Date, monthsAhead: num
 
 /**
  * Scheduled function — runs monthly.
- * Synchronizes seeded slots for the next 12 months based on tour-time-slots content.
+ * Synchronizes seeded slots for the configured booking horizon based on tour-time-slots content.
  */
 export async function syncSeededTourSlots(now = new Date()): Promise<SeededTourSyncResult> {
-    const slotConfigs = await loadTourTimeSlotSeedConfigs();
-    const startDate = toIsoDateUtc(now);
-    const endDate = toIsoDateUtc(addMonthsUtc(now, SEED_MONTHS_AHEAD));
+  const settings = await getTourCalendarSettings();
+  const monthsAhead = Math.min(6, Math.max(1, Number(settings.bookingHorizonMonths || 3)));
+  const slotConfigs = await loadTourTimeSlotSeedConfigs();
+  const startDate = toIsoDateUtc(now);
+  const endDate = toIsoDateUtc(addMonthsUtc(now, monthsAhead));
 
-    if (slotConfigs.length === 0) {
-      console.warn('[generate-seeded-tour-slots] No tour-time-slots content found. Nothing to seed.');
-      return {
-        insertedCount: 0,
-        deletedCount: 0,
-        seededTemplates: 0,
-        horizonMonths: SEED_MONTHS_AHEAD,
-        windowStart: startDate,
-        windowEnd: endDate,
-      };
-    }
-
-    const configuredRangeKeys = new Set(slotConfigs.map((config) => `${config.tourStart}-${config.tourEnd}`));
-    const desiredSeededKeys = new Set<string>();
-
-    for (const config of slotConfigs) {
-      for (const day of config.seedDays) {
-        const dates = getUpcomingDatesByWeekday(day, now, SEED_MONTHS_AHEAD);
-        for (const date of dates) {
-          desiredSeededKeys.add(`${date}|${config.tourStart}|${config.tourEnd}`);
-        }
-      }
-    }
-
-    const seedRows = Array.from(desiredSeededKeys).map((key) => {
-      const [date, start, end] = key.split('|');
-      return [date, start, end];
-    });
-
-    let insertedCount = 0;
-    if (seedRows.length > 0) {
-      const insertResult = await getDb().sql`
-        INSERT INTO tour_slots (date, start_time, end_time)
-        VALUES ${getDb().sql.values(seedRows)}
-        ON CONFLICT (date, start_time) DO NOTHING
-      `;
-      insertedCount = insertResult.length;
-    }
-
-    const existingFutureSlots = await getDb().sql<{
-      _id: string;
-      date: string;
-      startTime: string;
-      endTime: string;
-      status: 'available' | 'blocked' | 'booked';
-    }>`
-      SELECT
-        id AS "_id",
-        date,
-        start_time AS "startTime",
-        end_time AS "endTime",
-        status
-      FROM tour_slots
-      WHERE date >= ${startDate}
-        AND date <= ${endDate}
-    `;
-
-    const slotIdsToDelete = existingFutureSlots
-      .filter((slot) => {
-        if (slot.status === 'booked') return false;
-        const rangeKey = `${slot.startTime}-${slot.endTime}`;
-        if (!configuredRangeKeys.has(rangeKey)) return false;
-        const seededKey = `${slot.date}|${slot.startTime}|${slot.endTime}`;
-        return !desiredSeededKeys.has(seededKey);
-      })
-      .map((slot) => slot._id);
-
-    let deletedCount = 0;
-    if (slotIdsToDelete.length > 0) {
-      const slotIdRows = slotIdsToDelete.map((id) => [id]);
-      const deleted = await getDb().sql`
-        DELETE FROM tour_slots
-        WHERE id IN (
-          SELECT column1::uuid
-          FROM (VALUES ${getDb().sql.values(slotIdRows)}) AS ids
-        )
-        AND status != 'booked'
-        RETURNING id
-      `;
-      deletedCount = deleted.length;
-    }
-
-    const result: SeededTourSyncResult = {
-      insertedCount,
-      deletedCount,
-      seededTemplates: slotConfigs.length,
-      horizonMonths: SEED_MONTHS_AHEAD,
+  if (slotConfigs.length === 0) {
+    console.warn('[generate-seeded-tour-slots] No tour-time-slots content found. Nothing to seed.');
+    return {
+      insertedCount: 0,
+      deletedCount: 0,
+      seededTemplates: 0,
+      horizonMonths: monthsAhead,
       windowStart: startDate,
       windowEnd: endDate,
     };
+  }
 
-    console.log(
-      `[generate-seeded-tour-slots] inserted=${insertedCount} deleted=${deletedCount} ` +
-      `seededTemplates=${slotConfigs.length} horizonMonths=${SEED_MONTHS_AHEAD}`,
-    );
+  const configuredRangeKeys = new Set(slotConfigs.map((config) => `${config.tourStart}-${config.tourEnd}`));
+  const desiredSeededKeys = new Set<string>();
 
-    return result;
+  for (const config of slotConfigs) {
+    for (const day of config.seedDays) {
+      const dates = getUpcomingDatesByWeekday(day, now, monthsAhead);
+      for (const date of dates) {
+        desiredSeededKeys.add(`${date}|${config.tourStart}|${config.tourEnd}`);
+      }
+    }
+  }
+
+  const seedRows = Array.from(desiredSeededKeys).map((key) => {
+    const [date, start, end] = key.split('|');
+    return [date, start, end];
+  });
+
+  let insertedCount = 0;
+  if (seedRows.length > 0) {
+    const insertResult = await getDb().sql`
+      INSERT INTO tour_slots (date, start_time, end_time)
+      VALUES ${getDb().sql.values(seedRows)}
+      ON CONFLICT (date, start_time) DO NOTHING
+    `;
+    insertedCount = insertResult.length;
+  }
+
+  const existingFutureSlots = await getDb().sql<{
+    _id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: 'available' | 'blocked' | 'booked';
+  }>`
+    SELECT
+      id AS "_id",
+      date,
+      start_time AS "startTime",
+      end_time AS "endTime",
+      status
+    FROM tour_slots
+    WHERE date >= ${startDate}
+      AND date <= ${endDate}
+  `;
+
+  const slotIdsToDelete = existingFutureSlots
+    .filter((slot) => {
+      if (slot.status === 'booked') return false;
+      const rangeKey = `${slot.startTime}-${slot.endTime}`;
+      if (!configuredRangeKeys.has(rangeKey)) return false;
+      const seededKey = `${slot.date}|${slot.startTime}|${slot.endTime}`;
+      return !desiredSeededKeys.has(seededKey);
+    })
+    .map((slot) => slot._id);
+
+  let deletedCount = 0;
+  if (slotIdsToDelete.length > 0) {
+    const slotIdRows = slotIdsToDelete.map((id) => [id]);
+    const deleted = await getDb().sql`
+      DELETE FROM tour_slots
+      WHERE id IN (
+        SELECT column1::uuid
+        FROM (VALUES ${getDb().sql.values(slotIdRows)}) AS ids
+      )
+      AND status != 'booked'
+      RETURNING id
+    `;
+    deletedCount = deleted.length;
+  }
+
+  const result: SeededTourSyncResult = {
+    insertedCount,
+    deletedCount,
+    seededTemplates: slotConfigs.length,
+    horizonMonths: monthsAhead,
+    windowStart: startDate,
+    windowEnd: endDate,
+  };
+
+  console.log(
+    `[generate-seeded-tour-slots] inserted=${insertedCount} deleted=${deletedCount} ` +
+    `seededTemplates=${slotConfigs.length} horizonMonths=${monthsAhead}`,
+  );
+
+  return result;
 }
 
 export const handler = schedule('0 0 1 * *', async () => {

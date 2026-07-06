@@ -158,11 +158,14 @@
 }
 
 .admin-manager__fieldset--wedding-notes {
-  @container (width > 500px) {
-    grid-column: 1 / -1;
-  }
   @container (width > 750px) {
-    grid-column: 1 / -2;
+    grid-column: 2 / -1;
+    grid-row: 2 / 2;
+  }
+}
+.admin-manager__fieldset--holiday-mode {
+  @container (width > 750px) {
+    grid-row: 2 / 2;
   }
 }
 .admin-manager__fieldset--payments-received {
@@ -341,6 +344,56 @@
 
 .table-status-filter {
   width: 180px;
+}
+
+.table-date-filter {
+  width: 180px;
+}
+
+.table-date-range {
+  border: 1px solid var(--color-border, #d1d5db);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.table-date-range__grid {
+  display: grid;
+  gap:  var(--space-3) var(--space-5);
+  @container (width >= 800px) {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+.table-date-range__help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.table-date-range__presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.table-date-range__preset-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.table-date-range__fields {
+  display: grid;
+  grid-template-columns: min-content min-content;
+  gap: var(--space-3);
+}
+
+.table-date-range__fields .form-group {
+  margin-bottom: 0;
 }
 
 .sortable-col {

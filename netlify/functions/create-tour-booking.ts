@@ -4,6 +4,7 @@ import {
   getTourCalendarSettings,
   isSlotInsideHolidayRange,
   isSlotInsideBuffer,
+  isSlotBeyondBookingHorizon,
 } from './utils/tour-calendar';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -111,6 +112,22 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({
           error: `This tour slot is inside the ${settings.bookingBufferHours}-hour booking window and can no longer be booked online.`,
           code: 'BOOKING_WINDOW_ELAPSED',
+        }),
+      };
+    }
+
+    const blockedByHorizon = isSlotBeyondBookingHorizon(
+      slotRecord.date,
+      slotRecord.startTime,
+      settings.bookingHorizonMonths,
+    );
+    if (blockedByHorizon) {
+      return {
+        statusCode: 409,
+        headers,
+        body: JSON.stringify({
+          error: `This tour slot is outside the ${settings.bookingHorizonMonths}-month booking horizon and cannot be booked online yet.`,
+          code: 'BOOKING_HORIZON_EXCEEDED',
         }),
       };
     }

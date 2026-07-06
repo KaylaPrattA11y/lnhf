@@ -22,7 +22,7 @@ interface TourSlot {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'blocked';
-  visitorVisibility?: 'visible' | 'holiday_mode' | 'booking_buffer' | 'not_applicable';
+  visitorVisibility?: 'visible' | 'holiday_mode' | 'booking_buffer' | 'booking_horizon' | 'not_applicable';
   visitorVisibilityDetail?: string | null;
   tour?: {
     name: string;
@@ -58,6 +58,7 @@ interface SeedSyncResult {
 
 interface TourCalendarSettings {
   bookingBufferHours: 12 | 24 | 36 | 48;
+  bookingHorizonMonths: 1 | 2 | 3 | 4 | 5 | 6;
   holidayMode: 'off' | 'range' | 'indefinite';
   holidayStartAt: string | null;
   holidayEndAt: string | null;
@@ -69,6 +70,8 @@ const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
   { tourStart: '14:00', tourEnd: '15:00' },
   { tourStart: '15:00', tourEnd: '16:00' },
 ];
+
+type TableDatePreset = '' | 'week' | 'month' | 'year';
 
 function toDateTimeLocalValue(isoValue: string | null) {
   if (!isoValue) return '';
@@ -86,6 +89,39 @@ function fromDateTimeLocalValue(localValue: string) {
   if (!localValue) return null;
   const dt = new Date(localValue);
   return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+}
+
+function toDateInputValue(value: Date) {
+  const yyyy = value.getFullYear();
+  const mm = String(value.getMonth() + 1).padStart(2, '0');
+  const dd = String(value.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDateRangeForPreset(preset: Exclude<TableDatePreset, ''>, now = new Date()) {
+  const start = new Date(now);
+  const end = new Date(now);
+
+  if (preset === 'week') {
+    const day = now.getDay();
+    start.setDate(now.getDate() - day);
+    end.setDate(start.getDate() + 6);
+  }
+
+  if (preset === 'month') {
+    start.setDate(1);
+    end.setMonth(now.getMonth() + 1, 0);
+  }
+
+  if (preset === 'year') {
+    start.setMonth(0, 1);
+    end.setMonth(11, 31);
+  }
+
+  return {
+    fromDate: toDateInputValue(start),
+    toDate: toDateInputValue(end),
+  };
 }
 
 function fmtDate(d: string) {
@@ -117,6 +153,8 @@ const globalFilterFn: FilterFn<TourSlot> = (row, _columnId, filterValue: string)
 };
 
 export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: TourTimeSlotOption[] }) {
+  const defaultTableRange = useMemo(() => getDateRangeForPreset('month'), []);
+
   const adminMsg = useRef<HTMLDivElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [user, setUser] = useState<unknown>(null);
@@ -145,6 +183,9 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [tableDatePreset, setTableDatePreset] = useState<TableDatePreset>('month');
+  const [tableFromDate, setTableFromDate] = useState(defaultTableRange.fromDate);
+  const [tableToDate, setTableToDate] = useState(defaultTableRange.toDate);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
@@ -158,6 +199,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
   const [calendarSettings, setCalendarSettings] = useState<TourCalendarSettings>({
     bookingBufferHours: 24,
+    bookingHorizonMonths: 3,
     holidayMode: 'off',
     holidayStartAt: null,
     holidayEndAt: null,
@@ -185,6 +227,27 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     if (exportTo) booked = booked.filter((slot) => slot.date <= exportTo);
     return booked;
   }, [slots, exportFrom, exportTo]);
+
+  const filteredTableSlots = useMemo(() => {
+    return slots.filter((slot) => {
+      if (tableFromDate && slot.date < tableFromDate) return false;
+      if (tableToDate && slot.date > tableToDate) return false;
+      return true;
+    });
+  }, [slots, tableFromDate, tableToDate]);
+
+  const applyTableDatePreset = (preset: Exclude<TableDatePreset, ''>) => {
+    const range = getDateRangeForPreset(preset);
+    setTableDatePreset(preset);
+    setTableFromDate(range.fromDate);
+    setTableToDate(range.toDate);
+  };
+
+  const clearTableDateRange = () => {
+    setTableDatePreset('');
+    setTableFromDate('');
+    setTableToDate('');
+  };
 
   useEffect(() => {
     netlifyIdentity.on('init', (u: unknown) => {
@@ -292,6 +355,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
       const payload = {
         bookingBufferHours: Number(calendarSettings.bookingBufferHours),
+        bookingHorizonMonths: Number(calendarSettings.bookingHorizonMonths),
         holidayMode: calendarSettings.holidayMode,
         holidayStartAt: calendarSettings.holidayMode === 'range' ? fromDateTimeLocalValue(holidayStartInput) : null,
         holidayEndAt: calendarSettings.holidayMode === 'range' ? fromDateTimeLocalValue(holidayEndInput) : null,
@@ -552,6 +616,10 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [globalFilter]);
 
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [tableFromDate, tableToDate]);
+
   const columns = [
     columnHelper.accessor('date', {
       header: 'Date',
@@ -580,6 +648,9 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
               <span className="admin-badge admin-badge--visitor-hidden">Hidden</span>
             )}
             {slot.status === 'available' && slot.visitorVisibility === 'booking_buffer' && (
+              <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
+            )}
+            {slot.status === 'available' && slot.visitorVisibility === 'booking_horizon' && (
               <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
             )}
           </div>
@@ -645,7 +716,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   ];
 
   const table = useReactTable({
-    data: slots,
+    data: filteredTableSlots,
     columns,
     state: { sorting, columnFilters, globalFilter, pagination },
     onSortingChange: setSorting,
@@ -859,6 +930,27 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
             </fieldset>
 
             <fieldset className="admin-manager__fieldset">
+              <legend>Future Booking Horizon</legend>
+              <p className="admin-manager__subtitle">
+                This controls how far ahead tour slots are shown to visitors and how far future seeded slot generation runs.
+              </p>
+              <div className="form-group checks-vertical">
+                {[1, 2, 3, 4, 5, 6].map((months) => (
+                  <label key={months} className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="radio"
+                      name="booking-horizon-months"
+                      value={months}
+                      checked={Number(calendarSettings.bookingHorizonMonths) === months}
+                      onChange={() => setCalendarSettings((prev) => ({ ...prev, bookingHorizonMonths: months as 1 | 2 | 3 | 4 | 5 | 6 }))}
+                    />
+                    {months} {months === 1 ? 'month' : 'months'}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--holiday-mode">
               <legend>Holiday Mode</legend>
               <p className="admin-manager__subtitle">
                 Holiday mode disables the Tour Booking Calendar for visitors without deleting or changing saved slots and bookings that you or a visitor have already made.
@@ -1027,7 +1119,90 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           </select>
         </div>
 
-        {slots.length === 0 && !loading ? (
+        <fieldset className="table-date-range" aria-label="Tour slots date range filters">
+          <legend className="form-label">Date range</legend>
+          <p className="table-date-range__help">Choose a quick range or set custom From/To dates. Leave both blank to show all dates.</p>
+
+          <div className="table-date-range__grid">
+            <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for tour slots">
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="tour-table-date-preset"
+                checked={tableDatePreset === 'week'}
+                onChange={() => applyTableDatePreset('week')}
+              />
+              This week
+            </label>
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="tour-table-date-preset"
+                checked={tableDatePreset === 'month'}
+                onChange={() => applyTableDatePreset('month')}
+              />
+              This month
+            </label>
+            <label className="table-date-range__preset-option">
+              <input
+                type="radio"
+                name="tour-table-date-preset"
+                checked={tableDatePreset === 'year'}
+                onChange={() => applyTableDatePreset('year')}
+              />
+              This year
+            </label>
+          </div>
+
+          <div className="table-date-range__fields">
+            <div className="form-group">
+              <label className="form-label" htmlFor="tour-table-date-from">From date</label>
+              <input
+                id="tour-table-date-from"
+                className="form-input table-date-filter"
+                type="date"
+                value={tableFromDate}
+                max={tableToDate || undefined}
+                onChange={(e) => {
+                  setTableDatePreset('');
+                  setTableFromDate(e.target.value);
+                }}
+                aria-label="Filter tour slots from date"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="tour-table-date-to">To date</label>
+              <input
+                id="tour-table-date-to"
+                className="form-input table-date-filter"
+                type="date"
+                value={tableToDate}
+                min={tableFromDate || undefined}
+                onChange={(e) => {
+                  setTableDatePreset('');
+                  setTableToDate(e.target.value);
+                }}
+                aria-label="Filter tour slots to date"
+              />
+            </div>
+            
+          </div>
+          <div className="form-group table-date-range__clear-wrap">
+              <label className="form-label" htmlFor="tour-table-date-clear">Clear range</label>
+              <button
+                id="tour-table-date-clear"
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={clearTableDateRange}
+              >
+                Show all dates
+              </button>
+            </div>
+          </div>
+          
+        </fieldset>
+
+        {filteredTableSlots.length === 0 && !loading ? (
           <p className="admin-manager__empty">No slots found. Add some above.</p>
         ) : (
           <>

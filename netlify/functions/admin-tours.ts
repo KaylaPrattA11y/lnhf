@@ -4,6 +4,7 @@ import { isAuthenticated } from './utils/auth';
 import {
   getTourCalendarSettings,
   isHolidayModeActiveNow,
+  isSlotBeyondBookingHorizon,
   isSlotInsideBuffer,
   isSlotInsideHolidayRange,
 } from './utils/tour-calendar';
@@ -79,6 +80,11 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     const transformedSlots = slots.map((slot) => {
       const visitorBlockedByHoliday = slot.status === 'available' && isSlotInsideHolidayRange(slot.date, slot.startTime, settings);
       const visitorBlockedByBuffer = slot.status === 'available' && !visitorBlockedByHoliday && isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now);
+      const visitorBlockedByHorizon =
+        slot.status === 'available' &&
+        !visitorBlockedByHoliday &&
+        !visitorBlockedByBuffer &&
+        isSlotBeyondBookingHorizon(slot.date, slot.startTime, settings.bookingHorizonMonths, now);
 
       return {
         ...slot,
@@ -88,6 +94,8 @@ export const handler: Handler = async (event, context: HandlerContext) => {
             ? 'holiday_mode'
             : visitorBlockedByBuffer
               ? 'booking_buffer'
+              : visitorBlockedByHorizon
+                ? 'booking_horizon'
               : 'visible',
         visitorVisibilityDetail: slot.status !== 'available'
           ? null
@@ -97,6 +105,8 @@ export const handler: Handler = async (event, context: HandlerContext) => {
               : 'Hidden from visitors: This slot falls inside the configured Holiday Mode date range.')
             : visitorBlockedByBuffer
               ? `Hidden from visitors: Inside the ${settings.bookingBufferHours}-hour Booking Buffer.`
+              : visitorBlockedByHorizon
+                ? `Hidden from visitors: Outside the ${settings.bookingHorizonMonths}-month booking horizon.`
               : 'Visible to visitors for online booking.',
       };
     });

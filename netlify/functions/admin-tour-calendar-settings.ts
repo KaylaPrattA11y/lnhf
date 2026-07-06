@@ -8,6 +8,7 @@ import {
 } from './utils/tour-calendar';
 
 const VALID_BUFFER_HOURS = new Set([12, 24, 36, 48]);
+const VALID_BOOKING_HORIZON_MONTHS = new Set([1, 2, 3, 4, 5, 6]);
 const VALID_HOLIDAY_MODES = new Set<HolidayMode>(['off', 'range', 'indefinite']);
 
 function normalizeMessageHtml(value: unknown) {
@@ -44,6 +45,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
 
     const body = JSON.parse(event.body ?? '{}') as {
       bookingBufferHours?: number;
+      bookingHorizonMonths?: number;
       holidayMode?: HolidayMode;
       holidayStartAt?: string | null;
       holidayEndAt?: string | null;
@@ -51,6 +53,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     };
 
     const bookingBufferHours = Number(body.bookingBufferHours ?? 24);
+    const bookingHorizonMonths = Number(body.bookingHorizonMonths ?? 3);
     const holidayMode = (body.holidayMode ?? 'off') as HolidayMode;
     const holidayStartAt = body.holidayStartAt ? new Date(body.holidayStartAt) : null;
     const holidayEndAt = body.holidayEndAt ? new Date(body.holidayEndAt) : null;
@@ -58,6 +61,10 @@ export const handler: Handler = async (event, context: HandlerContext) => {
 
     if (!VALID_BUFFER_HOURS.has(bookingBufferHours)) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: 'bookingBufferHours must be one of 12, 24, 36, or 48' }) };
+    }
+
+    if (!VALID_BOOKING_HORIZON_MONTHS.has(bookingHorizonMonths)) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'bookingHorizonMonths must be between 1 and 6' }) };
     }
 
     if (!VALID_HOLIDAY_MODES.has(holidayMode)) {
@@ -79,6 +86,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
       INSERT INTO tour_calendar_settings (
         id,
         booking_buffer_hours,
+        booking_horizon_months,
         holiday_mode,
         holiday_start_at,
         holiday_end_at,
@@ -88,6 +96,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
       VALUES (
         TRUE,
         ${bookingBufferHours},
+        ${bookingHorizonMonths},
         ${holidayMode},
         ${holidayMode === 'range' ? holidayStartAt?.toISOString() ?? null : null},
         ${holidayMode === 'range' ? holidayEndAt?.toISOString() ?? null : null},
@@ -97,6 +106,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
       ON CONFLICT (id) DO UPDATE
       SET
         booking_buffer_hours = EXCLUDED.booking_buffer_hours,
+        booking_horizon_months = EXCLUDED.booking_horizon_months,
         holiday_mode = EXCLUDED.holiday_mode,
         holiday_start_at = EXCLUDED.holiday_start_at,
         holiday_end_at = EXCLUDED.holiday_end_at,

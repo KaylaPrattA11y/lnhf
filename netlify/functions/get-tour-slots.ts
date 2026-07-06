@@ -5,6 +5,7 @@ import {
   isHolidayModeActiveNow,
   isSlotInsideHolidayRange,
   isSlotInsideBuffer,
+  isSlotBeyondBookingHorizon,
 } from './utils/tour-calendar';
 
 /**
@@ -68,9 +69,13 @@ export const handler: Handler = async (event) => {
       if (slot.status !== 'available') return slot;
 
       const blockedByHoliday = isSlotInsideHolidayRange(slot.date, slot.startTime, settings);
-      const blockedByBuffer = isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now);
+      const blockedByBuffer = !blockedByHoliday && isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now);
+      const blockedByHorizon =
+        !blockedByHoliday &&
+        !blockedByBuffer &&
+        isSlotBeyondBookingHorizon(slot.date, slot.startTime, settings.bookingHorizonMonths, now);
 
-      if (blockedByHoliday || blockedByBuffer) {
+      if (blockedByHoliday || blockedByBuffer || blockedByHorizon) {
         return { ...slot, status: 'blocked' as const };
       }
 
@@ -84,6 +89,7 @@ export const handler: Handler = async (event) => {
         slots: transformedSlots,
         settings: {
           bookingBufferHours: settings.bookingBufferHours,
+          bookingHorizonMonths: settings.bookingHorizonMonths,
           holidayMode: settings.holidayMode,
           holidayStartAt: settings.holidayStartAt,
           holidayEndAt: settings.holidayEndAt,

@@ -19,6 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_tour_slots_date ON tour_slots (date);
 CREATE TABLE IF NOT EXISTS tour_calendar_settings (
   id BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id = TRUE),
   booking_buffer_hours INTEGER NOT NULL DEFAULT 24 CHECK (booking_buffer_hours IN (12, 24, 36, 48)),
+  booking_horizon_months INTEGER NOT NULL DEFAULT 3 CHECK (booking_horizon_months IN (1, 2, 3, 4, 5, 6)),
   holiday_mode TEXT NOT NULL DEFAULT 'off' CHECK (holiday_mode IN ('off', 'range', 'indefinite')),
   holiday_start_at TIMESTAMPTZ,
   holiday_end_at TIMESTAMPTZ,
