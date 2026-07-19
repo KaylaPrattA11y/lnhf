@@ -47,6 +47,16 @@
   from = "/sitemap.xml"
   to = "/sitemap-index.xml"
   status = 301
+# Redirect from individual Rooms pages to About page, scrolling down to Photo Gallery
+[[redirects]]
+  from = "/room/*"
+  to = "/about#waterfront"
+  status = 301
+# Redirect from old Tours page to new Tours page
+[[redirects]]
+  from = "/tour/"
+  to = "/tours/"
+  status = 301
 
 # HEADERS -----------------
 # Cache Astro's hashed static assets (JS, CSS, fonts) for 1 year
