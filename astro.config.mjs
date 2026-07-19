@@ -5,7 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import icon from 'astro-icon';
 
 export default defineConfig({
-  site: 'https://lowernotleyhallfarm.netlify.app/',
+  site: 'https://lowernotleyhallfarm.com/',
   integrations: [
     react(), 
     mdx(), 

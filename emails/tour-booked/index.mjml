@@ -29,7 +29,7 @@
   <mj-body css-class="bg-arabesque">
     <mj-section background-color="#2b2b2c" full-width="full-width">
       <mj-column>
-        <mj-navbar base-url="https://lowernotleyhallfarm.netlify.app" hamburger="hamburger" ico-color="#ffffff">
+        <mj-navbar base-url="https://lowernotleyhallfarm.com" hamburger="hamburger" ico-color="#ffffff">
             <mj-navbar-link href="/about/" color="#ffffff">About</mj-navbar-link>
             <mj-navbar-link href="/booking/" color="#ffffff">Book a Tour</mj-navbar-link>
             <mj-navbar-link href="/pricing/" color="#ffffff">Pricing</mj-navbar-link>
@@ -39,7 +39,7 @@
     </mj-section>
     <mj-section css-class="panel">
       <mj-column width="250px">
-        <mj-image src="https://lowernotleyhallfarm.netlify.app/images/logo.png" />
+        <mj-image src="https://lowernotleyhallfarm.com/images/logo.png" />
       </mj-column>
       <mj-column>
         <mj-text font-family="'Cormorant Garamond', Georgia, serif" font-weight="400">
@@ -70,7 +70,7 @@
       <mj-column>
         <mj-text font-size="20px" color="#b5924c" font-family="'Jost', Helvetica, Arial, sans-serif">{{ name }}, your private tour at Lower Notley Hall Farm has been booked.</mj-text>
         <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">We look forward to welcoming you to our farm.</mj-text>
-        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.netlify.app/about/">learn more about our farm</a> and get answers to <a href="https://lowernotleyhallfarm.netlify.app/faqs/">frequently asked questions</a>.</mj-text>
+        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.com/about/">learn more about our farm</a> and get answers to <a href="https://lowernotleyhallfarm.com/faqs/">frequently asked questions</a>.</mj-text>
       </mj-column>
     </mj-section>
     <mj-section background-color="#2b2b2c" full-width="full-width">
