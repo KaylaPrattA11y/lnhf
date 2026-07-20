@@ -4,10 +4,10 @@ import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import WeddingsAdmin from '@components/admin/WeddingsAdmin';
 import AdminManagerStyles from '@components/admin/AdminManagerStyles.astro';
-import { getCollection } from 'astro:content';
 import { comparePricingEntries } from '@lib/pricing-order';
+import { getPublishedCollection } from '@lib/content-status';
 
-const entries = await getCollection('pricing');
+const entries = await getPublishedCollection('pricing');
 const pricingEntries = entries
   .map((entry) => ({
     id: entry.id,

@@ -1,9 +1,9 @@
 ---
 // LatestPosts.astro — shows only posts explicitly marked for homepage
-import { getCollection } from 'astro:content';
+import { getPublishedCollection } from '@lib/content-status';
 import BlogCard from '../blog/BlogCard.astro';
 
-const allPosts = await getCollection('blog');
+const allPosts = await getPublishedCollection('blog');
 const latestPosts = allPosts
   .filter(post => post.data.showOnHomepage === true)
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())

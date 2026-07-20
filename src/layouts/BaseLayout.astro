@@ -4,7 +4,7 @@ import '@fontsource-variable/cormorant-garamond/wght.css';
 // Supports weights 100-900
 import '@fontsource-variable/jost/wght.css';
 import { createHash } from 'node:crypto';
-import { getCollection } from 'astro:content';
+import { getPublishedCollection } from '@lib/content-status';
 import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
 import type { SortablePricingEntry } from '../lib/pricing-order';
 
@@ -160,7 +160,7 @@ const webPageSchema: Record<string, unknown> = {
 const customSchema = Array.isArray(schema) ? schema : schema ? [schema] : [];
 const schemaGraph = [organizationSchema, webPageSchema, ...customSchema];
 
-const pricingEntries = await getCollection('pricing');
+const pricingEntries = await getPublishedCollection('pricing');
 const pricingVersionSeed = pricingEntries
   .map((entry: Object & { id: string; data: SortablePricingEntry }) => `${entry.id}:${JSON.stringify(entry.data)}`)
   .sort()

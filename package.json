@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tinacms dev -c \"astro dev\"",
-    "build": "tinacms build && astro build",
+    "dev": "node scripts/patch-tinacms-status-badges.mjs && tinacms dev -c \"astro dev\"",
+    "build": "node scripts/patch-tinacms-status-badges.mjs && tinacms build && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "clean:content": "rm -rf node_modules/.astro && astro sync",
     "db:migrate": "netlify database migrations apply",
-    "db:migrate:neon": "node scripts/apply-neon-migrations.mjs"
+    "db:migrate:neon": "node scripts/apply-neon-migrations.mjs",
+    "postinstall": "node scripts/patch-tinacms-status-badges.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.0",

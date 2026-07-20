@@ -1,5 +1,4 @@
 ---
-import { getCollection } from 'astro:content';
 import type { CollectionEntry } from "astro:content";
 import type { GetStaticPaths } from "astro";
 import BaseLayout from '@layouts/BaseLayout.astro';
@@ -7,9 +6,10 @@ import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import BlogCard from '@components/blog/BlogCard.astro';
 import Pagination from "../../components/blog/Pagination.astro";
+import { getPublishedCollection } from '@lib/content-status';
 
 export const getStaticPaths: GetStaticPaths = async ({ paginate }) => {
-  const posts = await getCollection("blog");
+  const posts = await getPublishedCollection("blog");
   const sortedPosts = posts.sort(
     (a: CollectionEntry<"blog">, b: CollectionEntry<"blog">) =>
       new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime()

@@ -1,5 +1,345 @@
 import React from 'react';
-import { defineConfig } from 'tinacms';
+import { defineConfig, type TinaCMS, useCMS } from 'tinacms';
+
+type DraftCollection = {
+  name: string;
+  label: string;
+  connectionField: string;
+};
+
+type DraftDocument = {
+  collectionName: string;
+  collectionLabel: string;
+  title: string;
+  filename: string;
+  relativePath: string;
+  breadcrumbs: string[];
+};
+
+const draftCollections: DraftCollection[] = [
+  { name: 'blog', label: 'Blog Posts', connectionField: 'blogConnection' },
+  { name: 'carousel', label: 'Home Page Slide Show', connectionField: 'carouselConnection' },
+  { name: 'gallery', label: 'About Page Gallery', connectionField: 'galleryConnection' },
+  { name: 'faqs', label: 'FAQs', connectionField: 'faqsConnection' },
+  { name: 'vendors', label: 'Vendors', connectionField: 'vendorsConnection' },
+  { name: 'testimonials', label: 'Testimonials', connectionField: 'testimonialsConnection' },
+  { name: 'pricing', label: 'Pricing', connectionField: 'pricingConnection' },
+  { name: 'tourTimeSlots', label: 'Tour Time Slots', connectionField: 'tourTimeSlotsConnection' },
+];
+
+const buildDraftsQuery = (connectionField: string) => `#graphql
+  query DraftDocuments {
+    ${connectionField}(first: 200, filter: { status: { eq: "draft" } }) {
+      edges {
+        node {
+          ... on Document {
+            _sys {
+              title
+              filename
+              relativePath
+              breadcrumbs
+            }
+            _values
+          }
+        }
+      }
+    }
+  }
+`;
+
+const DraftsIcon = () => React.createElement(
+  'svg',
+  {
+    viewBox: '0 0 24 24',
+    width: '1.5em',
+    height: '1.5em',
+    style: {
+      marginInlineEnd: '0.5em',
+    },
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: '2',
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': 'true',
+  },
+  React.createElement('path', { d: 'M9 5H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2' }),
+  React.createElement('path', { d: 'M9 12h6' }),
+  React.createElement('path', { d: 'M9 16h4' }),
+  React.createElement('path', { d: 'M14 4h6v6' }),
+  React.createElement('path', { d: 'M20 4 12 12' }),
+);
+
+const fetchDraftDocuments = async (cms: TinaCMS): Promise<DraftDocument[]> => {
+  const tinaApi = cms.api.tina;
+
+  if (!tinaApi) {
+    throw new Error('Tina API is unavailable.');
+  }
+
+  const results = await Promise.all(
+    draftCollections.map(async (collection) => {
+      const response = await tinaApi.request(buildDraftsQuery(collection.connectionField), { variables: {} }) as Record<string, {
+        edges?: Array<{
+          node?: {
+            _sys?: {
+              title?: string;
+              filename?: string;
+              relativePath?: string;
+              breadcrumbs?: string[];
+            };
+            _values?: {
+              status?: string;
+            };
+          };
+        }>;
+      }>;
+
+      return (response[collection.connectionField]?.edges ?? [])
+        .filter((edge) => edge.node?._sys && edge.node._values?.status === 'draft')
+        .map((edge) => ({
+          collectionName: collection.name,
+          collectionLabel: collection.label,
+          title: edge.node?._sys?.title?.trim() || edge.node?._sys?.filename || 'Untitled draft',
+          filename: edge.node?._sys?.filename || '',
+          relativePath: edge.node?._sys?.relativePath || '',
+          breadcrumbs: edge.node?._sys?.breadcrumbs || [],
+        }));
+    }),
+  );
+
+  return results
+    .flat()
+    .sort((left, right) => left.collectionLabel.localeCompare(right.collectionLabel) || left.title.localeCompare(right.title));
+};
+
+const DraftsScreen = () => {
+  const cms = useCMS();
+  const [drafts, setDrafts] = React.useState<DraftDocument[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const loadDrafts = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const nextDrafts = await fetchDraftDocuments(cms);
+      setDrafts(nextDrafts);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load drafts.');
+    } finally {
+      setLoading(false);
+    }
+  }, [cms]);
+
+  React.useEffect(() => {
+    void loadDrafts();
+  }, [loadDrafts]);
+
+  return React.createElement(
+    'div',
+    {
+      style: {
+        maxWidth: '1100px',
+        margin: '0 auto',
+        padding: '2rem',
+      },
+    },
+    React.createElement(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          alignItems: 'flex-start',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
+        },
+      },
+      React.createElement(
+        'div',
+        null,
+        React.createElement('h1', { style: { fontSize: '2rem', margin: '0 0 0.5rem', color: '#1f2937' } }, 'Drafts Queue'),
+        React.createElement(
+          'p',
+          { style: { margin: 0, color: '#4b5563', maxWidth: '60ch', lineHeight: 1.5 } },
+          'This dashboard shows every content entry that is still in draft status so editors can review, finish, and publish work from one place.'
+        ),
+      ),
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          onClick: () => {
+            void loadDrafts();
+          },
+          style: {
+            border: '1px solid #d1d5db',
+            borderRadius: '0.5rem',
+            background: '#fff',
+            color: '#374151',
+            padding: '0.7rem 1rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+          },
+        },
+        'Refresh list',
+      ),
+    ),
+    error && React.createElement(
+      'div',
+      {
+        style: {
+          marginBottom: '1rem',
+          padding: '0.85rem 1rem',
+          borderRadius: '0.75rem',
+          border: '1px solid #fecaca',
+          background: '#fef2f2',
+          color: '#991b1b',
+        },
+      },
+      error,
+    ),
+    loading
+      ? React.createElement('p', { style: { color: '#6b7280' } }, 'Loading draft entries...')
+      : drafts.length === 0
+        ? React.createElement(
+            'div',
+            {
+              style: {
+                padding: '1rem 1.25rem',
+                borderRadius: '0.75rem',
+                border: '1px solid #bbf7d0',
+                background: '#f0fdf4',
+                color: '#166534',
+              },
+            },
+            'No drafts are waiting for review.',
+          )
+        : React.createElement(
+            React.Fragment,
+            null,
+            React.createElement(
+              'p',
+              { style: { margin: '0 0 1rem', color: '#6b7280', fontWeight: 600 } },
+              `${drafts.length} draft${drafts.length === 1 ? '' : 's'} waiting for review`,
+            ),
+            React.createElement(
+              'div',
+              {
+                style: {
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '0.9rem',
+                  overflow: 'hidden',
+                  background: '#fff',
+                },
+              },
+              React.createElement(
+                'table',
+                {
+                  style: {
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                  },
+                },
+                React.createElement(
+                  'thead',
+                  { style: { background: '#f9fafb' } },
+                  React.createElement(
+                    'tr',
+                    null,
+                    ['Title', 'Collection', 'Path', ''].map((heading) => React.createElement(
+                      'th',
+                      {
+                        key: heading || 'actions',
+                        style: {
+                          padding: '0.85rem 1rem',
+                          textAlign: 'left',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        },
+                      },
+                      heading,
+                    )),
+                  ),
+                ),
+                React.createElement(
+                  'tbody',
+                  null,
+                  drafts.map((draft) => React.createElement(
+                    'tr',
+                    { key: `${draft.collectionName}:${draft.relativePath}` },
+                    React.createElement(
+                      'td',
+                      { style: { padding: '1rem', borderBottom: '1px solid #f3f4f6', verticalAlign: 'top' } },
+                      React.createElement('div', { style: { fontWeight: 600, color: '#1f2937', marginBottom: '0.35rem' } }, draft.title),
+                      React.createElement(
+                        'span',
+                        {
+                          style: {
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            borderRadius: '999px',
+                            padding: '0.2rem 0.55rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            background: '#fff7ed',
+                            border: '1px solid #fdba74',
+                            color: '#9a3412',
+                          },
+                        },
+                        'Draft',
+                      ),
+                    ),
+                    React.createElement('td', { style: { padding: '1rem', borderBottom: '1px solid #f3f4f6', color: '#374151', verticalAlign: 'top' } }, draft.collectionLabel),
+                    React.createElement('td', { style: { padding: '1rem', borderBottom: '1px solid #f3f4f6', color: '#6b7280', verticalAlign: 'top', fontFamily: 'monospace', fontSize: '0.9rem' } }, draft.relativePath),
+                    React.createElement(
+                      'td',
+                      { style: { padding: '1rem', borderBottom: '1px solid #f3f4f6', textAlign: 'right', verticalAlign: 'top' } },
+                      React.createElement(
+                        'a',
+                        {
+                          href: `#/collections/edit/${draft.collectionName}/~/${draft.breadcrumbs.join('/')}`,
+                          style: {
+                            display: 'inline-block',
+                            borderRadius: '0.5rem',
+                            background: '#c2410c',
+                            color: '#fff',
+                            textDecoration: 'none',
+                            padding: '0.65rem 0.95rem',
+                            fontWeight: 600,
+                          },
+                        },
+                        'Open draft',
+                      ),
+                    ),
+                  )),
+                ),
+              ),
+            ),
+          ),
+  );
+};
+
+const withDraftsScreen = (cms: TinaCMS) => {
+  cms.plugins.add({
+    __type: 'screen',
+    name: 'Drafts Queue',
+    Component: DraftsScreen,
+    Icon: DraftsIcon,
+    layout: 'fullscreen',
+    navCategory: 'Dashboard',
+  });
+
+  return cms;
+};
 
 const toTimeValue = (raw: unknown): string => {
   if (typeof raw !== 'string' || raw.trim() === '') return '';
@@ -38,6 +378,88 @@ const timeOnlyInput = (props: any) => {
   });
   const label = props.field.label ? React.createElement('label', { className: 'form-label', htmlFor: props.input.name }, props.field.label) : null;
   return React.createElement('div', { className: 'form-group' }, label, input);
+};
+
+const statusFieldInput = (props: any) => {
+  const value = props.input.value === 'published' ? 'published' : 'draft';
+  const badgeStyles = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    borderRadius: '999px',
+    padding: '0.2rem 0.55rem',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    background: value === 'published' ? '#e6f8eb' : '#fff1d6',
+    color: value === 'published' ? '#17663a' : '#8a4b00',
+    border: `1px solid ${value === 'published' ? '#9dd3ad' : '#f0c36d'}`,
+  };
+
+  const select = React.createElement(
+    'select',
+    {
+      value,
+      onBlur: props.input.onBlur,
+      onChange: (event: React.ChangeEvent<HTMLSelectElement>) => {
+        props.input.onChange(event.target.value);
+      },
+      id: props.input.name,
+      style: {
+        display: 'block',
+        width: '100%',
+        padding: '0.5rem 0.65rem',
+        border: '1px solid #d0d0d0',
+        borderRadius: '4px',
+        background: '#fff',
+        color: '#111',
+      },
+    },
+    React.createElement('option', { value: 'draft' }, 'Draft'),
+    React.createElement('option', { value: 'published' }, 'Published'),
+  );
+
+  const label = props.field.label
+    ? React.createElement('label', { className: 'form-label', htmlFor: props.input.name }, props.field.label)
+    : null;
+  const badge = React.createElement(
+    'span',
+    { style: badgeStyles },
+    value === 'published' ? 'Published' : 'Draft',
+  );
+  const helper = React.createElement(
+    'p',
+    {
+      style: {
+        margin: '0.5rem 0 0',
+        fontSize: '0.875rem',
+        color: '#555',
+      },
+    },
+    value === 'published'
+      ? 'This entry is live on the website.'
+      : 'This entry is hidden from the public website until you switch it to Published.',
+  );
+
+  return React.createElement(
+    'div',
+    { className: 'form-group' },
+    label,
+    React.createElement(
+      'div',
+      {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          marginBottom: '0.5rem',
+        },
+      },
+      badge,
+    ),
+    select,
+    helper,
+  );
 };
 
 const galleryFields = [
@@ -82,10 +504,26 @@ const galleryFields = [
   },
 ];
 
+const statusField = {
+  name: 'status',
+  label: 'Status',
+  type: 'string' as const,
+  options: [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+  ],
+  required: true,
+  description: 'Draft entries stay hidden from the public website until you change them to Published.',
+  ui: {
+    component: statusFieldInput,
+  },
+};
+
 export default defineConfig({
   branch: process.env.HEAD || process.env.BRANCH || "main",
   clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID,
   token: process.env.TINA_TOKEN,
+  cmsCallback: withDraftsScreen,
   search: {
     tina: {
       indexerToken: process.env.TINA_SEARCH_TOKEN,
@@ -110,6 +548,7 @@ export default defineConfig({
         path: 'src/content/blog',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           showOnHomepage: false,
           pubDate: new Date().toISOString(),
         }),
@@ -125,6 +564,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'title',
             label: 'Title',
@@ -231,9 +671,11 @@ export default defineConfig({
         path: 'src/content/carousel',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           sortOrder: 99,
         }),
         fields: [
+          statusField,
           {
             type: 'image',
             label: 'Image',
@@ -270,9 +712,10 @@ export default defineConfig({
         path: "src/content/gallery",
         format: "mdx",
         defaultItem: () => ({
+          status: 'draft',
           pubDate: new Date().toISOString(),
         }),
-        fields: galleryFields as any,
+        fields: [statusField, ...(galleryFields as any)],
       },
       {
         name: 'faqs',
@@ -280,6 +723,7 @@ export default defineConfig({
         path: 'src/content/faqs',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           sortOrder: 99,
         }),
         ui: {
@@ -289,6 +733,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'question',
             label: 'Question',
@@ -318,6 +763,7 @@ export default defineConfig({
         path: 'src/content/vendors',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           sortOrder: 99,
         }),
         ui: {
@@ -327,6 +773,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'name',
             label: 'Vendor Name',
@@ -396,6 +843,7 @@ export default defineConfig({
         path: 'src/content/testimonials',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           sortOrder: 99,
           showOnHomepage: false,
         }),
@@ -406,6 +854,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'names',
             label: 'Guest Name(s)',
@@ -466,6 +915,7 @@ export default defineConfig({
         path: 'src/content/pricing',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           feeType: 'static',
           sortOrder: 99,
           perUnit: false,
@@ -478,6 +928,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'name',
             label: 'Entry Name',
@@ -556,6 +1007,7 @@ export default defineConfig({
         path: 'src/content/tour-time-slots',
         format: 'mdx',
         defaultItem: () => ({
+          status: 'draft',
           seedSlotOnDay: ['0'],
         }),
         ui: {
@@ -581,6 +1033,7 @@ export default defineConfig({
           },
         },
         fields: [
+          statusField,
           {
             name: 'tourStart',
             label: 'Tour Start Time',

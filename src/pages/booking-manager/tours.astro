@@ -1,12 +1,12 @@
 ---
-import { getCollection } from 'astro:content';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import ToursAdmin from '@components/admin/ToursAdmin';
 import AdminManagerStyles from '@components/admin/AdminManagerStyles.astro';
+import { getPublishedCollection } from '@lib/content-status';
 
-const tourTimeSlots = (await getCollection('tourTimeSlots'))
+const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
   .map((entry) => ({
     tourStart: entry.data.tourStart,
     tourEnd: entry.data.tourEnd,

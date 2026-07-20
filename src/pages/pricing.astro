@@ -1,10 +1,10 @@
 ---
-import { getCollection } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import PricingTable from '@components/pricing/PricingTable';
+import { getPublishedCollection } from '@lib/content-status';
 import { comparePricingEntries } from '@lib/pricing-order';
 
-const rawEntries = await getCollection('pricing');
+const rawEntries = await getPublishedCollection('pricing');
 const entries = rawEntries
   .map((e) => ({
     id: e.id,

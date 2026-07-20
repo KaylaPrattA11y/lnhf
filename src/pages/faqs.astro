@@ -1,8 +1,9 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
+import { getPublishedCollection } from '@lib/content-status';
 
-const faqEntries = await getCollection('faqs');
+const faqEntries = await getPublishedCollection('faqs');
 const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
 ---
 

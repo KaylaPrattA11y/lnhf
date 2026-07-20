@@ -1,10 +1,10 @@
 ---
 import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
+import { getPublishedCollection } from '@lib/content-status';
 import Logo from '@assets/images/logo.svg';
-const images = await getCollection('gallery');
+const images = await getPublishedCollection('gallery');
 const latestImages = images
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
@@ -92,7 +92,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
       <div class="about-split__media">
         <div class="about-split__img-wrap">
           <Image
-            src={notleyHallFarmManorHouse}
+            src="/uploads/awaiting%20approval/manor-house-1.jpg"
             alt="The historic manor house on Lower Notley Hall Farm"
             class="about-split__img"
             width="600"

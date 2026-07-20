@@ -1,9 +1,9 @@
 ---
 // Hero.astro
 import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
-import receptionBarnInteriorRiverside from '../../assets/images/reception-barn-interior-riverside.jpg';
-import aerialReceptionBarn from '../../assets/images/aerial-reception-barn.jpg';
+import { getPublishedCollection } from '@lib/content-status';
+import receptionBarnInteriorRiverside from '@assets/images/reception-barn-interior-riverside.jpg';
+import aerialReceptionBarn from '@assets/images/aerial-reception-barn.jpg';
 
 interface HeroSlide {
   image: string;
@@ -11,7 +11,7 @@ interface HeroSlide {
   caption: string;
 }
 
-const heroSlides: HeroSlide[] = (await getCollection('carousel'))
+const heroSlides: HeroSlide[] = (await getPublishedCollection('carousel'))
   .sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99))
   .slice(0, 5)
   .map((slide) => ({

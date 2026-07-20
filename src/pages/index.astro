@@ -9,9 +9,9 @@ import TheSetting from '@components/home/TheSetting.astro';
 import LatestPosts from '@components/home/LatestPosts.astro';
 import Testimonials from '@components/home/Testimonials';
 import TourForm from '@components/home/TourForm.astro';
-import { getCollection } from 'astro:content';
+import { getPublishedCollection } from '@lib/content-status';
 
-const testimonials = await getCollection('testimonials');
+const testimonials = await getPublishedCollection('testimonials');
 // filter to homepage only, then sort by sortOrder (default to 99 if not set) so that entries without a sortOrder appear at the end
 const sortedTestimonials = testimonials
   .filter(t => t.data.showOnHomepage)

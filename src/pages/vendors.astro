@@ -1,8 +1,9 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
+import { getPublishedCollection } from '@lib/content-status';
 
-const vendors = await getCollection('vendors');
+const vendors = await getPublishedCollection('vendors');
 const vendorsWithContent = await Promise.all(
   vendors.map(async (vendor) => {
     const { Content } = await render(vendor);

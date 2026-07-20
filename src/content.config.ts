@@ -2,6 +2,8 @@ import { defineCollection } from "astro:content";
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+const statusSchema = z.enum(['draft', 'published']).optional().default('draft');
+
 const galleryItemSchema = z.object({
   image: z.string(),
   pubDate: z.coerce.date().default(new Date()),
@@ -13,6 +15,7 @@ const galleryItemSchema = z.object({
 const blog = defineCollection({
   loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     title: z.string(),
     pubDate: z.coerce.date().default(new Date()),
     showOnHomepage: z.boolean().optional().default(false),
@@ -25,12 +28,15 @@ const blog = defineCollection({
 
 const gallery = defineCollection({
   loader: glob({ base: './src/content/gallery', pattern: '**/*.{md,mdx}' }),
-  schema: galleryItemSchema,
+  schema: galleryItemSchema.extend({
+    status: statusSchema,
+  }),
 });
 
 const carousel = defineCollection({
   loader: glob({ base: './src/content/carousel', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     image: z.string(),
     title: z.string(),
     caption: z.string(),
@@ -41,6 +47,7 @@ const carousel = defineCollection({
 const faqs = defineCollection({
   loader: glob({ base: './src/content/faqs', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     question: z.string(),
     sortOrder: z.number().optional().default(99),
   }),
@@ -49,6 +56,7 @@ const faqs = defineCollection({
 const tourTimeSlots = defineCollection({
   loader: glob({ base: './src/content/tour-time-slots', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     tourStart: z
       .string()
       .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'tourStart must use HH:mm 24-hour format'),
@@ -65,6 +73,7 @@ const tourTimeSlots = defineCollection({
 const vendors = defineCollection({
   loader: glob({ base: './src/content/vendors', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     name: z.string(),
     vendorServices: z
       .union([
@@ -87,6 +96,7 @@ const vendors = defineCollection({
 const pricing = defineCollection({
   loader: glob({ base: './src/content/pricing', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     name: z.string(),
     description: z.string().optional(),
     billingTreatment: z.enum(['includedInTotals', 'returnedLater', 'informationalOnly']).optional().default('includedInTotals'),
@@ -103,6 +113,7 @@ const pricing = defineCollection({
 const testimonials = defineCollection({
   loader: glob({ base: './src/content/testimonials', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
+    status: statusSchema,
     names: z.string().max(100, 'Names cannot exceed 100 characters'),
     testimonial: z.string().max(250, 'Testimonial text cannot exceed 250 characters'),
     date: z.string().optional().default(new Date().toISOString()),
