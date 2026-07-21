@@ -436,8 +436,8 @@ const statusFieldInput = (props: any) => {
       },
     },
     value === 'published'
-      ? 'This entry is live on the website.'
-      : 'This entry is hidden from the public website until you switch it to Published.',
+      ? 'This entry is live on the website. (Please wait 5-10 minutes for changes to appear on the live site.)'
+      : 'This entry is hidden from the public website until you switch it to Published. (Please wait 5-10 minutes for changes to appear on the live site.)',
   );
 
   return React.createElement(
@@ -513,7 +513,7 @@ const statusField = {
     { label: 'Published', value: 'published' },
   ],
   required: true,
-  description: 'Draft entries stay hidden from the public website until you change them to Published.',
+  description: 'Draft entries stay hidden from the public website until you change them to Published. (Please wait 5-10 minutes for changes to appear on the live site.)',
   ui: {
     component: statusFieldInput,
   },
