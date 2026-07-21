@@ -13,25 +13,10 @@ import {
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
 import { buildGoogleCalendarUrl, buildIcsDownloadUrl } from '../../lib/calendar-links';
+import { ICONS } from './icons';
 
 const netlifyIdentity = window.netlifyIdentity!;
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
-
-const calendarDownArrow = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-	<path d="M0 0h24v24H0z" fill="none" />
-	<path fill="currentColor" d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2M5 20V8h14V6v14z" />
-	<path fill="currentColor" d="M13 10h-2v4H8l4 4l4-4h-3z" />
-</svg>
-);
-
-const calendarPlus = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-	<path d="M0 0h24v24H0z" fill="none" />
-	<path fill="currentColor" d="M13 10h-2v3H8v2h3v3h2v-3h3v-2h-3z" />
-	<path fill="currentColor" d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2M5 20V8h14V6v14z" />
-</svg>
-);
 
 interface TourSlot {
   _id: string;
@@ -173,6 +158,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   const defaultTableRange = useMemo(() => getDateRangeForPreset('month'), []);
 
   const adminMsg = useRef<HTMLDivElement>(null);
+  const addTourSlotDetailsRef = useRef<HTMLDetailsElement>(null);
   const [initialized, setInitialized] = useState(false);
   const [user, setUser] = useState<unknown>(null);
   const [slots, setSlots] = useState<TourSlot[]>([]);
@@ -194,6 +180,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   const [newStart, setNewStart] = useState(sortedTimeSlotOptions[0]?.tourStart ?? '13:00');
   const [newEnd, setNewEnd] = useState(sortedTimeSlotOptions[0]?.tourEnd ?? '14:00');
   const [newStatus, setNewStatus] = useState<'available' | 'blocked' | 'booked'>('available');
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [newTour, setNewTour] = useState({ name: '', email: '', phone: '', partySize: '', message: '' });
   const [tourFormErrors, setTourFormErrors] = useState<TourFormErrors>({});
@@ -252,6 +239,13 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       return true;
     });
   }, [slots, tableFromDate, tableToDate]);
+
+  const selectedExistingSlot = useMemo(() => {
+    if (!newDate || !newStart) return null;
+    return slots.find((slot) => slot.date === newDate && slot.startTime === newStart) ?? null;
+  }, [slots, newDate, newStart]);
+
+  const isBookingExistingSelection = !editingSlotId && newStatus === 'booked' && Boolean(selectedExistingSlot);
 
   const applyTableDatePreset = (preset: Exclude<TableDatePreset, ''>) => {
     const range = getDateRangeForPreset(preset);
@@ -420,9 +414,13 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       return;
     }
     const slot = slots.find((s) => s._id === id);
-    if (slot?.status === 'booked') {
+    if (slot?.status === 'booked' && body.status === 'available') {
       const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
       if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) return;
+    }
+    if (slot?.status === 'available' && body.status === 'blocked') {
+      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
+      if (!confirm(`Blocking a slot will prevent guests from booking it. Are you sure you want to block it?`)) return;
     }
     if (!res.ok) throw new Error((await res.json()).error || 'Update failed');
     await fetchSlots();
@@ -440,7 +438,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to delete it?`)) return;
     }
     
-    if (!confirm('Delete this tour slot permanently?')) return;
+    if (!confirm('Deleting this slot will remove any saved details. You can always add it back later. Delete this tour slot?')) return;
 
     try {
       console.log('Deleting slot with ID:', id);
@@ -504,9 +502,13 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       return;
     }
 
-    const duplicate = slots.some((slot) => slot.date === newDate && slot.startTime === newStart);
+    const duplicate = slots.some(
+      (slot) => slot.date === newDate && slot.startTime === newStart && slot._id !== editingSlotId,
+    );
 
-    if (duplicate) {
+    const autoBookingTargetSlot = !editingSlotId && newStatus === 'booked' ? selectedExistingSlot : null;
+
+    if (duplicate && !autoBookingTargetSlot) {
       flash(`A tour slot for ${fmtDate(newDate)} at ${fmtTime(newStart)} already exists.`);
       return;
     }
@@ -530,15 +532,25 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
         };
       }
 
+      const effectiveEditingSlotId = editingSlotId ?? autoBookingTargetSlot?._id ?? null;
+      const isEditing = Boolean(effectiveEditingSlotId);
+      const requestBody = isEditing ? { id: effectiveEditingSlotId, ...payload } : payload;
       const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
-        method: 'POST',
+        method: isEditing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!res.ok) throw new Error((await res.json()).error || 'Create failed');
+      if (!res.ok) throw new Error((await res.json()).error || (isEditing ? 'Update failed' : 'Create failed'));
       await fetchSlots();
-      flash('Tour slot added');
+      if (editingSlotId) {
+        flash('Tour slot updated');
+      } else if (autoBookingTargetSlot) {
+        flash('Booking saved to existing slot');
+      } else {
+        flash('Tour slot added');
+      }
+      setEditingSlotId(null);
       setNewDate('');
       setNewStatus('available');
       const firstSlot = sortedTimeSlotOptions[0];
@@ -553,6 +565,65 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     } finally {
       setAdding(false);
     }
+  };
+
+  const beginQuickBookFromSlot = (slot: TourSlot) => {
+    setEditingSlotId(slot._id);
+    setNewDate(slot.date);
+    setNewStart(slot.startTime);
+    setNewEnd(slot.endTime);
+    setNewStatus('booked');
+    setNewTour({ name: '', email: '', phone: '', partySize: '', message: '' });
+    setTourFormErrors({});
+
+    const detailsEl = addTourSlotDetailsRef.current;
+    if (detailsEl) {
+      detailsEl.open = true;
+      detailsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    requestAnimationFrame(() => {
+      focusAndScrollToField('tour-guest-name');
+    });
+  };
+
+  const beginEditBookedSlot = (slot: TourSlot) => {
+    setEditingSlotId(slot._id);
+    setNewDate(slot.date);
+    setNewStart(slot.startTime);
+    setNewEnd(slot.endTime);
+    setNewStatus('booked');
+    setNewTour({
+      name: slot.tour?.name ?? '',
+      email: slot.tour?.email ?? '',
+      phone: slot.tour?.phone ?? '',
+      partySize: slot.tour?.partySize ? String(slot.tour.partySize) : '',
+      message: slot.tour?.message ?? '',
+    });
+    setTourFormErrors({});
+
+    const detailsEl = addTourSlotDetailsRef.current;
+    if (detailsEl) {
+      detailsEl.open = true;
+      detailsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    requestAnimationFrame(() => {
+      focusAndScrollToField('tour-date');
+    });
+  };
+
+  const cancelEditSlot = () => {
+    setEditingSlotId(null);
+    setNewDate('');
+    setNewStatus('available');
+    const firstSlot = sortedTimeSlotOptions[0];
+    if (firstSlot) {
+      setNewStart(firstSlot.tourStart);
+      setNewEnd(firstSlot.tourEnd);
+    }
+    setNewTour({ name: '', email: '', phone: '', partySize: '', message: '' });
+    setTourFormErrors({});
   };
 
   const exportTours = async () => {
@@ -696,7 +767,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           <details>
             <summary>{slot.tour.name}</summary>
             <ul>
-              <li><strong>Email:</strong> {slot.tour.email}</li>
+              <li><strong>Email:</strong> <a href={`mailto:${slot.tour.email}`}>{slot.tour.email}</a></li>
               {slot.tour.phone && <li><strong>Phone:</strong> {slot.tour.phone}</li>}
               {slot.tour.partySize && <li><strong>Party:</strong> {slot.tour.partySize}</li>}
               {slot.tour.message && <li><strong>Notes:</strong> {slot.tour.message}</li>}
@@ -737,32 +808,50 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
         return (
           <div className="admin-td-actions">
             {slot.status === 'booked' && (
+              <button
+                className="admin-btn admin-btn--good"
+                onClick={() => beginEditBookedSlot(slot)}
+                title="Edit booked slot details"
+                aria-label="Edit booked slot details"
+              >
+                {ICONS.Edit}
+              </button>
+            )}
+            {slot.status === 'booked' && (
               <a className="admin-btn admin-btn--muted" href={googleCalendarUrl} target="_blank" rel="noopener noreferrer">
-                {calendarPlus} Google Calendar
+                {ICONS.CalendarPlus} Google Calendar
               </a>
             )}
             {slot.status === 'booked' && (
               <a className="admin-btn admin-btn--muted" href={icsDownloadUrl}>
-                {calendarDownArrow} Download (.ics)
+                {ICONS.CalendarDownArrow} Download (.ics)
               </a>
             )}
             {slot.status === 'available' && (
+              <button
+                className="admin-btn admin-btn--good"
+                onClick={() => beginQuickBookFromSlot(slot)}
+              >
+                {ICONS.Plus} Book
+              </button>
+            )}
+            {slot.status === 'available' && (
               <button className="admin-btn admin-btn--muted" onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Tour slot blocked'))}>
-                Block
+                {ICONS.Block} Block
               </button>
             )}
             {slot.status === 'blocked' && (
               <button className="admin-btn admin-btn--good" onClick={() => updateSlot(slot._id, { status: 'available' }).then(() => flash('Tour slot unblocked'))}>
-                Unblock
+                {ICONS.Unblock} Unblock
               </button>
             )}
             {slot.status === 'booked' && (
               <button className="admin-btn admin-btn--warn" onClick={() => updateSlot(slot._id, { unbook: true }).then(() => flash('Tour booking cancelled'))}>
-                Unbook
+                {ICONS.Minus} Unbook
               </button>
             )}
-            <button className="admin-btn admin-btn--danger" onClick={() => deleteSlot(slot._id)}>
-              Delete
+            <button aria-label="Delete this tour slot" className="admin-btn admin-btn--danger" onClick={() => deleteSlot(slot._id)} title="Delete this tour slot">
+              {ICONS.Delete}
             </button>
           </div>
         );
@@ -819,16 +908,31 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       </div>
 
       <div className="admin-manager__msg-container" aria-live="polite" ref={adminMsg}>
-        {msg && <div className="admin-manager__msg">{msg}</div>}
-        {error && <div className="admin-manager__error">{error}</div>}
+        {msg && <div className="admin-manager__msg"><p>{msg}</p></div>}
+        {error && <div className="admin-manager__error"><p>{error}</p></div>}
       </div>
 
       <section className="admin-manager__section">
-        <details className="admin-manager__export">
+        <details className="admin-manager__export" ref={addTourSlotDetailsRef}>
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Add Tour Slot</h2>
+            <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit Booked Slot' : 'Add Tour Slot'}</h2>
           </summary>
+          <div className="admin-manager__msg" role="status" aria-live="polite">
+            <p>
+            Use this form to add open slots or add bookings. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
+            </p>
+          </div>
           <form className="admin-manager__add-form admin-manager__export-controls" onSubmit={addSlot} noValidate>
+          {editingSlotId && (
+            <div className="admin-manager__msg" role="status" aria-live="polite">
+              <p>Editing booked slot details. Update fields below, then save.</p>
+            </div>
+          )}
+          {!editingSlotId && isBookingExistingSelection && selectedExistingSlot && (
+            <div className="admin-manager__msg" role="status" aria-live="polite">
+              <p>A slot already exists for this date and time. Submitting will add/update the booking on that existing slot.</p>
+            </div>
+          )}
           <div className="form-group">
             <label className="form-label" htmlFor="tour-date">Date</label>
             <input
@@ -950,8 +1054,17 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
             <div className="form-group is-button">
               <button type="submit" className="btn btn--primary" disabled={adding}>
-                {adding ? 'Adding...' : 'Add Slot'}
+                {adding
+                  ? (editingSlotId || isBookingExistingSelection ? 'Saving...' : 'Adding...')
+                  : (editingSlotId
+                    ? 'Save Changes'
+                    : (isBookingExistingSelection ? 'Save Booking' : 'Add Slot'))}
               </button>
+              {editingSlotId && (
+                <button type="button" className="btn btn--secondary" onClick={cancelEditSlot} disabled={adding}>
+                  Cancel Edit
+                </button>
+              )}
             </div>
           </form>
         </details>
@@ -1086,7 +1199,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                 />
               </div>
               {holidayMessageHtmlInput.trim() && (
-                <div className="admin-manager__msg" style={{ whiteSpace: 'pre-line' }}>{holidayMessageHtmlInput}</div>
+                <div className="admin-manager__msg" style={{ whiteSpace: 'pre-line' }}><p>{holidayMessageHtmlInput}</p></div>
               )}
             </fieldset>
 
@@ -1270,6 +1383,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                         <th
                           key={header.id}
                           onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                          data-name={header.column.id}
                           className={header.column.getCanSort() ? 'sortable-col' : ''}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}

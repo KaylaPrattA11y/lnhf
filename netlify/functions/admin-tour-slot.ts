@@ -95,7 +95,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
     }
 
     if (event.httpMethod === 'PATCH') {
-      const { id, status, unbook } = body as any;
+      const { id, status, unbook, date, startTime, endTime, tour: tourInput } = body as any;
 
       if (!id || !UUID_RE.test(id)) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Valid id is required' }) };
@@ -116,6 +116,65 @@ export const handler: Handler = async (event, context: HandlerContext) => {
         `;
         if (!slot) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Slot not found' }) };
         return { statusCode: 200, headers, body: JSON.stringify(slot) };
+      }
+
+      const hasDetailedUpdate = date || startTime || endTime || typeof tourInput !== 'undefined';
+
+      if (hasDetailedUpdate) {
+        if (!date || !startTime || !endTime) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'date, startTime, and endTime are required for detailed updates' }) };
+        }
+
+        if (!DATE_RE.test(date) || !TIME_RE.test(startTime) || !TIME_RE.test(endTime)) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid date/time format' }) };
+        }
+
+        const nextStatus = status ?? 'booked';
+
+        if (!VALID_STATUSES.includes(nextStatus)) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid status value' }) };
+        }
+
+        if (nextStatus === 'booked') {
+          if (!tourInput?.name?.trim() || !tourInput?.email?.trim()) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Guest name and email are required for booked slots' }) };
+          }
+
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(tourInput.email)) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid guest email address' }) };
+          }
+        }
+
+        try {
+          const [slot] = await getDb().sql`
+            UPDATE tour_slots
+            SET
+              date = ${date},
+              start_time = ${startTime},
+              end_time = ${endTime},
+              status = ${nextStatus},
+              guest_name = ${nextStatus === 'booked' ? tourInput?.name?.trim() ?? null : null},
+              guest_email = ${nextStatus === 'booked' ? tourInput?.email?.trim().toLowerCase() ?? null : null},
+              guest_phone = ${nextStatus === 'booked' ? tourInput?.phone?.trim() ?? null : null},
+              guest_party_size = ${nextStatus === 'booked' ? tourInput?.partySize ?? null : null},
+              guest_message = ${nextStatus === 'booked' ? tourInput?.message?.trim() ?? null : null},
+              booked_at = CASE
+                WHEN ${nextStatus} = 'booked' THEN COALESCE(booked_at, NOW())
+                ELSE NULL
+              END
+            WHERE id = ${id}
+            RETURNING id AS "_id", date, start_time AS "startTime", end_time AS "endTime", status
+          `;
+
+          if (!slot) return { statusCode: 404, headers, body: JSON.stringify({ error: 'Slot not found' }) };
+          return { statusCode: 200, headers, body: JSON.stringify(slot) };
+        } catch (err: any) {
+          if (err?.code === '23505') {
+            return { statusCode: 409, headers, body: JSON.stringify({ error: `A slot for ${date} at ${startTime} already exists` }) };
+          }
+
+          throw err;
+        }
       }
 
       if (!status) {

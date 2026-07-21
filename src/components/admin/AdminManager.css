@@ -75,6 +75,15 @@
   font-size: var(--text-sm);
 }
 
+.admin-manager__msg p,
+.admin-manager__error p {
+  max-inline-size: 80ch;
+}
+
+.admin-manager__export > .admin-manager__msg {
+  margin-inline: var(--space-4);
+}
+
 .admin-manager__msg {
   background: #ecfdf5;
   color: #166534;
@@ -159,7 +168,7 @@
 
 .admin-manager__fieldset--wedding-notes {
   @container (width > 750px) {
-    grid-column: 2 / -1;
+    grid-column: 1 / 3;
     grid-row: 2 / 2;
   }
 }
@@ -300,6 +309,7 @@
 .admin-btn:has(svg) {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
 }
 
@@ -405,6 +415,13 @@
 .sortable-col {
   cursor: pointer;
   user-select: none;
+}
+
+.admin-manager__table th[data-name=guest] {
+  width: 250px;
+}
+.admin-manager__table th[data-name=actions] {
+  width: 250px;
 }
 
 .sortable-col:hover {

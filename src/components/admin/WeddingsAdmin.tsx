@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
 import { comparePricingEntries } from '../../lib/pricing-order';
+import { ICONS } from './icons';
 
 const to12HourTime = (time24: string) => {
   const [hourStr, minute] = time24.split(':');
@@ -32,33 +33,6 @@ const formatDatePretty = (dateStr: string) => {
     year: 'numeric',
   });
 };
-
-const plusIcon = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-  <path d="M0 0h24v24H0z" fill="none" />
-  <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h7m7 0h-7m0 0V5m0 7v7" />
-</svg>
-);
-const deleteIcon = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-	<path d="M0 0h24v24H0z" fill="none" />
-	<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7a3 3 0 0 1 3-3v0a3 3 0 0 1 3 3v0M9 7h6M9 7H6m9 0h3m2 0h-2M4 7h2m0 0v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7" />
-</svg>
-);
-
-const editIcon = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-	<path d="M0 0h24v24H0z" fill="none" />
-	<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m14 6l2.293-2.293a1 1 0 0 1 1.414 0l2.586 2.586a1 1 0 0 1 0 1.414L18 10m-4-4l-9.707 9.707a1 1 0 0 0-.293.707V19a1 1 0 0 0 1 1h2.586a1 1 0 0 0 .707-.293L18 10m-4-4l4 4" />
-</svg>
-);
-
-const printIcon = (
-<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
-	<path d="M0 0h24v24H0z" fill="none" />
-	<path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 17v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M7 17H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1m0 0V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M6 7h12m0 0h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M7 10h1" />
-</svg>
-);
 
 const netlifyIdentity = window.netlifyIdentity!;
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
@@ -1096,10 +1070,10 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
         return (
           <div className="admin-td-actions">
             <button title="Edit Wedding" className="admin-btn admin-btn--warn" onClick={() => fillFormForEdit(wedding)}>
-              {editIcon}
+              {ICONS.Edit}
             </button>
             <button title="Print Wedding" className="admin-btn admin-btn--muted" onClick={() => printWedding(wedding)}>
-              {printIcon}
+              {ICONS.Print}
             </button>
             {wedding.status === 'active' ? (
               <button className="admin-btn admin-btn--muted" onClick={() => updateWeddingStatus(wedding, 'cancelled')}>
@@ -1111,7 +1085,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
               </button>
             )}
             <button title="Delete Wedding" className="admin-btn admin-btn--danger" onClick={() => deleteWedding(wedding._id)}>
-              {deleteIcon}
+              {ICONS.Delete}
             </button>
           </div>
         );
@@ -1168,8 +1142,8 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       </div>
 
       <div className="admin-manager__msg-container" aria-live="polite">
-        {msg && <div className="admin-manager__msg">{msg}</div>}
-        {error && <div className="admin-manager__error">{error}</div>}
+        {msg && <div className="admin-manager__msg"><p>{msg}</p></div>}
+        {error && <div className="admin-manager__error"><p>{error}</p></div>}
       </div>
 
       <section className="admin-manager__section">
@@ -1242,7 +1216,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
           <fieldset className="admin-manager__fieldset admin-manager__fieldset--other-contacts">
             <legend>Other Contacts</legend>
-            <button type="button" className="btn btn-secondary" onClick={addOtherContact}>{plusIcon} Add Other Contact</button>
+            <button type="button" className="btn btn-secondary" onClick={addOtherContact}>{ICONS.Plus} Add Other Contact</button>
             <div className="admin-manager__other-contacts-collection">
               {otherContacts.map((contact, index) => (
                 <div key={index} className="is-addons">
@@ -1286,7 +1260,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                   </div>
                   <div className="form-group">
                     <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeOtherContact(index)}>
-                      Remove
+                      {ICONS.Delete} Remove
                     </button>
                   </div>
                 </div>
@@ -1333,7 +1307,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                 </select>
               </div>
             </div>
-            <button type="button" className="btn btn-secondary" onClick={addActivity}>{plusIcon} Add Related Activity Date</button>
+            <button type="button" className="btn btn-secondary" onClick={addActivity}>{ICONS.Plus} Add Related Activity Date</button>
 
             <div className="admin-manager__other-contacts-collection">
               {activities.map((activity, index) => (
@@ -1390,7 +1364,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                     </select>
                   </div>
                   <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeActivity(index)}>Remove</button>
+                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeActivity(index)}>{ICONS.Delete} Remove</button>
                   </div>
                 </div>
               ))}
@@ -1439,7 +1413,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                 </div>
 
                 <div className="form-group">
-                  <button type="button" className="btn btn-secondary" onClick={addCustomPricing}>{plusIcon} Add Other Pricing Entry</button>
+                  <button type="button" className="btn btn-secondary" onClick={addCustomPricing}>{ICONS.Plus} Add Other Pricing Entry</button>
                 </div>
               </div>
               <div>
@@ -1491,7 +1465,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                     <input id={`wedding-custom-value-${index}`} className="form-input" type="number" step="0.01" value={entry.value} onChange={(e) => updateCustomPricing(index, 'value', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeCustomPricing(index)}>Remove</button>
+                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeCustomPricing(index)}>{ICONS.Delete} Remove</button>
                   </div>
                 </div>
               ))}
@@ -1499,7 +1473,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
           </fieldset>
           <fieldset className="admin-manager__fieldset admin-manager__fieldset--payments-received">
             <legend>Payments Received</legend>
-            <button type="button" className="btn btn-secondary" onClick={addPaymentReceived}>{plusIcon} Add Payment Received</button>
+            <button type="button" className="btn btn-secondary" onClick={addPaymentReceived}>{ICONS.Plus} Add Payment Received</button>
 
             <div className="admin-manager__other-contacts-collection">
               {paymentsReceived.map((payment, index) => (
@@ -1549,7 +1523,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                     />
                   </div>
                   <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removePaymentReceived(index)}>Remove</button>
+                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removePaymentReceived(index)}>{ICONS.Delete} Remove</button>
                   </div>
                 </div>
               ))}
@@ -1768,6 +1742,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                         <th
                           key={header.id}
                           onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                          data-name={header.column.id}
                           className={header.column.getCanSort() ? 'sortable-col' : ''}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
