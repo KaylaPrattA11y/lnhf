@@ -124,18 +124,12 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         date: slot.date,
         startTime: slot.startTime,
         endTime: slot.endTime,
-        title: calendarTitle,
-        description: calendarDescription,
         filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
       }, PUBLIC_SITE_BASE_URL);
 
       // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
         'form-name': 'tour-booking',
-        'slot-id': slot._id,
-        'slot-date-iso': slot.date,
-        'slot-start-time': slot.startTime,
-        'slot-end-time': slot.endTime,
         'name': name,
         'email': email,
         'phone': phone,

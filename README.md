@@ -194,6 +194,10 @@ Copy `.env.example` to `.env` and fill in the values. **Never commit `.env` to g
 | `TINA_TOKEN` | TinaCMS read/write token | app.tina.io → Project → Overview |
 | `TINA_SEARCH` | TinaCMS search token | app.tina.io → Project → Overview |
 | `NETLIFY_IDENTITY_URL` | Your Netlify site URL (for Identity) | Netlify Dashboard → Site settings → Identity |
+| `NETLIFY_EMAILS_SECRET` | Secret required to call Netlify Email templates from functions | Netlify Dashboard → Site configuration → Environment variables |
+| `NETLIFY_EMAILS_MAILGUN_DOMAIN` | Sender domain used for confirmation emails (for example `mg.lowernotleyhallfarm.com`) | Netlify Dashboard → Site configuration → Environment variables |
+| `NETLIFY_EMAILS_FROM` *(optional)* | Full sender override (for example `noreply@lowernotleyhallfarm.com`) | Netlify Dashboard → Site configuration → Environment variables |
+| `ENABLE_CONFIRMATION_EMAILS` *(optional)* | Confirmation email toggle. Defaults to enabled; set to `false` to disable. | Netlify Dashboard → Site configuration → Environment variables |
 | `IP_ALLOWLIST` *(optional but recommended)* | Comma-separated list of allowed source IPs/CIDRs for protected admin routes (example: `203.0.113.10,198.51.100.0/24`) | Netlify Dashboard → Site configuration → Environment variables |
 
 > **Database connection (`NETLIFY_TOURS_DB_URL`)** is injected automatically by `netlify dev` locally and by Netlify at build/runtime in production. You do not set this manually.

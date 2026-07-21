@@ -31,6 +31,30 @@ const EMAIL_SUBJECT_BY_FORM: Record<KnownFormName, string> = {
   'tour-booking': 'Your Lower Notley Hall Farm tour was booked',
 };
 
+function getSiteUrl(event: Parameters<Handler>[0]) {
+  const configured = (process.env.URL ?? '').trim();
+  if (configured) return configured.replace(/\/$/, '');
+
+  const forwardedHost = event.headers['x-forwarded-host'] ?? event.headers['host'];
+  if (!forwardedHost) return '';
+  return `https://${forwardedHost}`.replace(/\/$/, '');
+}
+
+function getFromAddress(siteUrl: string) {
+  const configuredFrom = (process.env.NETLIFY_EMAILS_FROM ?? '').trim();
+  if (configuredFrom) return configuredFrom;
+
+  const configuredDomain = (process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN ?? '').trim();
+  if (configuredDomain) return `noreply@${configuredDomain}`;
+
+  try {
+    const hostname = new URL(siteUrl).hostname;
+    return `noreply@${hostname}`;
+  } catch {
+    return 'noreply@lowernotleyhallfarm.com';
+  }
+}
+
 function sanitizeUrl(value: string | undefined) {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -122,7 +146,8 @@ function getTourCalendarLinks(data: Record<string, string>, siteUrl: string, gue
 }
 
 const handler: Handler = async (event) => {
-  if (process.env.ENABLE_CONFIRMATION_EMAILS !== 'true') {
+  const emailFlag = (process.env.ENABLE_CONFIRMATION_EMAILS ?? '').trim().toLowerCase();
+  if (emailFlag === 'false' || emailFlag === '0' || emailFlag === 'off' || emailFlag === 'no') {
     console.log(`Skipping submission handler — confirmation emails are disabled`);
     return { statusCode: 200, body: "Skipped: email confirmation disabled" };
   }
@@ -188,13 +213,9 @@ const handler: Handler = async (event) => {
     return { statusCode: 500, body: "Email service not configured" };
   }
 
-  if (!process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN) {
-    console.error("NETLIFY_EMAILS_MAILGUN_DOMAIN not configured");
-    return { statusCode: 500, body: "Email service not configured" };
-  }
-
-  if (!process.env.URL) {
-    console.error("URL environment variable not configured");
+  const siteUrl = getSiteUrl(event);
+  if (!siteUrl) {
+    console.error("Unable to resolve site URL from environment or request headers");
     return { statusCode: 500, body: "Email service not configured" };
   }
 
@@ -207,7 +228,7 @@ const handler: Handler = async (event) => {
 
   const templateName = EMAIL_TEMPLATE_BY_FORM[knownFormName];
   const subject = EMAIL_SUBJECT_BY_FORM[knownFormName];
-  const siteUrl = process.env.URL.replace(/\/$/, '');
+  const fromAddress = getFromAddress(siteUrl);
   const parameters: EmailTemplateParameters = {
     name: truncatedName,
     currentYear: new Date().getFullYear(),
@@ -221,7 +242,7 @@ const handler: Handler = async (event) => {
 
   try {
     const response = await fetch(
-      `${process.env.URL}/.netlify/functions/emails/${templateName}`,
+      `${siteUrl}/.netlify/functions/emails/${templateName}`,
       {
         headers: {
           "netlify-emails-secret": process.env.NETLIFY_EMAILS_SECRET,
@@ -229,7 +250,7 @@ const handler: Handler = async (event) => {
         },
         method: "POST",
         body: JSON.stringify({
-          from: `noreply@${process.env.NETLIFY_EMAILS_MAILGUN_DOMAIN}`,
+          from: fromAddress,
           to: data.email.trim(),
           subject,
           parameters,
