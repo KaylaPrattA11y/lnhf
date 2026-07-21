@@ -346,6 +346,49 @@ export default function PricingTable({ entries }: PricingTableProps) {
         .pricing-tool {
           font-size: var(--text-base);
           container: pricing-table / inline-size;
+          padding-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
+        }
+        .pricing-table tfoot {
+          position: fixed;
+          left: 50%;
+          bottom: max(var(--space-3), env(safe-area-inset-bottom));
+          transform: translateX(-50%);
+          z-index: 60;
+          width: min(680px, calc(100vw - var(--space-4)));
+          border: 1px solid color-mix(in srgb, var(--color-gold) 45%, transparent);
+          border-radius: var(--radius-md);
+          background: color-mix(in srgb, var(--color-primary-dark) 94%, black);
+          box-shadow: var(--shadow-lg);
+          backdrop-filter: blur(2px);
+          overflow: hidden;
+          display: block;
+        }
+        .pricing-table tfoot tr {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: center;
+          color: var(--color-white);
+          background: transparent;
+        }
+        .pricing-table tfoot tr + tr {
+          border-top: 1px solid color-mix(in srgb, var(--color-white) 18%, transparent);
+        }
+        .pricing-table tfoot td {
+          border: 0;
+          padding: var(--space-2) var(--space-4);
+          font-size: var(--text-sm);
+          line-height: var(--leading-snug);
+        }
+        .pricing-table tfoot td:empty {
+          display: none;
+        }
+        .pricing-table tfoot td:last-child {
+          text-align: right;
+        }
+        .pricing-table tfoot strong {
+          font-size: var(--text-base);
+          font-variant-numeric: tabular-nums;
+          line-height: var(--leading-snug);
         }
         .pricing-tool__table-wrap {
           overflow-x: auto;
@@ -378,10 +421,10 @@ export default function PricingTable({ entries }: PricingTableProps) {
         .pricing-table__row:last-child td { border-bottom: none; }
         .pricing-table__row--base { background: var(--color-gray-100); }
         .pricing-table__row--fixed { background: var(--color-gray-100); color: var(--color-text-muted); }
-        .pricing-table__row--total { background: var(--color-primary-dark); color: var(--color-white); }
-        .pricing-table__row--net { background: color-mix(in srgb, var(--color-primary-dark) 88%, white); color: var(--color-white); }
-        .pricing-table__row--total td { border: none; padding: var(--space-5); }
-        .pricing-table__row--net td { border: none; padding: var(--space-5); }
+        .pricing-table__row--total { background: transparent; color: var(--color-white); }
+        .pricing-table__row--net { background: transparent; color: var(--color-white); }
+        .pricing-table__row--total td { border: none; }
+        .pricing-table__row--net td { border: none; }
         .pricing-table__row.is-checked { background: var(--color-available-bg); }
         
         .pricing-table__total { font-size: var(--text-xl); }
@@ -468,6 +511,16 @@ export default function PricingTable({ entries }: PricingTableProps) {
           line-height: var(--leading-relaxed);
         }
         @container pricing-table (width < 600px) {
+          .pricing-table tfoot {
+            width: calc(100vw - var(--space-3));
+          }
+          .pricing-table tfoot td {
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-xs);
+          }
+          .pricing-table tfoot strong {
+            font-size: var(--text-sm);
+          }
         .pricing-table thead th:not(:first-child) { display: none; }
           .pricing-table__row td {
             display: block;
@@ -494,6 +547,28 @@ export default function PricingTable({ entries }: PricingTableProps) {
         }
         /* Print styles */
         @media print {
+          .pricing-table tfoot {
+            position: static;
+            left: auto;
+            bottom: auto;
+            transform: none;
+            width: auto;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            background: transparent;
+            backdrop-filter: none;
+            display: table-footer-group;
+          }
+          .pricing-table tfoot tr {
+            display: table-row;
+            color: inherit;
+          }
+          .pricing-table tfoot td {
+            border: none;
+            padding: var(--space-2) var(--space-5);
+            font-size: 11pt;
+          }
           .pricing-tool__actions { display: none !important; }
           .pricing-table {
             font-size: 11pt;
