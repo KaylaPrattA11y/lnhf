@@ -100,7 +100,7 @@ function getTourCalendarLinks(data: Record<string, string>, siteUrl: string, gue
   const endTime = (data['slot-end-time'] ?? '').trim();
 
   if (!DATE_RE.test(date) || !TIME_RE.test(startTime) || !TIME_RE.test(endTime)) {
-    const fallback = `${siteUrl}/booking/`;
+    const fallback = `${siteUrl}/tours/`;
     return {
       googleCalendarUrl: providedGoogleUrl ?? fallback,
       icsCalendarUrl: providedIcsUrl ?? fallback,

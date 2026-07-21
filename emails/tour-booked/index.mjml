@@ -31,7 +31,7 @@
       <mj-column>
         <mj-navbar base-url="https://lowernotleyhallfarm.com" hamburger="hamburger" ico-color="#ffffff">
             <mj-navbar-link href="/about/" color="#ffffff">About</mj-navbar-link>
-            <mj-navbar-link href="/booking/" color="#ffffff">Book a Tour</mj-navbar-link>
+            <mj-navbar-link href="/tours/" color="#ffffff">Book a Tour</mj-navbar-link>
             <mj-navbar-link href="/pricing/" color="#ffffff">Pricing</mj-navbar-link>
             <mj-navbar-link href="/faqs/" color="#ffffff">FAQs</mj-navbar-link>
         </mj-navbar>

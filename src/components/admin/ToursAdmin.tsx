@@ -419,6 +419,11 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       handleUnauthorized();
       return;
     }
+    const slot = slots.find((s) => s._id === id);
+    if (slot?.status === 'booked') {
+      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
+      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) return;
+    }
     if (!res.ok) throw new Error((await res.json()).error || 'Update failed');
     await fetchSlots();
   };

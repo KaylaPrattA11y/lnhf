@@ -58,6 +58,10 @@ const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
   >
     <input name="bot-field" />
     <input type="hidden" name="form-name" value="tour-booking" />
+    <input name="slot-id" />
+    <input name="slot-date-iso" />
+    <input name="slot-start-time" />
+    <input name="slot-end-time" />
     <input name="name" />
     <input name="email" />
     <input name="phone" />
@@ -65,6 +69,8 @@ const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
     <input name="date" />
     <input name="time" />
     <input name="party-size" />
+    <input name="add-to-google-calendar" />
+    <input name="download-ics-calendar" />
     <textarea name="message"></textarea>
   </form>
 

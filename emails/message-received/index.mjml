@@ -31,7 +31,7 @@
       <mj-column>
         <mj-navbar base-url="https://lowernotleyhallfarm.com" hamburger="hamburger" ico-color="#ffffff">
             <mj-navbar-link href="/about/" color="#ffffff">About</mj-navbar-link>
-            <mj-navbar-link href="/booking/" color="#ffffff">Book a Tour</mj-navbar-link>
+            <mj-navbar-link href="/tours/" color="#ffffff">Book a Tour</mj-navbar-link>
             <mj-navbar-link href="/pricing/" color="#ffffff">Pricing</mj-navbar-link>
             <mj-navbar-link href="/faqs/" color="#ffffff">FAQs</mj-navbar-link>
         </mj-navbar>
@@ -70,7 +70,7 @@
       <mj-column>
         <mj-text font-size="20px" color="#b5924c" font-family="'Jost', Helvetica, Arial, sans-serif">{{ name }}, thank you for contacting Lower Notley Hall Farm.</mj-text>
         <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">Jack and Cynthia will get back to you as soon as possible.</mj-text>
-        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.com/about/">learn more about our farm</a> and the <a href="https://lowernotleyhallfarm.com/booking/">tours</a> we offer.</mj-text>
+        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.com/about/">learn more about our farm</a> and the <a href="https://lowernotleyhallfarm.com/tours/">tours</a> we offer.</mj-text>
       </mj-column>
     </mj-section>
     <mj-section background-color="#2b2b2c" full-width="full-width">
