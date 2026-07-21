@@ -79,5 +79,6 @@
           &copy; {{ currentYear }} Lower Notley Hall Farm, LLC. All rights reserved.
         </mj-text>
       </mj-column>
+    </mj-section>
   </mj-body>
 </mjml>

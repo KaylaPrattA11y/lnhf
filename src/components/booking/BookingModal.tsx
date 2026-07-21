@@ -1,4 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  buildGoogleCalendarUrl,
+  buildIcsDownloadUrl,
+  formatCalendarDateLabel,
+  formatCalendarTimeLabel,
+} from '../../lib/calendar-links';
 
 interface BookingModalProps {
   slot: { _id: string; date: string; startTime: string; endTime: string } | null;
@@ -8,18 +14,14 @@ interface BookingModalProps {
 }
 
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
+const PUBLIC_SITE_BASE_URL = (import.meta.env.SITE || '').replace(/\/$/, '');
 
 function formatTime(t: string): string {
-  const [h, m] = t.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hr = h % 12 || 12;
-  return `${hr}:${m.toString().padStart(2, '0')} ${period}`;
+  return formatCalendarTimeLabel(t);
 }
 
 function formatDate(d: string): string {
-  return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
+  return formatCalendarDateLabel(d);
 }
 
 export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHours }: BookingModalProps) {
@@ -104,9 +106,36 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         throw new Error(data.error || 'Booking failed');
       }
 
+      const calendarTitle = `Tour at Lower Notley Hall Farm${name ? ` with ${name}` : ''}`;
+      const calendarDescription = [
+        `Guest: ${name}`,
+        `Email: ${email}`,
+        phone ? `Phone: ${phone}` : '',
+        message ? `Notes: ${message}` : '',
+      ].filter(Boolean).join('\n');
+      const googleCalendarUrl = buildGoogleCalendarUrl({
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        title: calendarTitle,
+        description: calendarDescription,
+      });
+      const icsDownloadUrl = buildIcsDownloadUrl({
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        title: calendarTitle,
+        description: calendarDescription,
+        filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
+      }, PUBLIC_SITE_BASE_URL);
+
       // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
         'form-name': 'tour-booking',
+        'slot-id': slot._id,
+        'slot-date-iso': slot.date,
+        'slot-start-time': slot.startTime,
+        'slot-end-time': slot.endTime,
         'name': name,
         'email': email,
         'phone': phone,
@@ -115,6 +144,8 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         'party-size': partySz,
         'subject': `Tour Request: ${name} for ${formatDate(slot.date)}`,
         'message': message,
+        'add-to-google-calendar': googleCalendarUrl,
+        'download-ics-calendar': icsDownloadUrl,
       });
       fetch(`${SITE_BASE_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
         .catch(() => { /* non-critical */ });

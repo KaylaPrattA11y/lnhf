@@ -297,6 +297,12 @@
   transition: opacity var(--transition-fast);
 }
 
+.admin-btn:has(svg) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .admin-btn:hover {
   opacity: 0.8;
 }

@@ -70,6 +70,37 @@
       <mj-column>
         <mj-text font-size="20px" color="#b5924c" font-family="'Jost', Helvetica, Arial, sans-serif">{{ name }}, your private tour at Lower Notley Hall Farm has been booked.</mj-text>
         <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">We look forward to welcoming you to our farm.</mj-text>
+        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">For your convenience, add your upcoming private tour at Lower Notley Hall Farm to your calendar with the buttons below:</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section css-class="panel">
+      <mj-column>
+        <mj-button
+          href="{{ googleCalendarUrl }}"
+          background-color="#1e40af"
+          color="#ffffff"
+          font-family="'Jost', Helvetica, Arial, sans-serif"
+          font-size="12px"
+          font-weight="600"
+        >
+          Add Tour to Google Calendar
+        </mj-button>
+      </mj-column>
+      <mj-column>
+        <mj-button
+          href="{{ icsCalendarUrl }}"
+          background-color="#1e40af"
+          color="#ffffff"
+          font-family="'Jost', Helvetica, Arial, sans-serif"
+          font-size="12px"
+          font-weight="600"
+        >
+          Download Tour as Calendar .ICS
+        </mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section css-class="panel">
+      <mj-column>
         <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.com/about/">learn more about our farm</a> and get answers to <a href="https://lowernotleyhallfarm.com/faqs/">frequently asked questions</a>.</mj-text>
       </mj-column>
     </mj-section>
@@ -79,5 +110,6 @@
           &copy; {{ currentYear }} Lower Notley Hall Farm, LLC. All rights reserved.
         </mj-text>
       </mj-column>
+    </mj-section>
   </mj-body>
 </mjml>

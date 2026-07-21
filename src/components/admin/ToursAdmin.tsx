@@ -12,9 +12,26 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
+import { buildGoogleCalendarUrl, buildIcsDownloadUrl } from '../../lib/calendar-links';
 
 const netlifyIdentity = window.netlifyIdentity!;
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
+
+const calendarDownArrow = (
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+	<path d="M0 0h24v24H0z" fill="none" />
+	<path fill="currentColor" d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2M5 20V8h14V6v14z" />
+	<path fill="currentColor" d="M13 10h-2v4H8l4 4l4-4h-3z" />
+</svg>
+);
+
+const calendarPlus = (
+<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+	<path d="M0 0h24v24H0z" fill="none" />
+	<path fill="currentColor" d="M13 10h-2v3H8v2h3v3h2v-3h3v-2h-3z" />
+	<path fill="currentColor" d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2M5 20V8h14V6v14z" />
+</svg>
+);
 
 interface TourSlot {
   _id: string;
@@ -689,8 +706,41 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       enableSorting: false,
       cell: (info) => {
         const slot = info.row.original;
+        const calendarTitle = `Tour at Lower Notley Hall Farm${slot.tour?.name ? ` with ${slot.tour.name}` : ''}`;
+        const calendarDescription = [
+          slot.tour?.name ? `Guest: ${slot.tour.name}` : '',
+          slot.tour?.email ? `Email: ${slot.tour.email}` : '',
+          slot.tour?.phone ? `Phone: ${slot.tour.phone}` : '',
+          slot.tour?.message ? `Notes: ${slot.tour.message}` : '',
+        ].filter(Boolean).join('\n');
+        const googleCalendarUrl = buildGoogleCalendarUrl({
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          title: calendarTitle,
+          description: calendarDescription,
+        });
+        const icsDownloadUrl = buildIcsDownloadUrl({
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          title: calendarTitle,
+          description: calendarDescription,
+          filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
+        }, SITE_BASE_URL);
+
         return (
           <div className="admin-td-actions">
+            {slot.status === 'booked' && (
+              <a className="admin-btn admin-btn--muted" href={googleCalendarUrl} target="_blank" rel="noopener noreferrer">
+                {calendarPlus} Google Calendar
+              </a>
+            )}
+            {slot.status === 'booked' && (
+              <a className="admin-btn admin-btn--muted" href={icsDownloadUrl}>
+                {calendarDownArrow} Download (.ics)
+              </a>
+            )}
             {slot.status === 'available' && (
               <button className="admin-btn admin-btn--muted" onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Tour slot blocked'))}>
                 Block
