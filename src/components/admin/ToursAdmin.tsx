@@ -404,6 +404,15 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   };
 
   const updateSlot = async (id: string, body: Record<string, unknown>) => {
+    const slot = slots.find((s) => s._id === id);
+    if (slot?.status === 'booked' && body.status === 'available') {
+      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
+      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) return;
+    }
+    if (slot?.status === 'available' && body.status === 'blocked') {
+      if (!confirm(`Blocking a slot will prevent guests from booking it. Are you sure you want to block it?`)) return;
+    }
+
     const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
@@ -412,15 +421,6 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     if (res.status === 401) {
       handleUnauthorized();
       return;
-    }
-    const slot = slots.find((s) => s._id === id);
-    if (slot?.status === 'booked' && body.status === 'available') {
-      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
-      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) return;
-    }
-    if (slot?.status === 'available' && body.status === 'blocked') {
-      const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
-      if (!confirm(`Blocking a slot will prevent guests from booking it. Are you sure you want to block it?`)) return;
     }
     if (!res.ok) throw new Error((await res.json()).error || 'Update failed');
     await fetchSlots();

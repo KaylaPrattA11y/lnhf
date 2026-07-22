@@ -207,7 +207,7 @@ export async function syncSeededTourSlots(now = new Date()): Promise<SeededTourS
     .filter((slot) => {
       if (slot.status === 'booked') return false;
       const rangeKey = `${slot.startTime}-${slot.endTime}`;
-      if (!configuredRangeKeys.has(rangeKey)) return false;
+      if (!configuredRangeKeys.has(rangeKey)) return true;
       const seededKey = `${slot.date}|${slot.startTime}|${slot.endTime}`;
       return !desiredSeededKeys.has(seededKey);
     })
