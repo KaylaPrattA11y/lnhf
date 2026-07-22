@@ -59,6 +59,7 @@
 .admin-manager__subtitle {
   margin-block: 0 var(--space-2);
   color: var(--color-text-muted);
+  max-inline-size: 80ch;
 }
 
 .admin-manager__msg-container {
@@ -75,13 +76,19 @@
   font-size: var(--text-sm);
 }
 
-.admin-manager__msg p,
-.admin-manager__error p {
-  max-inline-size: 80ch;
+.admin-manager__msg p:last-child,
+.admin-manager__error p:last-child {
+  margin-block-end: 0;
 }
 
-.admin-manager__export > .admin-manager__msg {
+.admin-manager__export > .admin-manager__msg,
+.admin-manager__export > .admin-manager__error,
+.admin-manager__export > p {
   margin-inline: var(--space-4);
+}
+
+.admin-manager__export > p:last-of-type {
+  margin-block-end: 0;
 }
 
 .admin-manager__msg {
@@ -348,6 +355,7 @@
 
 .table-controls {
   display: flex;
+  align-items: start;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
   flex-wrap: wrap;
@@ -360,6 +368,21 @@
 
 .table-status-filter {
   width: 180px;
+}
+
+.table-status-filter-wrap {
+  width: 180px;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.table-details-help {
+  font-size: var(--text-sm);
+}
+
+.table-details-help p {
+  margin: 0.25rem 0;
+  color: var(--color-text-muted);
 }
 
 .table-date-filter {

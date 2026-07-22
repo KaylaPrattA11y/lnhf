@@ -1373,7 +1373,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
           <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-pricing">
             <legend>Pricing</legend>
-            <details>
+            <details className="table-details-help">
               <summary>How to Customize Pricing</summary>
               <p style={{marginBlockEnd: 'var(--space-5)'}}>To customize the available pricing options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Pricing" collection.</p>
             </details>

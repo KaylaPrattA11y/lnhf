@@ -74,6 +74,7 @@ const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
 ];
 
 type TableDatePreset = '' | 'week' | 'month' | 'year';
+type StatusFilterValue = '' | 'available-visible' | 'available-hidden' | 'booked' | 'blocked';
 
 function toDateTimeLocalValue(isoValue: string | null) {
   if (!isoValue) return '';
@@ -186,7 +187,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   const [tourFormErrors, setTourFormErrors] = useState<TourFormErrors>({});
 
   const [globalFilter, setGlobalFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('available-visible');
   const [tableDatePreset, setTableDatePreset] = useState<TableDatePreset>('month');
   const [tableFromDate, setTableFromDate] = useState(defaultTableRange.fromDate);
   const [tableToDate, setTableToDate] = useState(defaultTableRange.toDate);
@@ -755,7 +756,22 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           </>
         );
       },
-      filterFn: 'equals',
+      filterFn: (row, _columnId, filterValue: string) => {
+        const slot = row.original;
+        const isGuestHidden =
+          slot.status === 'available' &&
+          (slot.visitorVisibility === 'holiday_mode' ||
+            slot.visitorVisibility === 'booking_buffer' ||
+            slot.visitorVisibility === 'booking_horizon');
+
+        if (!filterValue) return true;
+        if (filterValue === 'available-visible') return slot.status === 'available' && !isGuestHidden;
+        if (filterValue === 'available-hidden') return slot.status === 'available' && isGuestHidden;
+        if (filterValue === 'booked') return slot.status === 'booked';
+        if (filterValue === 'blocked') return slot.status === 'blocked';
+
+        return true;
+      },
     }),
     columnHelper.accessor((row) => row.tour?.name ?? '', {
       id: 'guest',
@@ -917,11 +933,9 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           <summary className="admin-manager__export-summary">
             <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit Booked Slot' : 'Add Tour Slot'}</h2>
           </summary>
-          <div className="admin-manager__msg" role="status" aria-live="polite">
-            <p>
-            Use this form to add open slots or add bookings. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
-            </p>
-          </div>
+          <p className="admin-manager__subtitle">
+            Use this form to add open slots or add bookings. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot for your guests, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
+          </p>
           <form className="admin-manager__add-form admin-manager__export-controls" onSubmit={addSlot} noValidate>
           {editingSlotId && (
             <div className="admin-manager__msg" role="status" aria-live="polite">
@@ -978,7 +992,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
               ))}
             </select>
             {tourFormErrors.timeRange && <p className="admin-field-error" id="tour-time-range-error">{tourFormErrors.timeRange}</p>}
-            <details>
+            <details className="table-details-help">
               <summary>How to Customize Time Slots</summary>
               <p>To customize the available time slot options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Tour Time Slots" collection.</p>
             </details>
@@ -1222,7 +1236,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
               <button className="btn btn--secondary btn--sm" onClick={runSeedSync} disabled={seeding || loading}>
                 {seeding ? 'Syncing...' : 'Generate Future Slots'}
               </button>
-              <details>
+              <details className="table-details-help">
                 <summary>What is this?</summary>
                 <p>This will add future tour slots based on the templates you have set up (see the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a>) and remove any future slots that no longer fit the templates. It will not modify any past or currently booked slots.</p>
               </details>
@@ -1279,12 +1293,27 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
             onChange={(e) => setGlobalFilter(e.target.value)}
             aria-label="Search tour slots"
           />
-          <select className="form-select table-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter tour slots by status">
-            <option value="">All statuses</option>
-            <option value="available">Available</option>
-            <option value="booked">Booked</option>
-            <option value="blocked">Blocked</option>
-          </select>
+          <div className="table-status-filter-wrap">
+            <select
+              className="form-select table-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilterValue)}
+              aria-label="Filter tour slots by status"
+            >
+              <option value="">All statuses</option>
+              <option value="available-visible">Available</option>
+              <option value="available-hidden">Available (hidden from visitors)</option>
+              <option value="booked">Booked</option>
+              <option value="blocked">Blocked</option>
+            </select>
+            <details className="table-details-help">
+              <summary>What does this mean?</summary>
+              <p><strong>Available:</strong> Guests can see and book this slot.</p>
+              <p><strong>Available (hidden from visitors):</strong> Slot exists but is currently hidden by holiday mode, booking buffer, or booking horizon rules.</p>
+              <p><strong>Booked:</strong> Already reserved by a guest.</p>
+              <p><strong>Blocked:</strong> Manually disabled and not bookable.</p>
+            </details>
+          </div>
         </div>
 
         <fieldset className="table-date-range" aria-label="Tour slots date range filters">
