@@ -85,7 +85,7 @@ const vendors = defineCollection({
         if (!value) return [];
         return Array.isArray(value) ? value : [value];
       }),
-    isPreferred: z.boolean().optional().default(false),
+    logo: z.string().optional(),
     website: z.string().optional(),
     phone: z.string().optional(),
     email: z.string().optional(),

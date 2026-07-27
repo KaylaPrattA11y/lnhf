@@ -800,10 +800,10 @@ export default defineConfig({
             ],
           },
           {
-            name: 'isPreferred',
-            label: 'Preferred Vendor',
-            type: 'boolean',
-            description: 'If true, this vendor will be highlighted as a preferred vendor.',
+            name: 'logo',
+            label: 'Logo',
+            type: 'image',
+            description: 'Upload the vendor logo. Recommended dimensions: 400x400px.',
           },
           {
             name: 'website',

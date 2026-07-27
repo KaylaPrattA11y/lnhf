@@ -53,7 +53,6 @@ const vendorsGrouped = normalizedVendors
   .sort((a, b) => {
     const byCategory = (serviceRank.get(a.service) ?? 999) - (serviceRank.get(b.service) ?? 999);
     if (byCategory !== 0) return byCategory;
-    if (a.vendor.isPreferred !== b.vendor.isPreferred) return a.vendor.isPreferred ? -1 : 1;
     const byName = a.vendor.name.localeCompare(b.vendor.name);
     if (byName !== 0) return byName;
     return (a.vendor.sortOrder ?? 99) - (b.vendor.sortOrder ?? 99);
@@ -87,50 +86,51 @@ const vendorsGrouped = normalizedVendors
           <h2 class="vendor-group__title">{category}</h2>
           <div class="vendor-cards">
             {items.map(v => (
-              <article class={`vendor-card${v.isPreferred ? ' vendor-card--featured' : ''}`}>
-                <div class="vendor-card__header">
-                  <div>
-                    <h3 class="vendor-card__name">
-                    {v.website ? (
-                      <a href={v.website} target="_blank" rel="noopener noreferrer">
-                        {v.name}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                        </svg>
-                      </a>
-                    ) : v.name}
-                    </h3>
+              <article class="vendor-card">
+                {v.logo ? (
+                  <div class="vendor-card__logo">
+                    <img src={v.logo} alt={`${v.name} logo`} />
                   </div>
-                  <div>
-                    {v.isPreferred && (
-                      <span class="vendor-card__badge">Preferred Partner</span>
-                    )}
+                ) : null}
+                <div class="vendor-card__content">
+                  <div class="vendor-card__header">
+                    <div>
+                      <h3 class="vendor-card__name">
+                      {v.website ? (
+                        <a href={v.website} target="_blank" rel="noopener noreferrer">
+                          {v.name}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
+                        </a>
+                      ) : v.name}
+                      </h3>
+                    </div>
                   </div>
-                </div>
-                
-                {v.email && (
-                  <p class="vendor-card__desc">
-                    <strong>Email:</strong>{' '}
-                    <a href={`mailto:${v.email.trim()}`}>{v.email.trim()}</a>
-                  </p>
-                )}
-                {v.phone && (
-                  <p class="vendor-card__desc">
-                    <strong>Phone:</strong>{' '}
-                    <a href={`tel:${v.phone.replace(/\D/g, '').trim()}`}>{v.phone.trim()}</a>
-                  </p>
-                )}
-                {v.hasBodyContent && (
-                  <div class="vendor-card__desc vendor-card__details">
-                    <v.Content />
+                  {v.email && (
+                    <p class="vendor-card__desc">
+                      <strong>Email:</strong>{' '}
+                      <a href={`mailto:${v.email.trim()}`}>{v.email.trim()}</a>
+                    </p>
+                  )}
+                  {v.phone && (
+                    <p class="vendor-card__desc">
+                      <strong>Phone:</strong>{' '}
+                      <a href={`tel:${v.phone.replace(/\D/g, '').trim()}`}>{v.phone.trim()}</a>
+                    </p>
+                  )}
+                  {v.hasBodyContent && (
+                    <div class="vendor-card__desc vendor-card__details">
+                      <v.Content />
+                    </div>
+                  )}
+                  <div class="vendor-card__services" aria-label="Vendor services">
+                    {v.vendorServices.map((service) => (
+                      <span class={`vendor-card__service-chip${service === category ? ' vendor-card__service-chip--active' : ''}`}>
+                        {service}
+                      </span>
+                    ))}
                   </div>
-                )}
-                <div class="vendor-card__services" aria-label="Vendor services">
-                  {v.vendorServices.map((service) => (
-                    <span class={`vendor-card__service-chip${service === category ? ' vendor-card__service-chip--active' : ''}`}>
-                      {service}
-                    </span>
-                  ))}
                 </div>
               </article>
             ))}
@@ -166,9 +166,14 @@ const vendorsGrouped = normalizedVendors
     display: inline-block;
   }
   .vendor-cards {
+    container: vendor-cards / inline-size;
     display: grid;
     gap: var(--space-4);
     grid-template-columns: 1fr;
+    @container main (width < 600px) {
+      width: calc(100% + var(--padding-x) * 2);
+      margin-inline: calc(var(--padding-x) * -1) 0;
+    }
   }
   @media (min-width: 640px) {
     .vendor-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -178,13 +183,34 @@ const vendorsGrouped = normalizedVendors
     background: var(--color-white);
     border: 1.5px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
     box-shadow: var(--shadow-sm);
     position: relative;
+    overflow: hidden;
+    min-block-size: 200px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+  .vendor-card__content {
+    padding: var(--space-6);
+  }
+  .vendor-card__logo {
+    max-inline-size: 100px;
+    overflow: hidden;
+    order: 2;
+    @container vendor-cards (width >= 400px) {
+      max-inline-size: 150px;
+    }
+  }
+  .vendor-card__logo img {
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    object-fit: contain;
   }
   .vendor-card__header {
     display: grid;
     gap: var(--space-1) var(--space-5);
+    position: relative;
+    z-index: 1;
     @container vendor-card (width >= 300px) {
       grid-template-columns: 1fr auto;
       align-items: baseline;
@@ -219,9 +245,13 @@ const vendorsGrouped = normalizedVendors
     color: var(--color-text-muted);
     line-height: var(--leading-relaxed);
     margin: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .vendor-card__details {
+    position: relative;
+    z-index: 1;
     margin-top: var(--space-3);
   }
 
@@ -234,6 +264,8 @@ const vendorsGrouped = normalizedVendors
   }
 
   .vendor-card__services {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
