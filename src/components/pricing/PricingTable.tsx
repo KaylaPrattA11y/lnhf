@@ -496,6 +496,10 @@ export default function PricingTable({ entries }: PricingTableProps) {
           border-radius: var(--radius-lg);
           padding: var(--space-6);
         }
+        .pricing-tool__notes > * {
+          max-inline-size: 80ch;
+          margin-inline: auto;
+        }
         .pricing-tool__notes-title {
           font-size: var(--text-lg);
           color: var(--color-primary-dark);

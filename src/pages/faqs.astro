@@ -148,7 +148,7 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
     font-size: var(--text-base);
     line-height: var(--leading-relaxed);
   }
-  .faq-item__answer :global(p)  { margin-bottom: var(--space-3); }
+  .faq-item__answer :global(p)  { max-inline-size: 80ch; margin-bottom: var(--space-3); }
   .faq-item__answer :global(a)  { color: var(--color-primary); font-weight: 700; }
   .faq-item__answer :global(ul), .faq-item__answer :global(ol) {
     padding-left: var(--space-6);
