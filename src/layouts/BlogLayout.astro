@@ -76,6 +76,11 @@ const resolvedOgImage =
   <Footer slot="footer" />
 </BaseLayout>
 
+<script>
+  import { identifyVisitor } from '@lib/umami';
+  identifyVisitor();
+</script>
+
 <style>
   .blog-hero {
     position: relative;

@@ -289,6 +289,9 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
       }
     </script>
     <script>
+      import { identifyVisitor } from '@lib/umami';
+      identifyVisitor();
+
       const recommendationElement = document.getElementById('pricing-recommendation');
       const root = document.documentElement;
       const navElement = document.getElementById('nav');

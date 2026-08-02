@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { getVisitorId } from '@lib/umami';
 import {
   buildGoogleCalendarUrl,
   buildIcsDownloadUrl,
   formatCalendarDateLabel,
   formatCalendarTimeLabel,
-} from '../../lib/calendar-links';
+} from '@lib/calendar-links';
 
 interface BookingModalProps {
   slot: { _id: string; date: string; startTime: string; endTime: string } | null;
@@ -126,6 +127,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         endTime: slot.endTime,
         filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
       }, PUBLIC_SITE_BASE_URL);
+      const visitorId = getVisitorId();
 
       // Notify via Netlify Forms (non-critical)
       const formData = new URLSearchParams({
@@ -140,6 +142,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         'message': message,
         'add-to-google-calendar': googleCalendarUrl,
         'download-ics-calendar': icsDownloadUrl,
+        'umami-visitor-id': visitorId, // Include the persistent visitor ID for tracking
       });
       fetch(`${SITE_BASE_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() })
         .catch(() => { /* non-critical */ });

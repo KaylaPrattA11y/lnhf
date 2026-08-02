@@ -86,6 +86,8 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
             <label>Do not fill: <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
           </div>
           <input type="hidden" name="form-name" value="contact" />
+          <input type="hidden" name="subject" value="New contact form submission" />
+          <input type="hidden" name="umami-visitor-id" id="umami-visitor-id" />
 
           <div class="form-group">
             <label class="form-label" for="c-name">
@@ -137,11 +139,11 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 
           <div class="form-group">
             <label class="form-label" for="c-subject">Subject</label>
-            <select class="form-select" id="c-subject" name="subject">
-              <option value="Inquiry">General Inquiry</option>
-              <option value="Inquiry: Pricing and Packages">Pricing & Packages</option>
-              <option value="Inquiry: Tour Booking">Tour Booking</option>
-              <option value="Inquiry: Vendors">Vendors</option>
+            <select class="form-select" id="c-subject" name="inquiry-subject">
+              <option value="General Inquiry">General Inquiry</option>
+              <option value="Pricing and Packages">Pricing & Packages</option>
+              <option value="Tour Booking">Tour Booking</option>
+              <option value="Vendors">Vendors</option>
             </select>
           </div>
 
@@ -173,8 +175,16 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 </InteriorLayout>
 
 <script>
+  import { getVisitorId } from '@lib/umami';
+
   const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  
   if (form) {
+    const uniqueVisitorIdInput = form.elements.namedItem('umami-visitor-id') as HTMLInputElement | null;
+    if (uniqueVisitorIdInput) {
+      uniqueVisitorIdInput.value = getVisitorId();
+    }
+
     const fields = [
       {
         el: document.getElementById('c-name') as HTMLInputElement,
@@ -197,6 +207,8 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
       },
     ];
 
+    const generalErrorMessage = "Sorry, there was an error sending your message. Please try again or give us a call at (301) 769-2030.";
+
     const showError = (field: typeof fields[number], msg: string) => {
       field.errorEl.textContent = msg;
       field.el.classList.toggle('form-input--error', !!msg);
@@ -208,8 +220,18 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
       field.el.addEventListener('input', () => showError(field, field.validate(field.el.value)));
     });
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      let formData = new FormData(form);
       let firstInvalid: HTMLElement | null = null;
+      const botField = formData.get('bot-field')?.toString().trim();
+
+      if (botField) {
+        // Bot detected, do not submit
+        console.warn('Bot submission detected. Form not submitted.');
+        return;
+      }
 
       fields.forEach(field => {
         const msg = field.validate(field.el.value);
@@ -218,9 +240,30 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
       });
 
       if (firstInvalid) {
-        e.preventDefault();
         (firstInvalid as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
         (firstInvalid as HTMLElement).focus();
+        return;
+      }
+
+      try {
+        
+        formData = new FormData(form);
+        const submitterName = (formData.get('name') || 'a visitor').toString().trim();
+        formData.set('subject', `New message from ${submitterName}: ${formData.get('inquiry-subject') || 'General Inquiry'}`);
+
+        const response = await fetch('/', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          window.location.href = '/contact/success/';
+        } else {
+          alert(generalErrorMessage);
+        }
+      } catch (error) {
+        console.error('Error submitting form:', error);
+        alert(generalErrorMessage);
       }
     });
   }
