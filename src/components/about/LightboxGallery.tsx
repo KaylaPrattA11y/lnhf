@@ -114,6 +114,7 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
               <figcaption className="lightbox__caption">
                 <div>{current.data.title}</div>
                 {current.data.caption && <p>{current.data.caption}</p>}
+                {current.data.credit && <small>Photo credit: {current.data.credit}</small>}
               </figcaption>
             </figure>
 
@@ -230,6 +231,11 @@ export default function LightboxGallery({ images, columns = 3 }: LightboxGallery
         .lightbox__caption > p {
           font-size: var(--text-lg);
           font-style: italic;
+          margin-block-end: 0;
+        }
+        .lightbox__caption > small {
+          margin-block-end: 1em;
+          display: block;
         }
         .lightbox__close {
           position: absolute;
