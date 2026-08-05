@@ -1,0 +1,145 @@
+---
+import TinaMarkdown from '@tinacms/astro/TinaMarkdown.astro';
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { BlogQuery } from '../../../tina/__generated__/types';
+import BlogFigure from '../blog/BlogFigure.astro';
+
+interface Props {
+  data?: BlogQuery['blog'] | null;
+  slug?: string;
+}
+
+const { data, slug = '' } = Astro.props;
+if (!data) return;
+
+const postDate = data.pubDate ? new Date(data.pubDate) : undefined;
+const featuredImage = data.featuredImage ?? undefined;
+const components = { BlogFigure };
+---
+
+{featuredImage && (
+  <div
+    class="parallax"
+    style={`background-image: url('${featuredImage}');`}
+    data-tina-field={tinaField(data, 'featuredImage')}
+  >
+    <header class="blog-post__header">
+      <div class="container">
+        <h1 class="blog-post__title" data-tina-field={tinaField(data, 'title')}>
+          {data.title}
+        </h1>
+        {data.excerpt && (
+          <p class="blog-post__excerpt" data-tina-field={tinaField(data, 'excerpt')}>
+            {data.excerpt}
+          </p>
+        )}
+        {(postDate || data.author) && (
+          <p class="blog-post__meta">
+            {postDate && (
+              <time datetime={postDate.toISOString()} data-tina-field={tinaField(data, 'pubDate')}>
+                {postDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+            )}
+            {postDate && data.author && <span aria-hidden="true"> · </span>}
+            {data.author && (
+              <span>By <span data-tina-field={tinaField(data, 'author')}>{data.author}</span></span>
+            )}
+          </p>
+        )}
+      </div>
+    </header>
+  </div>
+)}
+
+<article class="bg-arabesque">
+  <div class="blog-post container">
+    {!featuredImage && (
+      <header class="blog-post__header">
+        <h1 class="blog-post__title" data-tina-field={tinaField(data, 'title')}>{data.title}</h1>
+        {data.excerpt && (
+          <p class="blog-post__excerpt" data-tina-field={tinaField(data, 'excerpt')}>
+            {data.excerpt}
+          </p>
+        )}
+        {(postDate || data.author) && (
+          <p class="blog-post__meta">
+            {postDate && (
+              <time datetime={postDate.toISOString()} data-tina-field={tinaField(data, 'pubDate')}>
+                {postDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+            )}
+            {postDate && data.author && <span aria-hidden="true"> · </span>}
+            {data.author && (
+              <span>By <span data-tina-field={tinaField(data, 'author')}>{data.author}</span></span>
+            )}
+          </p>
+        )}
+        <hr class="divider divider--left" aria-hidden="true" />
+      </header>
+    )}
+
+    {data.body && (
+      <div class="blog-post__body prose" data-tina-field={tinaField(data, 'body')}>
+        <TinaMarkdown content={data.body} components={components} />
+      </div>
+    )}
+
+    <footer class="blog-post__footer">
+      <a href="/blog/" class="btn btn--secondary btn--sm">&larr; Back to Blog</a>
+    </footer>
+  </div>
+</article>
+
+<style>
+  .blog-post {
+    max-width: 760px;
+    padding-top: var(--space-12);
+    padding-bottom: var(--space-20);
+  }
+  .blog-post__header { margin-bottom: var(--space-10); }
+  .blog-post__title { font-size: var(--text-4xl); margin-bottom: var(--space-4); }
+  .blog-post__excerpt {
+    font-size: var(--text-lg);
+    margin-bottom: 0;
+  }
+  .blog-post__meta { color: var(--color-text-muted); font-size: var(--text-sm); margin-bottom: var(--space-6); }
+  .blog-post__body { line-height: var(--leading-relaxed); }
+  .blog-post__body :global(h2),
+  .blog-post__body :global(h3) { margin-top: var(--space-10); margin-bottom: var(--space-4); }
+  .blog-post__body :global(p) { margin-bottom: var(--space-6); }
+  .blog-post__body :global(img:not(.lightbox-thumb__img)) { border-radius: var(--radius-lg); margin-block: var(--space-8); }
+  .blog-post__body :global(.blog-figure) { width: 100%; max-width: 50%; margin-block-end: var(--space-2); }
+  .blog-post__body :global(.blog-figure img) { width: 100%; margin: 0; display: block; border-radius: 0.75rem; }
+  .blog-post__body :global(.blog-figure figcaption) { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-text-muted); }
+  .blog-post__body :global(.blog-figure--left) { float: left; margin-right: var(--space-6); }
+  .blog-post__body :global(.blog-figure--right) { float: right; margin-left: var(--space-6); }
+  .blog-post__body :global(.blog-figure--center) { float: none; margin-inline: auto; }
+  .blog-post__body::after { content: ''; display: block; clear: both; }
+  @media (max-width: 900px) {
+    .blog-post__body :global(.blog-figure) { float: none; max-width: 100%; margin-inline: 0; }
+  }
+  .blog-post__footer { margin-top: var(--space-16); padding-top: var(--space-8); border-top: 1px solid var(--color-border); }
+  .parallax {
+    position: relative;
+    min-height: 65vh;
+    min-height: 65dvh;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+  .parallax .blog-post__header {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    font-size: var(--text-5xl);
+    padding-block: var(--space-16);
+    background: linear-gradient(to top, rgba(26,53,120,0.9), rgba(0,0,0,0));
+    margin: 0;
+  }
+  .parallax .blog-post__title,
+  .parallax .blog-post__excerpt,
+  .parallax .blog-post__meta { color: white; }
+  .parallax .container { max-width: 760px; }
+</style>

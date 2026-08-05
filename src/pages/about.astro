@@ -2,11 +2,26 @@
 import { Image } from 'astro:assets';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
-import { getPublishedCollection } from '@lib/content-status';
+import AboutGalleryIsland from '@components/tina/AboutGalleryIsland.astro';
+import { getAboutGalleryItems } from '@lib/tina/data';
+import { isEditorRequest } from '@lib/tina/is-editor-request';
 import Logo from '@assets/images/logo.svg';
-const images = await getPublishedCollection('gallery');
-const latestImages = images
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const inEditMode = isEditorRequest(Astro.request);
+const selectedRelativePath = Astro.url.searchParams.get('entry');
+const galleryEntries = await getAboutGalleryItems({ preview: inEditMode, selectedRelativePath });
+const latestImages = galleryEntries
+  .map((item, index) => ({
+    id: `gallery-${index}`,
+    data: {
+      image: (item as { image?: string }).image ?? '',
+      pubDate: new Date((item as { pubDate?: string | Date }).pubDate ?? Date.now()),
+      title: (item as { title?: string }).title ?? `Gallery image ${index + 1}`,
+      caption: (item as { caption?: string }).caption,
+      credit: (item as { credit?: string }).credit,
+    },
+  }))
+  .filter((item) => item.data.image);
 
 import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
 import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-House.jpg';
@@ -177,19 +192,23 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
 
   <!-- Photo Gallery -->
   {latestImages.length > 0 && (
-    <section class="section bg-arabesque" aria-labelledby="gallery-title" id="waterfront">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-header__eyebrow">Photo Gallery</span>
-          <h2 class="section-header__title" id="gallery-title">See It for Yourself</h2>
-          <hr class="divider" aria-hidden="true" />
-          <p class="section-header__subtitle">
-            Click any photo to view full size.
-          </p>
+    inEditMode ? (
+      <AboutGalleryIsland images={galleryEntries as Parameters<typeof AboutGalleryIsland>[0]['images']} />
+    ) : (
+      <section class="section bg-arabesque" aria-labelledby="gallery-title" id="waterfront">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-header__eyebrow">Photo Gallery</span>
+            <h2 class="section-header__title" id="gallery-title">See It for Yourself</h2>
+            <hr class="divider" aria-hidden="true" />
+            <p class="section-header__subtitle">
+              Click any photo to view full size.
+            </p>
+          </div>
+          <LightboxGallery client:load images={latestImages} columns={3} />
         </div>
-        <LightboxGallery client:load images={latestImages} columns={3} />
-      </div>
-    </section>
+      </section>
+    )
   )}
 
   <!-- CTA -->

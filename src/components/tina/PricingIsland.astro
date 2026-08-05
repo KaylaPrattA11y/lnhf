@@ -1,0 +1,87 @@
+---
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { PricingQuery } from '../../../tina/__generated__/types';
+import { fmtUsd } from '@lib/formatters';
+
+interface PricingEntry {
+  id: string;
+  name: string;
+  feeType: 'static' | 'dynamic';
+  isChecked: boolean;
+  adjustment: number;
+  perUnit: boolean;
+  sortOrder: number;
+  description?: string;
+  maxUnits?: number;
+  billingTreatment?: 'includedInTotals' | 'returnedLater' | 'informationalOnly';
+}
+
+interface Props {
+  entries: Array<PricingQuery['pricing']>;
+}
+
+const { entries } = Astro.props;
+---
+
+<section class="section pricing-tool-section bg-arabesque" aria-label="Pricing estimator">
+  <div class="container" style="max-width: 960px;">
+    <div class="section-header">
+      <h2 class="section-header__title" id="carousel-preview-title">Pricing (Visual Editor)</h2>
+      <p class="section-header__subtitle">Each entry below represents a row in the Pricing Estimator table. Your guests will see the calculated prices based on these entries.</p>
+    </div>
+    <div class="pricing-preview" role="list">
+      {entries.map((entry) => {
+        if (!entry) return null;
+        return (
+          <article role="listitem" class="pricing-preview__item">
+            <h3 data-tina-field={tinaField(entry, 'name')}>{entry.name}</h3>
+            {entry.description && (
+              <p data-tina-field={tinaField(entry, 'description')}>
+                {entry.description}
+              </p>
+            )}
+            <ul>
+              <li data-tina-field={tinaField(entry, 'adjustment')}>
+                Adjustment: <strong>{fmtUsd(entry.adjustment ?? 0, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</strong>
+              </li>
+              <li data-tina-field={tinaField(entry, 'billingTreatment')}>
+                Billing Treatment: <strong>{entry.billingTreatment}</strong>
+              </li>
+              {entry.perUnit && entry.maxUnits && (
+                <li data-tina-field={tinaField(entry, 'maxUnits')}>
+                  Per Unit Max: <strong>{entry.maxUnits}x</strong>
+                </li>
+              )}
+            </ul>
+          </article>
+        )
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .pricing-preview {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .pricing-preview__item {
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+
+  .pricing-preview__item h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    color: var(--color-primary-dark);
+  }
+
+  .pricing-preview__item p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+</style>

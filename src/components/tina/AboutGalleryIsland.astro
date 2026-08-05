@@ -1,0 +1,154 @@
+---
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { GalleryQuery } from '../../../tina/__generated__/types';
+
+interface Props {
+  images: Array<GalleryQuery['gallery']>;
+}
+
+const { images } = Astro.props;
+
+type GalleryEntry = NonNullable<GalleryQuery['gallery']>;
+
+const entries = images
+  .filter((item): item is GalleryEntry => Boolean(item))
+  .sort((left, right) => {
+    const leftDate = left.pubDate ? new Date(left.pubDate).valueOf() : 0;
+    const rightDate = right.pubDate ? new Date(right.pubDate).valueOf() : 0;
+    return rightDate - leftDate;
+  });
+
+const imageSrc = (entry: GalleryEntry): string => {
+  const raw = (entry as { image?: unknown }).image;
+  if (typeof raw === 'string') return raw;
+  if (raw && typeof raw === 'object') {
+    const maybe = raw as { src?: unknown; url?: unknown; path?: unknown };
+    if (typeof maybe.src === 'string') return maybe.src;
+    if (typeof maybe.url === 'string') return maybe.url;
+    if (typeof maybe.path === 'string') return maybe.path;
+  }
+  return '';
+};
+
+const fieldAttr = (entry: GalleryEntry, field: 'image' | 'title' | 'caption' | 'credit') => {
+  const value = tinaField(entry, field);
+  return value || undefined;
+};
+---
+
+{entries.length > 0 && (
+  <section class="section bg-arabesque" aria-labelledby="gallery-title" id="waterfront">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-header__eyebrow">Photo Gallery</span>
+        <h2 class="section-header__title" id="gallery-title">About Page: Photo Gallery (Visual Editor)</h2>
+        <hr class="divider" aria-hidden="true" />
+        <p class="section-header__subtitle">
+          Visual Editor preview of gallery entries. On the production site, click any photo to view full size and details. In the visual editor, you can edit the gallery entries directly.
+        </p>
+        <p class="section-header__subtitle">
+          <strong>Change the date of an entry to reorder the gallery. The most recent entries will appear first.</strong>
+        </p>
+      </div>
+      <div class="gallery-grid" role="list">
+        {entries.map((item, index) => (
+          <figure class="gallery-item" role="listitem">
+            {imageSrc(item)
+              ? (
+                <img
+                  src={imageSrc(item)}
+                  alt={item.title ?? item.caption ?? `Gallery image ${index + 1}`}
+                  data-tina-field={fieldAttr(item, 'image')}
+                />
+              )
+              : (
+                <div class="gallery-item__placeholder" data-tina-field={fieldAttr(item, 'image')}>
+                  No image selected
+                </div>
+              )}
+            <figcaption>
+              <strong class="gallery-item__title" data-tina-field={fieldAttr(item, 'title')}>
+                {item.title ?? `Gallery image ${index + 1}`}
+              </strong>
+              {item.caption && (
+                <span class="gallery-item__caption" data-tina-field={fieldAttr(item, 'caption')}>
+                  {item.caption}
+                </span>
+              )}
+              {item.credit && (
+                <span class="gallery-item__credit" data-tina-field={fieldAttr(item, 'credit')}>
+                  Photo by {item.credit}
+                </span>
+              )}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .gallery-grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gallery-item {
+    margin: 0;
+  }
+
+  .gallery-item img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+  }
+
+  .gallery-item__placeholder {
+    align-items: center;
+    aspect-ratio: 4 / 3;
+    background: var(--color-cream);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    display: flex;
+    font-size: var(--text-sm);
+    justify-content: center;
+  }
+
+  .gallery-item figcaption {
+    margin-top: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .gallery-item__title {
+    color: var(--color-primary-dark);
+    font-size: var(--text-base);
+    font-weight: 700;
+  }
+
+  .gallery-item__caption {
+    color: var(--color-text);
+  }
+
+  .gallery-item__credit {
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .gallery-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .gallery-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
