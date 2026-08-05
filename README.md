@@ -584,7 +584,6 @@ Monitor TinaCMS releases for upstream fixes.
 This project is private. For questions or changes, contact the site maintainer:
 
 **Kayla Pratt** — [KaylaPrattA11y](https://github.com/KaylaPrattA11y)
-Photography credit: [Candace Nicole Photography](https://candacenicolephotography.com)
 
 ---
 
