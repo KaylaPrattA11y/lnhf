@@ -156,7 +156,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
                 <td>${escapeHtml(fmt(totalCost))}</td>
               </tr>
               <tr>
-                <td>Net Cost After Refundable Amounts Are Returned</td>
+                <td>Net Cost (after refundable amounts are returned)</td>
                 <td>${escapeHtml(fmt(netCost))}</td>
               </tr>
             </tfoot>
@@ -271,14 +271,14 @@ export default function PricingTable({ entries }: PricingTableProps) {
           </tbody>
           <tfoot>
             <tr className="pricing-table__row pricing-table__row--total">
-              <td><strong>Total Amount Due (including refundable items)</strong></td>
+              <td><strong>Total Amount Due</strong><br/>(including refundable items)</td>
               <td className="pricing-table__amount pricing-table__total" aria-live="polite">
                 <strong>{fmt(totalCost)}</strong>
               </td>
               <td></td>
             </tr>
             <tr className="pricing-table__row pricing-table__row--net">
-              <td><strong>Net Cost After Refundable Amounts Are Returned</strong></td>
+              <td><strong>Net Cost</strong><br/>(after refundable amounts are returned)</td>
               <td className="pricing-table__amount pricing-table__total" aria-live="polite">
                 <strong>{fmt(netCost)}</strong>
               </td>
@@ -348,6 +348,11 @@ export default function PricingTable({ entries }: PricingTableProps) {
           container: pricing-table / inline-size;
           padding-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
         }
+        .pricing-table caption {
+          background: var(--color-primary);
+          color: var(--color-white);
+          padding: var(--space-2);
+        }
         .pricing-table tfoot {
           position: fixed;
           left: 50%;
@@ -355,13 +360,15 @@ export default function PricingTable({ entries }: PricingTableProps) {
           transform: translateX(-50%);
           z-index: 60;
           width: min(680px, calc(100vw - var(--space-4)));
-          border: 1px solid color-mix(in srgb, var(--color-gold) 45%, transparent);
+          border: 4px double color-mix(in srgb, var(--color-gold) 45%, transparent);
           border-radius: var(--radius-md);
-          background: color-mix(in srgb, var(--color-primary-dark) 94%, black);
+          background: var(--color-available);
           box-shadow: var(--shadow-lg);
           backdrop-filter: blur(2px);
           overflow: hidden;
           display: block;
+          border-radius: 0.5rem;
+          corner-shape: scoop;
         }
         .pricing-table tfoot tr {
           display: grid;
@@ -377,6 +384,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
           border: 0;
           padding: var(--space-2) var(--space-4);
           font-size: var(--text-sm);
+          font-weight: 500;
           line-height: var(--leading-snug);
         }
         .pricing-table tfoot td:empty {
@@ -392,9 +400,10 @@ export default function PricingTable({ entries }: PricingTableProps) {
         }
         .pricing-tool__table-wrap {
           overflow-x: auto;
-          border-radius: var(--radius-lg);
           box-shadow: var(--shadow-md);
           margin-bottom: var(--space-6);
+          border-radius: 1rem;
+          corner-shape: scoop;
         }
         .pricing-table {
           width: 100%;
