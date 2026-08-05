@@ -1,56 +1,46 @@
 ---
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
-import InteriorLayout from '@layouts/InteriorLayout.astro';
-import FaqsIsland from '@components/tina/FaqsIsland.astro';
-import { islands } from '@lib/tina/islands';
-import { getAllFaqs } from '@lib/tina/data';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
+import TinaMarkdown from '@tinacms/astro/TinaMarkdown.astro';
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { FaqsQuery } from '../../../tina/__generated__/types';
 
-const inEditMode = isEditorRequest(Astro.request);
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const faqEntries = await getAllFaqs({
-  preview: inEditMode,
-  selectedRelativePath,
-});
+interface Props {
+  entries: Array<FaqsQuery['faqs']>;
+  inEditMode?: boolean;
+}
+
+const { entries, inEditMode = false } = Astro.props;
 ---
 
-<InteriorLayout
-  title="Frequently Asked Questions"
-  description="Answers to the most common questions about booking, pricing, policies, and amenities at Lower Notley Hall Farm."
-  eyebrow="Need Answers?"
-  heroTitle="Frequently Asked Questions"
->
-  <p class="interior-hero__lead" slot="hero">
-    We've collected the questions we hear most often. Don't see yours? We're happy to help —
-    <a href="/contact/">reach out any time</a> or call <a href="tel:3017692030">(301) 769-2030</a>.
-  </p>
+<section class="section bg-arabesque" aria-label="FAQ accordion">
+  <div class="container faqs-container">
+    <div class="faq-list" role="list">
+      {entries.map((faq) => {
+        if (!faq) return null;
+        return (
+          <details class="faq-item" open={inEditMode}>
+            <summary class="faq-item__summary">
+              <h2 class="faq-item__heading" data-tina-field={tinaField(faq, 'question')}>
+                {faq.question}
+              </h2>
+            </summary>
+            <div class="faq-item__panel">
+              <div class="faq-item__answer" data-tina-field={tinaField(faq, 'body')}>
+                {faq.body && <TinaMarkdown content={faq.body} />}
+              </div>
+            </div>
+          </details>
+        );
+      })}
+    </div>
 
-  <TinaIsland
-    name="faqsContent"
-    wrapper={islands.faqsContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <FaqsIsland
-      entries={faqEntries as Parameters<typeof FaqsIsland>[0]['entries']}
-      inEditMode={inEditMode}
-    />
-  </TinaIsland>
-
-</InteriorLayout>
-
-<script>
-  document.querySelectorAll<HTMLButtonElement>('[data-faq-trigger]').forEach(btn => {
-    const panelId = btn.getAttribute('aria-controls');
-    const panel   = panelId ? document.getElementById(panelId) as HTMLElement | null : null;
-    if (!panel) return;
-    btn.addEventListener('click', () => {
-      const isOpen = btn.getAttribute('aria-expanded') === 'true';
-      btn.setAttribute('aria-expanded', String(!isOpen));
-      panel.hidden = isOpen;
-      btn.closest('.faq-item')?.classList.toggle('is-open', !isOpen);
-    });
-  });
-</script>
+    <div class="faqs-footer-note">
+      <p>
+        <strong>Still have questions?</strong> <a href="/contact/">Contact Jack and Cindy</a> — we love
+        talking about the farm and what we can do for you.
+      </p>
+    </div>
+  </div>
+</section>
 
 <style>
   .container {
@@ -78,19 +68,22 @@ const faqEntries = await getAllFaqs({
     border-color: var(--color-primary);
     box-shadow: var(--shadow-sm);
   }
-  .faq-item__heading { margin: 0; }
-  .faq-item__trigger {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
+  .faq-item__heading { 
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    margin: 0; 
+    display: inline-block;
+  }
+  .faq-item__summary {
     padding: var(--space-5) var(--space-6);
     background: none;
     border: none;
     cursor: pointer;
     text-align: left;
     transition: background var(--transition-fast);
+  }
+  .faq-item__summary::marker {
+    display: inline-block;
   }
   .faq-item__trigger:hover { background: var(--color-gray-100); }
   .faq-item.is-open .faq-item__trigger { background: var(--color-gray-100); }

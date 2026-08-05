@@ -2,77 +2,13 @@
 import BaseLayout from './BaseLayout.astro';
 import Nav from '../components/layout/Nav.astro';
 import Footer from '../components/layout/Footer.astro';
-import Share from '../components/blog/Share.astro';
 
-const { title, description, date, author, featuredImage, ogImage, slug, id } = Astro.props;
-const postSlug = (typeof slug === 'string' ? slug : typeof id === 'string' ? id : '').replace(/\.mdx?$/, '');
-const resolvedOgImage =
-  (typeof ogImage === 'string' ? ogImage : undefined) ??
-  (typeof featuredImage === 'string' ? featuredImage : featuredImage?.src);
+const { title, description, ogImage } = Astro.props;
 ---
 
-<BaseLayout 
-  title={title} 
-  description={description} 
-  ogImage={resolvedOgImage}
->
+<BaseLayout title={title} description={description} ogImage={ogImage}>
   <Nav slot="nav" />
-
-  {featuredImage && (
-    <div class="parallax" aria-hidden="true" style={`background-image: url('${featuredImage}');`}>
-      <header class="blog-post__header">
-        <div class="container">
-          <h1 class="blog-post__title">{title}</h1>
-          {(date || author) && (
-            <p class="blog-post__meta">
-              {date && (
-                <time datetime={date.toISOString()}>
-                  {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </time>
-              )}
-              {date && author && <span aria-hidden="true"> · </span>}
-              {author && <span>By {author}</span>}
-            </p>
-          )}
-          <div class="blog-post__share">
-            <Share blog={{ title, slug: postSlug, excerpt: description }} />
-          </div>
-        </div>
-      </header>
-    </div>
-  )}
-
-  <article class="bg-arabesque">
-    <div class="blog-post container">
-      {!featuredImage && (
-        <header class="blog-post__header">
-          <h1 class="blog-post__title">{title}</h1>
-          {(date || author) && (
-            <p class="blog-post__meta">
-              {date && (
-                <time datetime={date.toISOString()}>
-                  {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </time>
-              )}
-              {date && author && <span aria-hidden="true"> · </span>}
-              {author && <span>By {author}</span>}
-            </p>
-          )}
-          <Share blog={{ title, slug: postSlug, excerpt: description }} />
-          <hr class="divider divider--left" aria-hidden="true" />
-        </header>
-      )}
-  
-      <div class="blog-post__body prose">
-        <slot />
-      </div>
-  
-      <footer class="blog-post__footer">
-        <a href="/blog/" class="btn btn--secondary btn--sm">&larr; Back to Blog</a>
-      </footer>
-    </div>
-  </article>
-
+  <slot />
   <Footer slot="footer" />
 </BaseLayout>
 
@@ -108,6 +44,12 @@ const resolvedOgImage =
 
   .blog-post__header {
     margin-bottom: var(--space-10);
+  }
+
+  .blog-post__excerpt {
+    font-size: var(--text-sm);
+    color: white;
+    margin-bottom: 0;
   }
 
   .blog-post__title {

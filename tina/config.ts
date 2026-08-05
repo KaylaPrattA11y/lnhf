@@ -29,7 +29,7 @@ const draftCollections: DraftCollection[] = [
 
 const buildDraftsQuery = (connectionField: string) => `#graphql
   query DraftDocuments {
-    ${connectionField}(first: 200, filter: { status: { eq: "draft" } }) {
+    ${connectionField}(first: 200) {
       edges {
         node {
           ... on Document {
@@ -46,6 +46,35 @@ const buildDraftsQuery = (connectionField: string) => `#graphql
     }
   }
 `;
+
+const collectionPreviewBasePath: Record<string, string> = {
+  carousel: '/',
+  gallery: '/about',
+  faqs: '/faqs',
+  vendors: '/vendors',
+  testimonials: '/',
+  pricing: '/pricing',
+  tourTimeSlots: '/tours',
+};
+
+const buildDraftPreviewPath = (draft: DraftDocument) => {
+  if (draft.collectionName === 'blog') {
+    const relativePath = (draft.relativePath || draft.filename || '').trim();
+    if (!relativePath) return '/blog/page/1/';
+    const slug = relativePath.replace(/^\/+/, '').replace(/\.mdx?$/i, '');
+    return `/blog/${slug}/`;
+  }
+
+  const basePath = collectionPreviewBasePath[draft.collectionName] || '/';
+  const normalizedBasePath = basePath === '/' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
+  const relativePath = (draft.relativePath || draft.filename || '').trim();
+  if (!relativePath) return normalizedBasePath;
+
+  const separator = normalizedBasePath.includes('?') ? '&' : '?';
+  return `${normalizedBasePath}${separator}entry=${encodeURIComponent(relativePath)}`;
+};
+
+const buildDraftVisualEditorHref = (draft: DraftDocument) => `#/~${buildDraftPreviewPath(draft)}`;
 
 const DraftsIcon = () => React.createElement(
   'svg',
@@ -306,7 +335,7 @@ const DraftsScreen = () => {
                       React.createElement(
                         'a',
                         {
-                          href: `#/collections/edit/${draft.collectionName}/~/${draft.breadcrumbs.join('/')}`,
+                          href: buildDraftVisualEditorHref(draft),
                           style: {
                             display: 'inline-block',
                             borderRadius: '0.5rem',
@@ -329,6 +358,11 @@ const DraftsScreen = () => {
 };
 
 const withDraftsScreen = (cms: TinaCMS) => {
+  // Keep admin navigation in visual-preview mode so Create/Add File flows
+  // open the site preview frame instead of form-only collection routes.
+  cms.flags.set('tina-preview', 'admin');
+  cms.flags.set('tina-basepath', '');
+
   cms.plugins.add({
     __type: 'screen',
     name: 'Drafts Queue',
@@ -406,7 +440,7 @@ const statusFieldInput = (props: any) => {
       id: props.input.name,
       style: {
         display: 'block',
-        width: '100%',
+        maxWidth: '100%',
         padding: '0.5rem 0.65rem',
         border: '1px solid #d0d0d0',
         borderRadius: '4px',
@@ -427,12 +461,14 @@ const statusFieldInput = (props: any) => {
     value === 'published' ? 'Published' : 'Draft',
   );
   const helper = React.createElement(
-    'p',
+    'small',
     {
       style: {
         margin: '0.5rem 0 0',
-        fontSize: '0.875rem',
         color: '#555',
+        maxWidth: '385px',
+        width: '100%',
+        whiteSpace: 'break-spaces'
       },
     },
     value === 'published'
@@ -448,7 +484,7 @@ const statusFieldInput = (props: any) => {
       'div',
       {
         style: {
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '0.75rem',
@@ -519,14 +555,33 @@ const statusField = {
   },
 };
 
+const getRouterRelativePath = (document?: { _sys?: { relativePath?: string; filename?: string } }) => {
+  const raw = document?._sys?.relativePath || document?._sys?.filename || '';
+  const normalized = raw.trim();
+  // Tina uses "~" as a placeholder filename while creating a new document.
+  if (!normalized || normalized === '~' || normalized.endsWith('/~')) return '';
+  return normalized;
+};
+
+const buildCollectionEditorRoute = (basePath: string, document?: { _sys?: { relativePath?: string; filename?: string } }) => {
+  const normalizedBasePath = basePath === '/' ? '/' : basePath.endsWith('/') ? basePath : `${basePath}/`;
+  const relativePath = getRouterRelativePath(document);
+  if (!relativePath) return normalizedBasePath;
+  const separator = normalizedBasePath.includes('?') ? '&' : '?';
+  return `${normalizedBasePath}${separator}entry=${encodeURIComponent(relativePath)}`;
+};
+
 export default defineConfig({
   branch: process.env.HEAD || process.env.BRANCH || "main",
-  clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID,
+  clientId:
+    process.env.NEXT_PUBLIC_TINA_CLIENT_ID ||
+    process.env.TINA_PUBLIC_CLIENT_ID ||
+    process.env.TINA_CLIENT_ID,
   token: process.env.TINA_TOKEN,
   cmsCallback: withDraftsScreen,
   search: {
     tina: {
-      indexerToken: process.env.TINA_SEARCH_TOKEN,
+      indexerToken: process.env.TINA_SEARCH_TOKEN || process.env.TINA_SEARCH,
       stopwordLanguages: ['eng'],
     },
   },
@@ -553,6 +608,12 @@ export default defineConfig({
           pubDate: new Date().toISOString(),
         }),
         ui: {
+          router: ({ document }) => {
+            const relativePath = getRouterRelativePath(document);
+            if (!relativePath) return '/blog/page/1/';
+            const slug = relativePath.replace(/\.mdx?$/, '');
+            return `/blog/${slug}/`;
+          },
           filename: {
             readonly: false,
             slugify: values => {
@@ -674,6 +735,9 @@ export default defineConfig({
           status: 'draft',
           sortOrder: 99,
         }),
+        ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/', document),
+        },
         fields: [
           statusField,
           {
@@ -715,6 +779,9 @@ export default defineConfig({
           status: 'draft',
           pubDate: new Date().toISOString(),
         }),
+        ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/about', document),
+        },
         fields: [statusField, ...(galleryFields as any)],
       },
       {
@@ -727,6 +794,7 @@ export default defineConfig({
           sortOrder: 99,
         }),
         ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/faqs', document),
           allowedActions: {
             create: true,
             delete: true,
@@ -767,6 +835,7 @@ export default defineConfig({
           sortOrder: 99,
         }),
         ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/vendors', document),
           allowedActions: {
             create: true,
             delete: true,
@@ -848,6 +917,7 @@ export default defineConfig({
           showOnHomepage: false,
         }),
         ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/', document),
           allowedActions: {
             create: true,
             delete: true,
@@ -922,6 +992,7 @@ export default defineConfig({
           billingTreatment: 'includedInTotals',
         }),
         ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/pricing', document),
           allowedActions: {
             create: true,
             delete: true,
@@ -1011,6 +1082,7 @@ export default defineConfig({
           seedSlotOnDay: ['0'],
         }),
         ui: {
+          router: ({ document }) => buildCollectionEditorRoute('/tours', document),
           allowedActions: {
             create: true,
             delete: true,

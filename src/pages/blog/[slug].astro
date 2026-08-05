@@ -1,22 +1,36 @@
 ---
-import { render } from 'astro:content';
+import TinaIsland from '@components/tina/TinaIslandCompat.astro';
 import BlogLayout from '@layouts/BlogLayout.astro';
-import Nav from '@components/layout/Nav.astro';
-import Footer from '@components/layout/Footer.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
-import BlogFigure from '@components/blog/BlogFigure.astro';
-import { getPublishedCollection } from '@lib/content-status';
+import BlogBodyIsland from '@components/tina/BlogBodyIsland.astro';
+import { islands } from '@lib/tina/islands';
+import { getBlogPost } from '@lib/tina/data';
+import { isEditorRequest } from '@lib/tina/is-editor-request';
 
-export async function getStaticPaths() {
-  const posts = await getPublishedCollection('blog');
-  return posts.map(post => ({
-    params: { slug: post.id.replace(/\.mdx?$/, '') },
-    props:  { post },
-  }));
+export const prerender = false;
+
+const postSlug = Astro.params.slug?.trim() ?? '';
+
+if (!postSlug) {
+  return new Response('Not Found', { status: 404 });
 }
 
-const { post } = Astro.props;
-const { Content } = await render(post);
+let tinaPost;
+
+try {
+  tinaPost = await getBlogPost(postSlug);
+} catch {
+  return new Response('Not Found', { status: 404 });
+}
+
+const editablePost = tinaPost.data?.blog;
+const inEditMode = isEditorRequest(Astro.request);
+
+if (!editablePost || (!inEditMode && editablePost.status === 'draft')) {
+  return new Response('Not Found', { status: 404 });
+}
+
+const postDate = editablePost.pubDate ? new Date(editablePost.pubDate) : undefined;
 
 type BlogGalleryItem = {
   image: string;
@@ -26,51 +40,39 @@ type BlogGalleryItem = {
   credit?: string;
 };
 
-const normalizedGallery: BlogGalleryItem[] = (post.data.photoGallery ?? [])
-  .map((item) => {
-    if (typeof item === 'string') {
-      return {
-        image: item,
-      };
-    }
+const normalizedGallery: BlogGalleryItem[] = [];
+for (const item of editablePost.photoGallery ?? []) {
+  if (!item || !item.image) continue;
+  normalizedGallery.push({
+    image: item.image,
+    pubDate: item.pubDate ? new Date(item.pubDate) : undefined,
+    title: item.title,
+    caption: item.caption ?? undefined,
+    credit: item.credit ?? undefined,
+  });
+}
+normalizedGallery.sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0));
 
-    return {
-      image: item.image,
-      pubDate: item.pubDate,
-      title: item.title,
-      caption: item.caption,
-      credit: item.credit,
-    };
-  })
-  .filter((item) => Boolean(item.image))
-  .sort((a, b) => (b.pubDate?.valueOf() ?? 0) - (a.pubDate?.valueOf() ?? 0));
-
-const galleryImages = normalizedGallery
-  .filter((item) => Boolean(item.image))
-  .map((item, index) => ({
-    id: `${post.id}-gallery-${index}`,
-    data: {
-      image: item.image as string,
-      pubDate: item.pubDate ?? post.data.pubDate,
-      title: item.title ?? `Gallery photo ${index + 1}`,
-      caption: item.caption,
-      credit: item.credit,
-    },
-  }));
+const galleryImages = normalizedGallery.map((item, index) => ({
+  id: `${postSlug}-gallery-${index}`,
+  data: {
+    image: item.image,
+    pubDate: item.pubDate ?? postDate ?? new Date(),
+    title: item.title ?? `Gallery photo ${index + 1}`,
+    caption: item.caption,
+    credit: item.credit,
+  },
+}));
 ---
 
 <BlogLayout
-  title={post.data.title}
-  description={post.data.excerpt ?? `Read about ${post.data.title} on the Lower Notley Hall Farm blog.`}
-  date={post.data.pubDate}
-  author={post.data.author}
-  featuredImage={post.data.featuredImage}
-  ogImage={post.data.featuredImage}
-  slug={post.id.replace(/\.mdx?$/, '')}
+  title={editablePost.title}
+  description={editablePost.excerpt ?? `Read about ${editablePost.title} on the Lower Notley Hall Farm blog.`}
+  ogImage={editablePost.featuredImage ?? undefined}
 >
-  <Nav slot="nav" />
-
-  <Content components={{ BlogFigure }} />
+  <TinaIsland name="blogBody" wrapper={islands.blogBody.wrapper} params={{ slug: postSlug }} primary>
+    <BlogBodyIsland data={editablePost} slug={postSlug} />
+  </TinaIsland>
 
   {galleryImages.length > 0 && (
     <section class="blog-gallery" aria-label="Photo gallery">
@@ -79,7 +81,6 @@ const galleryImages = normalizedGallery
     </section>
   )}
 
-  <Footer slot="footer" />
 </BlogLayout>
 
 <style>
