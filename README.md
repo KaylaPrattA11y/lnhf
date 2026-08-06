@@ -1,5 +1,7 @@
 # Lower Notley Hall Farm — Website
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/98b68b14-ec53-4eb4-a5c2-50c1d9b96ec0/deploy-status)](https://app.netlify.com/projects/lowernotleyhallfarm/deploys)
+
 The official website for **Lower Notley Hall Farm**, a historic waterfront wedding venue in Chaptico, Southern Maryland. Built with Astro 6, React 19, TinaCMS, and Netlify Database (Postgres), deployed on Netlify.
 
 **Live site:** https://lowernotleyhallfarm.com
