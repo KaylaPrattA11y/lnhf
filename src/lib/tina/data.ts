@@ -52,14 +52,23 @@ const getCollectionFileNameMap = async (collection: CollectionKey) => {
   const cached = collectionFileNameCache.get(collection);
   if (cached) return cached;
 
-  const directory = new URL(`../../content/${collectionContentDirs[collection]}/`, import.meta.url);
-  const files = await readdir(directory, { withFileTypes: true });
   const map = new Map<string, string>();
 
-  for (const file of files) {
-    if (!file.isFile()) continue;
-    if (!file.name.endsWith('.md') && !file.name.endsWith('.mdx')) continue;
-    map.set(file.name.toLowerCase(), file.name);
+  // Deployed Netlify Functions only bundle traced JS chunks, not the raw
+  // src/content directory, so this scan is unavailable at runtime in
+  // production. Fall back to the entry's own filePath casing when it fails.
+  try {
+    const directory = new URL(`../../content/${collectionContentDirs[collection]}/`, import.meta.url);
+    const files = await readdir(directory, { withFileTypes: true });
+    for (const file of files) {
+      if (!file.isFile()) continue;
+      if (!file.name.endsWith('.md') && !file.name.endsWith('.mdx')) continue;
+      map.set(file.name.toLowerCase(), file.name);
+    }
+  } catch {
+    // Directory not available at runtime (e.g. deployed function bundle); use fallback casing instead.
+    new Error('Directory not available at runtime').stack; // Log the stack trace for debugging purposes
+    console.warn('Directory not available at runtime, falling back to entry filePath casing.');
   }
 
   collectionFileNameCache.set(collection, map);
