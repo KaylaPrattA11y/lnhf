@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import Hero from '@components/home/Hero.astro';
@@ -8,16 +7,16 @@ import StatsBar from '@components/home/StatsBar.astro';
 import Blockquote from '@components/home/Blockquote.astro';
 import TheSetting from '@components/home/TheSetting.astro';
 import LatestPosts from '@components/home/LatestPosts.astro';
-import HomeTestimonialsIsland from '@components/tina/HomeTestimonialsIsland.astro';
+import Testimonials from '@components/home/Testimonials';
 import TourForm from '@components/home/TourForm.astro';
-import { getHomeCarouselSlides, getHomepageTestimonials } from '@lib/tina/data';
-import { islands } from '@lib/tina/islands';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
+import { getPublishedCollection } from '@lib/content-status';
 
-const inEditMode = isEditorRequest(Astro.request);
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const heroSlides = await getHomeCarouselSlides({ preview: inEditMode, selectedRelativePath });
-const testimonials = await getHomepageTestimonials({ preview: inEditMode, selectedRelativePath });
+const testimonials = await getPublishedCollection('testimonials');
+// filter to homepage only, then sort by sortOrder (default to 99 if not set) so that entries without a sortOrder appear at the end
+const sortedTestimonials = testimonials
+  .filter(t => t.data.showOnHomepage)
+  .sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99))
+  .map(t => ({ id: t.id, ...t.data }));
 
 const description =
   'Lower Notley Hall Farm is a historic Southern Maryland waterfront wedding venue in Chaptico, MD—50 miles from Washington, DC. Manor house, reception barn, and Wicomico River views for up to 150 guests.';
@@ -31,27 +30,11 @@ const description =
 >
   <Nav slot="nav" />
 
-  <TinaIsland
-    name="homeCarouselContent"
-    wrapper={islands.homeCarouselContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <Hero slides={heroSlides as Parameters<typeof Hero>[0]['slides']} />
-  </TinaIsland>
+  <Hero />
   <StatsBar />
   <Blockquote />
   <TheSetting />
-  <TinaIsland
-    name="homeTestimonialsContent"
-    wrapper={islands.homeTestimonialsContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <HomeTestimonialsIsland
-      testimonials={testimonials as Parameters<typeof HomeTestimonialsIsland>[0]['testimonials']}
-      inEditMode={inEditMode}
-      selectedRelativePath={selectedRelativePath ?? ''}
-    />
-  </TinaIsland>
+  <Testimonials testimonials={sortedTestimonials} client:load />
   <LatestPosts />
   <TourForm />
 

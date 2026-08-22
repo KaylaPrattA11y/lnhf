@@ -1,17 +1,10 @@
 ---
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
+import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
-import FaqsIsland from '@components/tina/FaqsIsland.astro';
-import { islands } from '@lib/tina/islands';
-import { getAllFaqs } from '@lib/tina/data';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
+import { getPublishedCollection } from '@lib/content-status';
 
-const inEditMode = isEditorRequest(Astro.request);
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const faqEntries = await getAllFaqs({
-  preview: inEditMode,
-  selectedRelativePath,
-});
+const faqEntries = await getPublishedCollection('faqs');
+const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
 ---
 
 <InteriorLayout
@@ -25,16 +18,51 @@ const faqEntries = await getAllFaqs({
     <a href="/contact/">reach out any time</a> or call <a href="tel:3017692030">(301) 769-2030</a>.
   </p>
 
-  <TinaIsland
-    name="faqsContent"
-    wrapper={islands.faqsContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <FaqsIsland
-      entries={faqEntries as Parameters<typeof FaqsIsland>[0]['entries']}
-      inEditMode={inEditMode}
-    />
-  </TinaIsland>
+  <section class="section bg-arabesque" aria-label="FAQ accordion">
+    <div class="container faqs-container">
+      <div class="faq-list" role="list">
+        {sorted.map(async entry => {
+          const { Content } = await render(entry);
+          const btnId   = `faq-btn-${entry.id}`;
+          const panelId = `faq-panel-${entry.id}`;
+          return (
+            <div class="faq-item" role="listitem">
+              <h2 class="faq-item__heading">
+                <button
+                  id={btnId}
+                  class="faq-item__trigger"
+                  aria-expanded="false"
+                  aria-controls={panelId}
+                  data-faq-trigger
+                  data-umami-event="Toggle FAQ"
+                  data-umami-event-value={entry.data.question} 
+                >
+                  <span class="faq-item__question">{entry.data.question}</span>
+                  <span class="faq-item__icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </span>
+                </button>
+              </h2>
+              <div id={panelId} role="region" aria-labelledby={btnId} class="faq-item__panel" hidden>
+                <div class="faq-item__answer">
+                  <Content />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div class="faqs-footer-note">
+        <p>
+          <strong>Still have questions?</strong> <a href="/contact/">Contact Jack and Cindy</a> — we love
+          talking about the farm and what we can do for you.
+        </p>
+      </div>
+    </div>
+  </section>
 
 </InteriorLayout>
 

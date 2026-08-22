@@ -1,21 +1,15 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import BookingCalendar from '@components/booking/BookingCalendar';
-import { getTourTimeSlots } from '@lib/tina/data';
-import { islands } from '@lib/tina/islands';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
+import { getPublishedCollection } from '@lib/content-status';
 
-const inEditMode = isEditorRequest(Astro.request);
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const tourTimeSlots = (await getTourTimeSlots({ preview: inEditMode, selectedRelativePath }))
+const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
   .map((entry) => ({
-    tourStart: (entry as { tourStart?: string }).tourStart ?? '',
-    tourEnd: (entry as { tourEnd?: string }).tourEnd ?? '',
+    tourStart: entry.data.tourStart,
+    tourEnd: entry.data.tourEnd,
   }))
-  .filter((entry) => entry.tourStart && entry.tourEnd)
   .sort((a, b) => a.tourStart.localeCompare(b.tourStart));
 ---
 
@@ -48,17 +42,11 @@ const tourTimeSlots = (await getTourTimeSlots({ preview: inEditMode, selectedRel
     </div>
   </section>
 
-  <TinaIsland
-    name="tourTimeSlotsContent"
-    wrapper={islands.tourTimeSlotsContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <section class="section bg-arabesque booking-calendar-section" aria-label="Tour calendar">
-      <div class="container booking-calendar-wrap">
-        <BookingCalendar client:load timeSlotOptions={tourTimeSlots} />
-      </div>
-    </section>
-  </TinaIsland>
+  <section class="section bg-arabesque booking-calendar-section" aria-label="Tour calendar">
+    <div class="container booking-calendar-wrap">
+      <BookingCalendar client:load timeSlotOptions={tourTimeSlots} />
+    </div>
+  </section>
 
   <form
     name="tour-booking"

@@ -1,16 +1,67 @@
 ---
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
+import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
-import VendorsIsland from '@components/tina/VendorsIsland.astro';
-import { islands } from '@lib/tina/islands';
-import { getAllVendors } from '@lib/tina/data';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
+import { getPublishedCollection } from '@lib/content-status';
 
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const vendorEntries = await getAllVendors({
-  preview: isEditorRequest(Astro.request),
-  selectedRelativePath,
+const vendors = await getPublishedCollection('vendors');
+const vendorsWithContent = await Promise.all(
+  vendors.map(async (vendor) => {
+    const { Content } = await render(vendor);
+    return {
+      vendor,
+      Content,
+      hasBodyContent: Boolean(vendor.body?.trim()),
+    };
+  }),
+);
+
+const serviceOrder = [
+  'Bartending',
+  'Catering',
+  'Decor',
+  'DJs and Entertainment',
+  'Florist',
+  'Photography',
+  'Transportation',
+  'Wedding Coordination',
+  'Other',
+];
+
+const serviceRank = new Map(serviceOrder.map((service, index) => [service, index]));
+
+const normalizedVendors = vendorsWithContent.map(({ vendor, Content, hasBodyContent }) => {
+  const data = vendor.data as typeof vendor.data & { vendorType?: string };
+  const services = Array.isArray(data.vendorServices)
+    ? data.vendorServices
+    : data.vendorServices
+      ? [data.vendorServices]
+      : data.vendorType
+        ? [data.vendorType]
+        : ['Other'];
+
+  return {
+    id: vendor.id,
+    ...data,
+    vendorServices: services,
+    Content,
+    hasBodyContent,
+  };
 });
+
+const vendorsGrouped = normalizedVendors
+  .flatMap((vendor) => vendor.vendorServices.map((service) => ({ service, vendor })))
+  .sort((a, b) => {
+    const byCategory = (serviceRank.get(a.service) ?? 999) - (serviceRank.get(b.service) ?? 999);
+    if (byCategory !== 0) return byCategory;
+    const byName = a.vendor.name.localeCompare(b.vendor.name);
+    if (byName !== 0) return byName;
+    return (a.vendor.sortOrder ?? 99) - (b.vendor.sortOrder ?? 99);
+  })
+  .reduce<Record<string, typeof normalizedVendors>>((groups, item) => {
+    if (!groups[item.service]) groups[item.service] = [];
+    groups[item.service].push(item.vendor);
+    return groups;
+  }, {});
 ---
 
 <InteriorLayout
@@ -25,19 +76,85 @@ const vendorEntries = await getAllVendors({
     please <a href="/contact/">contact Jack and Cindy</a> directly.
   </p>
 
-  <TinaIsland
-    name="vendorsContent"
-    wrapper={islands.vendorsContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <VendorsIsland vendors={vendorEntries as Parameters<typeof VendorsIsland>[0]['vendors']} />
-  </TinaIsland>
+  <section class="section bg-arabesque" aria-label="Vendor list">
+    <div class="container vendors-container">
+      <p>Below is a list of pre-approved and highly recommended Southern Maryland Wedding Venue vendors.</p>
+      <p>All other vendors must be approved by Lower Notley Hall Farm and must present licensing and proof of insurance, including photographers as applicable. If your vendor is not approved by Lower Notley Hall Farm, they will not be allowed to work at the venue.</p>
+      <p><em>Approval of any vendor not listed below must be approved by Lower Notley Hall Farm, LLC in writing.</em></p>
+      {Object.entries(vendorsGrouped).map(([category, items]) => (
+        <div class="vendor-group">
+          <h2 class="vendor-group__title">{category}</h2>
+          <div class="vendor-cards">
+            {items.map(v => (
+              <article class="vendor-card">
+                {v.logo ? (
+                  <div class="vendor-card__logo">
+                    <img src={v.logo} alt={`${v.name} logo`} />
+                  </div>
+                ) : null}
+                <div class="vendor-card__content">
+                  <div class="vendor-card__header">
+                    <div>
+                      <h3 class="vendor-card__name">
+                      {v.website ? (
+                        <a href={v.website} target="_blank" rel="noopener noreferrer">
+                          {v.name}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:inline; margin-left:4px; vertical-align:middle;">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
+                        </a>
+                      ) : v.name}
+                      </h3>
+                    </div>
+                  </div>
+                  {v.email && (
+                    <p class="vendor-card__desc">
+                      <strong>Email:</strong>{' '}
+                      <a href={`mailto:${v.email.trim()}`}>{v.email.trim()}</a>
+                    </p>
+                  )}
+                  {v.phone && (
+                    <p class="vendor-card__desc">
+                      <strong>Phone:</strong>{' '}
+                      <a href={`tel:${v.phone.replace(/\D/g, '').trim()}`}>{v.phone.trim()}</a>
+                    </p>
+                  )}
+                  {v.hasBodyContent && (
+                    <div class="vendor-card__desc vendor-card__details">
+                      <v.Content />
+                    </div>
+                  )}
+                  <div class="vendor-card__services" aria-label="Vendor services">
+                    {v.vendorServices.map((service) => (
+                      <span class={`vendor-card__service-chip${service === category ? ' vendor-card__service-chip--active' : ''}`}>
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <div class="vendors-note">
+        <p>
+          <strong>Note:</strong> Our preferred vendor list is updated regularly.
+          Always confirm availability directly with the vendor, and{' '}
+          <a href="/contact/">let us know</a> if you'd like our latest recommendations.
+        </p>
+        <p><strong>General Business Requirements (All Vendors):</strong> Almost every vendor operating in Maryland must obtain a Trader’s License (often called a Business License) from the Clerk of the Circuit Court in the county where the business is located. The cost varies by county (typically $100+ annually). Out-of-State: If you live outside Maryland but work within the state, you may need a non-resident license or to register your business with the Maryland Department of Assessments and Taxation.</p>
+        <p><strong>Insurance:</strong> LNHF, just as many other venues, requires the vendors below to carry General Liability Insurance ($1M–$2M coverage) and name the LNHF venue as an “additional insured”. LNHF contracts always require General Liability Insurance. Vendors without insurance will not be allowed to operate at LNHF.</p>
+      </div>
+    </div>
+  </section>
 
 </InteriorLayout>
 
 <style>
   .vendors-container { max-width: 900px; }
-
+  .vendors-container > p { max-inline-size: 80ch; }
   .vendor-group { margin-bottom: var(--space-10); }
   .vendor-group__title {
     font-family: var(--font-heading);
@@ -49,9 +166,14 @@ const vendorEntries = await getAllVendors({
     display: inline-block;
   }
   .vendor-cards {
+    container: vendor-cards / inline-size;
     display: grid;
     gap: var(--space-4);
     grid-template-columns: 1fr;
+    @container main (width < 600px) {
+      width: calc(100% + var(--padding-x) * 2);
+      margin-inline: calc(var(--padding-x) * -1) 0;
+    }
   }
   @media (min-width: 640px) {
     .vendor-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -61,13 +183,34 @@ const vendorEntries = await getAllVendors({
     background: var(--color-white);
     border: 1.5px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: var(--space-6);
     box-shadow: var(--shadow-sm);
     position: relative;
+    overflow: hidden;
+    min-block-size: 200px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+  .vendor-card__content {
+    padding: var(--space-6);
+  }
+  .vendor-card__logo {
+    max-inline-size: 100px;
+    overflow: hidden;
+    order: 2;
+    @container vendor-cards (width >= 400px) {
+      max-inline-size: 150px;
+    }
+  }
+  .vendor-card__logo img {
+    max-inline-size: 100%;
+    max-block-size: 100%;
+    object-fit: contain;
   }
   .vendor-card__header {
     display: grid;
     gap: var(--space-1) var(--space-5);
+    position: relative;
+    z-index: 1;
     @container vendor-card (width >= 300px) {
       grid-template-columns: 1fr auto;
       align-items: baseline;
@@ -102,9 +245,13 @@ const vendorEntries = await getAllVendors({
     color: var(--color-text-muted);
     line-height: var(--leading-relaxed);
     margin: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .vendor-card__details {
+    position: relative;
+    z-index: 1;
     margin-top: var(--space-3);
   }
 
@@ -117,6 +264,8 @@ const vendorEntries = await getAllVendors({
   }
 
   .vendor-card__services {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
@@ -148,4 +297,5 @@ const vendorEntries = await getAllVendors({
     color: var(--color-text-muted);
   }
   .vendors-note a { color: var(--color-primary); font-weight: 700; word-wrap: break-word; }
+  .vendors-note p { max-inline-size: 80ch; margin-inline: auto }
 </style>

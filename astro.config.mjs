@@ -2,26 +2,20 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import netlify from '@astrojs/netlify';
-import tina from '@tinacms/astro/integration';
-import { tinaAdminDevRedirect } from '@tinacms/astro/vite';
 import icon from 'astro-icon';
 
 export default defineConfig({
   site: 'https://lowernotleyhallfarm.com/',
   integrations: [
-    tina(),
     react(), 
     mdx(), 
     sitemap(), 
     icon()
   ],
-  adapter: netlify(),
-  output: 'server',
+  output: 'static',
   trailingSlash: 'always',
   vite: {
-    plugins: [tinaAdminDevRedirect()],
-    optimizeDeps: {
+  optimizeDeps: {
       include: ['react', 'react-dom', 'react-dom/client', '@tanstack/react-table'],
     },
   },

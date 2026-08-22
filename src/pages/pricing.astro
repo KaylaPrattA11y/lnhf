@@ -1,27 +1,22 @@
 ---
-import TinaIsland from '@components/tina/TinaIslandCompat.astro';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import PricingTable from '@components/pricing/PricingTable';
-import { getPricingEntries } from '@lib/tina/data';
+import { getPublishedCollection } from '@lib/content-status';
 import { comparePricingEntries } from '@lib/pricing-order';
-import { islands } from '@lib/tina/islands';
-import { isEditorRequest } from '@lib/tina/is-editor-request';
 
-const inEditMode = isEditorRequest(Astro.request);
-const selectedRelativePath = Astro.url.searchParams.get('entry');
-const rawEntries = await getPricingEntries({ preview: inEditMode, selectedRelativePath });
+const rawEntries = await getPublishedCollection('pricing');
 const entries = rawEntries
-  .map((entry, index) => ({
-    id: (entry as { _sys?: { relativePath?: string } })._sys?.relativePath ?? `pricing-${index}`,
-    name: (entry as { name?: string }).name ?? 'Untitled entry',
-    feeType: ((entry as { feeType?: 'static' | 'dynamic' }).feeType ?? 'static'),
-    isChecked: (entry as { isChecked?: boolean }).isChecked === true,
-    adjustment: Number((entry as { adjustment?: number }).adjustment ?? 0),
-    perUnit: (entry as { perUnit?: boolean }).perUnit ?? false,
-    sortOrder: Number((entry as { sortOrder?: number }).sortOrder ?? 99),
-    description: (entry as { description?: string }).description,
-    maxUnits: (entry as { maxUnits?: number }).maxUnits,
-    billingTreatment: (entry as { billingTreatment?: 'includedInTotals' | 'returnedLater' | 'informationalOnly' }).billingTreatment ?? 'includedInTotals',
+  .map((e) => ({
+    id: e.id,
+    name: e.data.name,
+    feeType: e.data.feeType,
+    isChecked: e.data.isChecked === true,
+    adjustment: e.data.adjustment ?? 0,
+    perUnit: e.data.perUnit ?? false,
+    sortOrder: e.data.sortOrder ?? 99,
+    description: e.data.description,
+    maxUnits: e.data.maxUnits,
+    billingTreatment: e.data.billingTreatment ?? 'includedInTotals',
   }))
   .sort(comparePricingEntries);
 ---
@@ -43,17 +38,11 @@ const entries = rawEntries
     </p>
   </Fragment>
 
-  <TinaIsland
-    name="pricingContent"
-    wrapper={islands.pricingContent.wrapper}
-    params={{ entry: selectedRelativePath ?? '' }}
-  >
-    <section class="section pricing-tool-section bg-arabesque" aria-label="Pricing estimator">
-      <div class="container" style="max-width: 960px;">
-        <PricingTable entries={entries} client:only="react" />
-      </div>
-    </section>
-  </TinaIsland>
+  <section class="section pricing-tool-section bg-arabesque" aria-label="Pricing estimator">
+    <div class="container" style="max-width: 960px;">
+      <PricingTable entries={entries} client:only="react" />
+    </div>
+  </section>
 
 </InteriorLayout>
 

@@ -1,6 +1,7 @@
 ---
 // Hero.astro
 import { Image } from 'astro:assets';
+import { getPublishedCollection } from '@lib/content-status';
 import receptionBarnInteriorRiverside from '@assets/images/reception-barn-interior-riverside.jpg';
 import aerialReceptionBarn from '@assets/images/aerial-reception-barn.jpg';
 
@@ -10,24 +11,13 @@ interface HeroSlide {
   caption: string;
 }
 
-interface CarouselSlideLike {
-  image?: string | null;
-  title?: string | null;
-  caption?: string | null;
-}
-
-interface Props {
-  slides?: CarouselSlideLike[];
-}
-
-const { slides = [] } = Astro.props;
-
-const heroSlides: HeroSlide[] = slides
-  .filter((slide) => typeof slide?.image === 'string' && slide.image.length > 0)
+const heroSlides: HeroSlide[] = (await getPublishedCollection('carousel'))
+  .sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99))
+  .slice(0, 5)
   .map((slide) => ({
-    image: slide.image as string,
-    caption: slide.caption ?? '',
-    title: slide.title ?? 'Homepage slide',
+    image: slide.data.image,
+    caption: slide.data.caption,
+    title: slide.data.title,
   }));
 
 if (heroSlides.length === 0) {

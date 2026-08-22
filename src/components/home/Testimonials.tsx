@@ -7,14 +7,7 @@ interface Testimonial {
   date?: string;
 };
 
-interface TestimonialFieldAttrs {
-  testimonial?: string;
-  names?: string;
-  photo?: string;
-  date?: string;
-}
-
-export default function Testimonials({ testimonials, fieldAttrs }: { testimonials: Testimonial[]; fieldAttrs?: TestimonialFieldAttrs[] }) {
+export default function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
   const [current, setCurrent] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const total = testimonials.length;
@@ -37,7 +30,6 @@ export default function Testimonials({ testimonials, fieldAttrs }: { testimonial
   }, [current]);
 
   const t = testimonials[current];
-  const currentFieldAttrs = fieldAttrs?.[current] ?? {};
 
   return (
     <section className="testimonials bg-outline-circles" aria-label="Guest testimonials" aria-live="polite">
@@ -46,7 +38,6 @@ export default function Testimonials({ testimonials, fieldAttrs }: { testimonial
           <blockquote className="testimonials__quote">
             {t.photo && (
               <img
-                data-tina-field={currentFieldAttrs.photo}
                 src={t.photo}
                 alt={`Photo of ${t.names.split(',')[0].trim()}${t.names.includes(',') ? ' and others' : ''}, who provided a testimonial about their experience at Lower Notley Hall Farm.`}
                 className="testimonials__photo"
@@ -54,10 +45,10 @@ export default function Testimonials({ testimonials, fieldAttrs }: { testimonial
                 height={125}
               />
             )}
-            <p className="testimonials__text" data-tina-field={currentFieldAttrs.testimonial}>&ldquo;{t.testimonial}&rdquo;</p>
+            <p className="testimonials__text">&ldquo;{t.testimonial}&rdquo;</p>
             <footer className="testimonials__attribution">
-              <cite className="testimonials__author" data-tina-field={currentFieldAttrs.names}>{t.names}</cite>
-              {t.date && <span className="testimonials__date" data-tina-field={currentFieldAttrs.date}>{t.date}</span>}
+              <cite className="testimonials__author">{t.names}</cite>
+              {t.date && <span className="testimonials__date">{t.date}</span>}
             </footer>
           </blockquote>
         </div>
