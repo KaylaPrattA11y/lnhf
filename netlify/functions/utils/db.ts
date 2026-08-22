@@ -9,6 +9,9 @@ export function getDb() {
   if (!_db) {
     const connectionString = process.env.NETLIFY_TOURS_DB_URL;
     _db = getDatabase({ connectionString });
+    // Without this, a dropped idle connection (e.g. Neon closing it) emits an
+    // unhandled 'error' on the pool and crashes the whole process.
+    _db.pool.on('error', (err: Error) => console.error('Unexpected error on idle tours DB client', err));
   }
   return _db;
 }
@@ -17,6 +20,7 @@ export function getWeddingDb() {
   if (!_weddingDb) {
     const connectionString = process.env.NETLIFY_WEDDINGS_DB_URL ?? process.env.NETLIFY_TOURS_DB_URL;
     _weddingDb = getDatabase({ connectionString });
+    _weddingDb.pool.on('error', (err: Error) => console.error('Unexpected error on idle weddings DB client', err));
   }
   return _weddingDb;
 }
