@@ -143,6 +143,10 @@
   border-color: #b91c1c;
 }
 
+.admin-manager__add-form .admin-manager__msg {
+  grid-column: 1 / -1;
+}
+
 .admin-manager__add-form,
 .admin-manager__grid {
   @container (width > 500px) {
@@ -299,7 +303,7 @@
 .admin-td-actions {
   white-space: nowrap;
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-1);
   flex-wrap: wrap;
 }
 
@@ -354,26 +358,18 @@
 }
 
 .table-controls {
-  display: flex;
+  display: grid;
   align-items: start;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-  flex-wrap: wrap;
+  @container (width >= 700px) {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .table-search {
   flex: 1;
   min-width: 180px;
-}
-
-.table-status-filter {
-  width: 180px;
-}
-
-.table-status-filter-wrap {
-  width: 180px;
-  display: grid;
-  gap: 0.35rem;
 }
 
 .table-details-help {
@@ -390,6 +386,7 @@
 }
 
 .table-date-range {
+  container: table-date-range / inline-size;
   border: 1px solid var(--color-border, #d1d5db);
   padding: var(--space-4);
   margin-bottom: var(--space-4);
@@ -400,8 +397,8 @@
 .table-date-range__grid {
   display: grid;
   gap:  var(--space-3) var(--space-5);
-  @container (width >= 800px) {
-    grid-template-columns: auto 1fr auto;
+  @container (width >= 300px) {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -412,8 +409,7 @@
 }
 
 .table-date-range__presets {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   align-content: start;
   gap: var(--space-3) var(--space-4);
 }
@@ -427,7 +423,6 @@
 
 .table-date-range__fields {
   display: grid;
-  grid-template-columns: min-content min-content;
   gap: var(--space-3);
 }
 
@@ -462,7 +457,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: var(--space-4);
+  padding: var(--space-1);
   font-size: var(--text-sm);
 }
 
@@ -500,6 +495,10 @@
   background: var(--color-cream, #fdf8f0);
   list-style: none;
   user-select: none;
+}
+
+.admin-manager__section-inner {
+  padding: var(--space-4);
 }
 
 .admin-manager__export-summary::-webkit-details-marker {
@@ -657,4 +656,30 @@ summary > * {
   border: 1px dashed var(--color-border);
   padding: var(--space-2);
   margin-bottom: var(--space-4);
+}
+
+.admin-manager__table :is(a, button)[aria-label] {
+  position: relative;
+}
+.admin-manager__table :is(a, button)[aria-label]::after {
+  content: attr(aria-label);
+  position: absolute;
+  inset: -1px auto auto 50%;
+  translate: -50% -100%;
+  background: var(--color-bark-deep);
+  border: 1px solid var(--color-gray-700);
+  color: var(--color-white);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 9999;
+}
+.admin-manager__table :is(a, button)[aria-label]:hover::after {
+  opacity: 1;
 }

@@ -187,7 +187,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
   const [tourFormErrors, setTourFormErrors] = useState<TourFormErrors>({});
 
   const [globalFilter, setGlobalFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('available-visible');
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('booked');
   const [tableDatePreset, setTableDatePreset] = useState<TableDatePreset>('month');
   const [tableFromDate, setTableFromDate] = useState(defaultTableRange.fromDate);
   const [tableToDate, setTableToDate] = useState(defaultTableRange.toDate);
@@ -246,7 +246,79 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     return slots.find((slot) => slot.date === newDate && slot.startTime === newStart) ?? null;
   }, [slots, newDate, newStart]);
 
-  const isBookingExistingSelection = !editingSlotId && newStatus === 'booked' && Boolean(selectedExistingSlot);
+  // The single source of truth for "which existing slot, if any, will this
+  // submission target automatically (i.e. without the pencil-icon edit flow)".
+  const autoTargetSlot = useMemo(() => {
+    if (editingSlotId || !selectedExistingSlot) return null;
+    return selectedExistingSlot;
+  }, [editingSlotId, selectedExistingSlot]);
+
+  const isUpdatingExistingSlot = Boolean(autoTargetSlot);
+
+  // The slot record currently backing editingSlotId, if any — used to know
+  // whether an "edit" in progress originally belonged to a booked slot, so we
+  // can warn if the admin is about to erase its guest data.
+  const editingOriginalSlot = useMemo(() => {
+    if (!editingSlotId) return null;
+    return slots.find((s) => s._id === editingSlotId) ?? null;
+  }, [editingSlotId, slots]);
+
+  const formStatusMessage = useMemo(() => {
+    if (editingSlotId) {
+      if (editingOriginalSlot?.status === 'booked' && newStatus !== 'booked') {
+        const tourGuestName = editingOriginalSlot.tour?.name ?? 'a guest';
+        return newStatus === 'blocked'
+          ? `A booking already exists for this date and time for "${tourGuestName}". Blocking this slot will erase the saved booking information.`
+          : `A booking already exists for this date and time for "${tourGuestName}". Making this slot available will erase the saved booking information.`;
+      }
+      return 'Editing booked slot details. Update fields below, then save.';
+    }
+
+    if (!selectedExistingSlot) {
+      if (newDate && newStart) {
+        return 'Submitting this form will create and add a new tour slot to the booking calendar.';
+      }
+      return null;
+    }
+
+    if (selectedExistingSlot.status === 'blocked') {
+      return 'This tour slot is currently blocked.';
+    }
+
+    if (selectedExistingSlot.status === 'booked') {
+      if (newStatus === 'booked') {
+        return 'A booking already exists for this date and time. Submitting will overwrite the existing booking information.';
+      }
+      if (newStatus === 'blocked') {
+        return 'A booking already exists for this date and time. Blocking this slot will erase the saved booking information.';
+      }
+      return 'A booking already exists for this date and time. Making this slot available will erase the saved booking information.';
+    }
+
+    return null; // existing slot is 'available' — no message defined
+  }, [editingSlotId, editingOriginalSlot, selectedExistingSlot, newDate, newStart, newStatus]);
+
+  // When the user selects a date/time that matches an existing BOOKED slot
+  // and has Status set to Booked, auto-populate the form with that booking's
+  // details so they can review/edit rather than overwrite blindly. Skip if
+  // we're already mid-edit on a *different* slot, so we don't silently
+  // discard in-progress edits by retargeting out from under the admin.
+  useEffect(() => {
+    if (newStatus !== 'booked') return;
+    if (!selectedExistingSlot || selectedExistingSlot.status !== 'booked') return;
+    if (editingSlotId === selectedExistingSlot._id) return; // already populated for this slot
+    if (editingSlotId) return; // already editing a different slot — don't clobber in-progress edits
+
+    setEditingSlotId(selectedExistingSlot._id);
+    setNewTour({
+      name: selectedExistingSlot.tour?.name ?? '',
+      email: selectedExistingSlot.tour?.email ?? '',
+      phone: selectedExistingSlot.tour?.phone ?? '',
+      partySize: selectedExistingSlot.tour?.partySize ? String(selectedExistingSlot.tour.partySize) : '',
+      message: selectedExistingSlot.tour?.message ?? '',
+    });
+    setTourFormErrors({});
+  }, [newDate, newStart, newStatus, selectedExistingSlot, editingSlotId]);
 
   const applyTableDatePreset = (preset: Exclude<TableDatePreset, ''>) => {
     const range = getDateRangeForPreset(preset);
@@ -404,14 +476,31 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     }
   };
 
-  const updateSlot = async (id: string, body: Record<string, unknown>) => {
+  const updateSlot = async (id: string, body: { status?: TourSlot['status'] } & Record<string, unknown>) => {
     const slot = slots.find((s) => s._id === id);
-    if (slot?.status === 'booked' && body.status === 'available') {
+    if (slot?.status === 'booked' && body.unbook === true) {
       const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
-      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) return;
+
+      if (confirm(`This slot is booked by ${guestName}. Are you sure you want to unbook it?`)) {
+        // update react state to reflect unbooking immediately for better UX
+        setSlots((prev) => prev.map((s) => (s._id === id ? { ...s, status: 'available', tour: undefined } : s)));
+        if (id === editingSlotId) {
+          cancelEditSlot(); // clears editingSlotId + form so it doesn't shadow future submits
+        }
+      } else {
+        return;
+      }
     }
     if (slot?.status === 'available' && body.status === 'blocked') {
-      if (!confirm(`Blocking a slot will prevent guests from booking it. Are you sure you want to block it?`)) return;
+      if (confirm(`Blocking a slot will prevent guests from booking it. Are you sure you want to block it?`)) {
+        // update react state to reflect blocking immediately for better UX
+        setSlots((prev) => prev.map((s) => (s._id === id ? { ...s, status: 'blocked' } : s)));
+        if (id === editingSlotId) {
+          cancelEditSlot(); // clears editingSlotId + form so it doesn't shadow future submits
+        }
+      } else {
+        return;
+      }
     }
 
     const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
@@ -436,16 +525,26 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     const slot = slots.find((s) => s._id === id);
     if (slot?.status === 'booked') {
       const guestName = slot?.tour && slot.tour.name ? slot.tour.name : 'a guest';
-      if (!confirm(`This slot is booked by ${guestName}. Are you sure you want to delete it?`)) return;
+      if (confirm(`This slot is booked by ${guestName}. Are you sure you want to delete it?`)) {
+        if (id === editingSlotId) {
+          cancelEditSlot(); // clears editingSlotId + form so it doesn't shadow future submits
+        }
+      } else {
+        return;
+      }
     }
-    
-    if (!confirm('Deleting this slot will remove any saved details. You can always add it back later. Delete this tour slot?')) return;
+
+    if (confirm('Deleting this slot will remove any saved details. You can always add it back later. Delete this tour slot?')) {
+      if (id === editingSlotId) {
+        cancelEditSlot(); // clears editingSlotId + form so it doesn't shadow future submits
+      }
+    } else {
+      return;
+    }
 
     try {
-      console.log('Deleting slot with ID:', id);
-
       const res = await fetch(
-        `${SITE_BASE_URL}/.netlify/functions/admin-tour-slot?id=${encodeURIComponent(id)}`, 
+        `${SITE_BASE_URL}/.netlify/functions/admin-tour-slot?id=${encodeURIComponent(id)}`,
         {
           method: 'DELETE',
           headers: {
@@ -463,7 +562,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       let data: any = {};
       try {
         data = await res.json();
-      } catch {}
+      } catch { }
 
       if (!res.ok) {
         throw new Error(data.error || `Failed with status ${res.status}`);
@@ -492,11 +591,11 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
         ? 'tour-date'
         : nextErrors.timeRange
           ? 'tour-start'
-        : nextErrors.guestName
-          ? 'tour-guest-name'
-          : nextErrors.guestEmail
-            ? 'tour-guest-email'
-            : undefined;
+          : nextErrors.guestName
+            ? 'tour-guest-name'
+            : nextErrors.guestEmail
+              ? 'tour-guest-email'
+              : undefined;
       if (firstInvalidFieldId) {
         requestAnimationFrame(() => focusAndScrollToField(firstInvalidFieldId));
       }
@@ -507,9 +606,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       (slot) => slot.date === newDate && slot.startTime === newStart && slot._id !== editingSlotId,
     );
 
-    const autoBookingTargetSlot = !editingSlotId && newStatus === 'booked' ? selectedExistingSlot : null;
-
-    if (duplicate && !autoBookingTargetSlot) {
+    if (duplicate && !autoTargetSlot) {
       flash(`A tour slot for ${fmtDate(newDate)} at ${fmtTime(newStart)} already exists.`);
       return;
     }
@@ -531,9 +628,17 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           ...(newTour.partySize ? { partySize: Number(newTour.partySize) } : {}),
           ...(newTour.message ? { message: newTour.message } : {}),
         };
+      } else {
+        // Explicitly clear any existing guest/tour data when this submission
+        // moves a slot to 'available' or 'blocked' — a booking's tour object
+        // should not silently survive on the backend just because the field
+        // was omitted from this payload. This is what backs the "will erase
+        // the saved booking information" warnings shown above the form.
+        payload.tour = null;
+        payload.unbook = true;
       }
 
-      const effectiveEditingSlotId = editingSlotId ?? autoBookingTargetSlot?._id ?? null;
+      const effectiveEditingSlotId = editingSlotId ?? autoTargetSlot?._id ?? null;
       const isEditing = Boolean(effectiveEditingSlotId);
       const requestBody = isEditing ? { id: effectiveEditingSlotId, ...payload } : payload;
       const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-tour-slot`, {
@@ -546,8 +651,8 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       await fetchSlots();
       if (editingSlotId) {
         flash('Tour slot updated');
-      } else if (autoBookingTargetSlot) {
-        flash('Booking saved to existing slot');
+      } else if (autoTargetSlot) {
+        flash(newStatus === 'booked' ? 'Booking saved to existing slot' : 'Existing tour slot updated');
       } else {
         flash('Tour slot added');
       }
@@ -736,23 +841,23 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
         return (
           <>
-          <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'repeat(auto-fit, minmax(50px, max-content))', gap: '0.35rem' }}>
-            <span className={`admin-badge admin-badge--${info.getValue()}`}>{info.getValue()}</span>
-            {slot.status === 'available' && slot.visitorVisibility === 'holiday_mode' && (
-              <span className="admin-badge admin-badge--visitor-hidden">Hidden</span>
+            <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'repeat(auto-fit, minmax(50px, max-content))', gap: '0.35rem' }}>
+              <span className={`admin-badge admin-badge--${info.getValue()}`}>{info.getValue()}</span>
+              {slot.status === 'available' && slot.visitorVisibility === 'holiday_mode' && (
+                <span className="admin-badge admin-badge--visitor-hidden">Hidden</span>
+              )}
+              {slot.status === 'available' && slot.visitorVisibility === 'booking_buffer' && (
+                <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
+              )}
+              {slot.status === 'available' && slot.visitorVisibility === 'booking_horizon' && (
+                <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
+              )}
+            </div>
+            {slot.visitorVisibilityDetail && (
+              <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', lineHeight: 1.4 }}>
+                {slot.visitorVisibilityDetail}
+              </span>
             )}
-            {slot.status === 'available' && slot.visitorVisibility === 'booking_buffer' && (
-              <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
-            )}
-            {slot.status === 'available' && slot.visitorVisibility === 'booking_horizon' && (
-              <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
-            )}
-          </div>
-          {slot.visitorVisibilityDetail && (
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', lineHeight: 1.4 }}>
-              {slot.visitorVisibilityDetail}
-            </span>
-          )}
           </>
         );
       },
@@ -827,48 +932,74 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
               <button
                 className="admin-btn admin-btn--good"
                 onClick={() => beginEditBookedSlot(slot)}
-                title="Edit booked slot details"
-                aria-label="Edit booked slot details"
+                aria-label="Edit booking details"
               >
                 {ICONS.Edit}
               </button>
-            )}
-            {slot.status === 'booked' && (
-              <a className="admin-btn admin-btn--muted" href={googleCalendarUrl} target="_blank" rel="noopener noreferrer">
-                {ICONS.CalendarPlus} Google Calendar
-              </a>
-            )}
-            {slot.status === 'booked' && (
-              <a className="admin-btn admin-btn--muted" href={icsDownloadUrl}>
-                {ICONS.CalendarDownArrow} Download (.ics)
-              </a>
             )}
             {slot.status === 'available' && (
               <button
                 className="admin-btn admin-btn--good"
                 onClick={() => beginQuickBookFromSlot(slot)}
+                aria-label="Book tour slot"
               >
-                {ICONS.Plus} Book
+                {ICONS.Plus}
               </button>
             )}
             {slot.status === 'available' && (
-              <button className="admin-btn admin-btn--muted" onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Tour slot blocked'))}>
-                {ICONS.Block} Block
+              <button
+                className="admin-btn admin-btn--muted"
+                onClick={() => updateSlot(slot._id, { status: 'blocked' }).then(() => flash('Tour slot blocked'))}
+                aria-label="Block tour slot"
+              >
+                {ICONS.Block}
               </button>
             )}
             {slot.status === 'blocked' && (
-              <button className="admin-btn admin-btn--good" onClick={() => updateSlot(slot._id, { status: 'available' }).then(() => flash('Tour slot unblocked'))}>
-                {ICONS.Unblock} Unblock
+              <button
+                className="admin-btn admin-btn--good"
+                onClick={() => updateSlot(slot._id, { status: 'available' }).then(() => flash('Tour slot unblocked'))}
+                aria-label="Unblock tour slot"
+              >
+                {ICONS.Unblock}
               </button>
             )}
             {slot.status === 'booked' && (
-              <button className="admin-btn admin-btn--warn" onClick={() => updateSlot(slot._id, { unbook: true }).then(() => flash('Tour booking cancelled'))}>
-                {ICONS.Minus} Unbook
+              <button
+                className="admin-btn admin-btn--warn"
+                onClick={() => updateSlot(slot._id, { unbook: true }).then(() => flash('Tour booking cancelled'))}
+                aria-label="Clear tour slot"
+              >
+                {ICONS.Clear}
               </button>
             )}
-            <button aria-label="Delete this tour slot" className="admin-btn admin-btn--danger" onClick={() => deleteSlot(slot._id)} title="Delete this tour slot">
+            <button
+              aria-label="Delete tour slot"
+              className="admin-btn admin-btn--danger"
+              onClick={() => deleteSlot(slot._id)}
+            >
               {ICONS.Delete}
             </button>
+            {slot.status === 'booked' && (
+              <a
+                className="admin-btn admin-btn--muted"
+                href={googleCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Add to Google Calendar"
+              >
+                {ICONS.GoogleCalendar}
+              </a>
+            )}
+            {/* {slot.status === 'booked' && (
+              <a 
+                className="admin-btn admin-btn--muted" 
+                href={icsDownloadUrl} 
+                aria-label="Download .ics file"
+              >
+                {ICONS.CalendarDownArrow}
+              </a>
+            )} */}
           </div>
         );
       },
@@ -918,9 +1049,14 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           <h1 className="admin-manager__title">Tours Manager</h1>
           <p className="admin-manager__subtitle">Add, update, search, export, and manage tour slots.</p>
         </div>
-        <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
-          Log Out
-        </button>
+        <div className="admin-manager__section-inner">
+          <button className="btn btn--secondary btn--sm" onClick={fetchSlots} disabled={loading || seeding} style={{ marginRight: '0.5rem' }}>
+            {loading ? 'Loading...' : 'Refresh Tour Database'}
+          </button>
+          <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
+            Log Out
+          </button>
+        </div>
       </div>
 
       <div className="admin-manager__msg-container" aria-live="polite" ref={adminMsg}>
@@ -931,148 +1067,359 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       <section className="admin-manager__section">
         <details className="admin-manager__export" ref={addTourSlotDetailsRef}>
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit Booked Slot' : 'Add Tour Slot'}</h2>
+            <h2 className="admin-manager__section-title">Tour Database</h2>
+          </summary>
+          <div className="admin-manager__section-inner">
+
+            {lastSyncResult && (
+              <div className="admin-manager__msg" role="status" aria-live="polite">
+                <strong>Last Sync Result:</strong>{' '}
+                Added {lastSyncResult.insertedCount}, removed {lastSyncResult.deletedCount}, templates {lastSyncResult.seededTemplates},
+                window {lastSyncResult.windowStart} to {lastSyncResult.windowEnd},
+                ran {new Date(lastSyncResult.syncedAt).toLocaleString()}.
+              </div>
+            )}
+
+            <div className="table-controls">
+              <fieldset className="table-date-range">
+                <legend className="form-label">Filter Attributes</legend>
+                <label>
+                  Search Tour Slots
+                  <input
+                    className="form-input table-search"
+                    type="search"
+                    placeholder="Enter date, time, guest name, or email"
+                    value={globalFilter}
+                    onChange={(e) => setGlobalFilter(e.target.value)}
+                    id="tour-table-search"
+                  />
+                </label>
+                <div className="table-status-filter-wrap">
+                  <label>
+                    Filter by Tour Slot Status
+                    <select
+                      className="form-select table-status-filter"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as StatusFilterValue)}
+                    >
+                      <option value="">All statuses</option>
+                      <option value="available-visible">Available</option>
+                      <option value="available-hidden">Available (hidden from visitors)</option>
+                      <option value="booked">Booked</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </label>
+                  <details className="table-details-help">
+                    <summary>What does each Tour Slot Status mean?</summary>
+                    <p><strong>Available:</strong> Guests can see and book this slot.</p>
+                    <p><strong>Available (hidden from visitors):</strong> Slot exists but is currently hidden by holiday mode, booking buffer, or booking horizon rules.</p>
+                    <p><strong>Booked:</strong> Already reserved by a guest.</p>
+                    <p><strong>Blocked:</strong> Manually disabled and not bookable.</p>
+                  </details>
+                </div>
+              </fieldset>
+
+              <fieldset className="table-date-range" aria-label="Tour slots date range filters">
+                <legend className="form-label">Filter Date Range</legend>
+                <div className="table-date-range__grid">
+                  <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for tour slots">
+                    <strong>Preset ranges:</strong>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="tour-table-date-preset"
+                        checked={tableDatePreset === 'week'}
+                        onChange={() => applyTableDatePreset('week')}
+                      />
+                      This week
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="tour-table-date-preset"
+                        checked={tableDatePreset === 'month'}
+                        onChange={() => applyTableDatePreset('month')}
+                      />
+                      This month
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="tour-table-date-preset"
+                        checked={tableDatePreset === 'year'}
+                        onChange={() => applyTableDatePreset('year')}
+                      />
+                      This year
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="tour-table-date-preset"
+                        checked={tableDatePreset === ''}
+                        onChange={() => clearTableDateRange()}
+                      />
+                      All time
+                    </label>
+                  </div>
+
+                  <div className="table-date-range__fields">
+                    <strong>Custom range:</strong>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="tour-table-date-from">From date</label>
+                      <input
+                        id="tour-table-date-from"
+                        className="form-input table-date-filter"
+                        type="date"
+                        value={tableFromDate}
+                        max={tableToDate || undefined}
+                        onChange={(e) => {
+                          setTableDatePreset('');
+                          setTableFromDate(e.target.value);
+                        }}
+                        aria-label="Filter tour slots from date"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="tour-table-date-to">To date</label>
+                      <input
+                        id="tour-table-date-to"
+                        className="form-input table-date-filter"
+                        type="date"
+                        value={tableToDate}
+                        min={tableFromDate || undefined}
+                        onChange={(e) => {
+                          setTableDatePreset('');
+                          setTableToDate(e.target.value);
+                        }}
+                        aria-label="Filter tour slots to date"
+                      />
+                    </div>
+
+                  </div>
+                </div>
+
+              </fieldset>
+
+            </div>
+
+          </div>
+          {filteredTableSlots.length === 0 && !loading ? (
+            <p className="admin-manager__empty">No slots found. Add some above.</p>
+          ) : (
+            <>
+              <div className="admin-manager__table-wrap">
+                <table className="admin-manager__table">
+                  <thead>
+                    {table.getHeaderGroups().map((group) => (
+                      <tr key={group.id}>
+                        {group.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                            data-name={header.column.id}
+                            className={header.column.getCanSort() ? 'sortable-col' : ''}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.column.getCanSort() && (
+                              <span className="sort-icon" aria-hidden="true">
+                                {header.column.getIsSorted() === 'asc' ? ' ▲' : header.column.getIsSorted() === 'desc' ? ' ▼' : ' ⇅'}
+                              </span>
+                            )}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {table.getRowModel().rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length} className="admin-manager__empty">No tour slots match your filters.</td>
+                      </tr>
+                    ) : (
+                      table.getRowModel().rows.map((row) => (
+                        <tr key={row.id} className={`admin-row admin-row--${row.original.status}`}>
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="table-pagination">
+                <span className="table-pagination__info">
+                  {totalFiltered === 0
+                    ? 'No results'
+                    : `Showing ${pageIndex * pageSize + 1}-${Math.min((pageIndex + 1) * pageSize, totalFiltered)} of ${totalFiltered}`}
+                </span>
+                <div className="table-pagination__controls">
+                  <button className="admin-btn" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} aria-label="First page">
+                    «
+                  </button>
+                  <button className="admin-btn" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label="Previous page">
+                    ‹
+                  </button>
+                  <span className="table-pagination__page">Page {pageIndex + 1} of {pageCount || 1}</span>
+                  <button className="admin-btn" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label="Next page">
+                    ›
+                  </button>
+                  <button className="admin-btn" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} aria-label="Last page">
+                    »
+                  </button>
+                </div>
+                <select className="form-select table-pagination__size" value={pageSize} onChange={(e) => table.setPageSize(Number(e.target.value))} aria-label="Rows per page">
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>{size}/page</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </details>
+      </section>
+
+      <section className="admin-manager__section">
+        <details className="admin-manager__export" ref={addTourSlotDetailsRef}>
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit an Existing Booked Slot' : 'Manage a Tour Slot'}</h2>
           </summary>
           <p className="admin-manager__subtitle">
-            Use this form to add open slots or add bookings. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot for your guests, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
+            Use this form to manage tour slots by adding custom slots, removing existing slots, and directly booking slots to any chosen date and time slot. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot for your guests, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
           </p>
           <form className="admin-manager__add-form admin-manager__export-controls" onSubmit={addSlot} noValidate>
-          {editingSlotId && (
-            <div className="admin-manager__msg" role="status" aria-live="polite">
-              <p>Editing booked slot details. Update fields below, then save.</p>
-            </div>
-          )}
-          {!editingSlotId && isBookingExistingSelection && selectedExistingSlot && (
-            <div className="admin-manager__msg" role="status" aria-live="polite">
-              <p>A slot already exists for this date and time. Submitting will add/update the booking on that existing slot.</p>
-            </div>
-          )}
-          <div className="form-group">
-            <label className="form-label" htmlFor="tour-date">Date</label>
-            <input
-              className={`form-input${tourFormErrors.newDate ? ' is-invalid' : ''}`}
-              type="date"
-              id="tour-date"
-              required
-              value={newDate}
-              onChange={(e) => {
-                const value = e.target.value;
-                setNewDate(value);
-                if (value) {
-                  setTourFormErrors((prev) => ({ ...prev, newDate: undefined }));
-                }
-              }}
-              min={new Date().toISOString().split('T')[0]}
-              aria-invalid={Boolean(tourFormErrors.newDate)}
-              aria-describedby={tourFormErrors.newDate ? 'tour-date-error' : undefined}
-            />
-            {tourFormErrors.newDate && <p className="admin-field-error" id="tour-date-error">{tourFormErrors.newDate}</p>}
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="tour-start">Start Time</label>
-            <select
-              className={`form-select${tourFormErrors.timeRange ? ' is-invalid' : ''}`}
-              id="tour-start"
-              value={`${newStart}|${newEnd}`}
-              onChange={(e) => {
-                const [start, end] = e.target.value.split('|');
-                setNewStart(start);
-                setNewEnd(end);
-                if (start && end) {
-                  setTourFormErrors((prev) => ({ ...prev, timeRange: undefined }));
-                }
-              }}
-              aria-invalid={Boolean(tourFormErrors.timeRange)}
-              aria-describedby={tourFormErrors.timeRange ? 'tour-time-range-error' : undefined}
-            >
-              {sortedTimeSlotOptions.map((slot) => (
-                <option key={`${slot.tourStart}-${slot.tourEnd}`} value={`${slot.tourStart}|${slot.tourEnd}`}>
-                  {fmtTime(slot.tourStart)} - {fmtTime(slot.tourEnd)}
-                </option>
-              ))}
-            </select>
-            {tourFormErrors.timeRange && <p className="admin-field-error" id="tour-time-range-error">{tourFormErrors.timeRange}</p>}
-            <details className="table-details-help">
-              <summary>How to Customize Time Slots</summary>
-              <p>To customize the available time slot options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Tour Time Slots" collection.</p>
-            </details>
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="tour-status">Status</label>
-            <select className="form-select" id="tour-status" value={newStatus} onChange={(e) => setNewStatus(e.target.value as 'available' | 'blocked' | 'booked')}>
-              <option value="available">Available</option>
-              <option value="blocked">Blocked</option>
-              <option value="booked">Booked (phone/walk-in)</option>
-            </select>
-          </div>
-
-          {newStatus === 'booked' && (
-            <fieldset className="admin-manager__fieldset admin-manager__add-form-guest-fieldset">
-              <legend className="form-label">Guest Details</legend>
-              <div className="admin-manager__other-contacts-collection">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour-guest-name">Name *</label>
-                  <input
-                    className={`form-input${tourFormErrors.guestName ? ' is-invalid' : ''}`}
-                    type="text"
-                    id="tour-guest-name"
-                    required
-                    value={newTour.name}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewTour((prev) => ({ ...prev, name: value }));
-                      if (value.trim()) {
-                        setTourFormErrors((prev) => ({ ...prev, guestName: undefined }));
-                      }
-                    }}
-                    aria-invalid={Boolean(tourFormErrors.guestName)}
-                    aria-describedby={tourFormErrors.guestName ? 'tour-guest-name-error' : undefined}
-                  />
-                  {tourFormErrors.guestName && <p className="admin-field-error" id="tour-guest-name-error">{tourFormErrors.guestName}</p>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour-guest-email">Email *</label>
-                  <input
-                    className={`form-input${tourFormErrors.guestEmail ? ' is-invalid' : ''}`}
-                    type="email"
-                    id="tour-guest-email"
-                    required
-                    value={newTour.email}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setNewTour((prev) => ({ ...prev, email: value }));
-                      if (value.trim()) {
-                        setTourFormErrors((prev) => ({ ...prev, guestEmail: undefined }));
-                      }
-                    }}
-                    aria-invalid={Boolean(tourFormErrors.guestEmail)}
-                    aria-describedby={tourFormErrors.guestEmail ? 'tour-guest-email-error' : undefined}
-                  />
-                  {tourFormErrors.guestEmail && <p className="admin-field-error" id="tour-guest-email-error">{tourFormErrors.guestEmail}</p>}
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour-guest-phone">Phone</label>
-                  <input className="form-input" type="tel" id="tour-guest-phone" value={newTour.phone} onChange={(e) => setNewTour((prev) => ({ ...prev, phone: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour-guest-party">Party Size</label>
-                  <input className="form-input" type="number" id="tour-guest-party" min={1} value={newTour.partySize} onChange={(e) => setNewTour((prev) => ({ ...prev, partySize: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour-guest-msg">Notes</label>
-                  <textarea className="form-input" id="tour-guest-msg" rows={3} value={newTour.message} onChange={(e) => setNewTour((prev) => ({ ...prev, message: e.target.value }))} />
-                </div>
+            {formStatusMessage && (
+              <div className="admin-manager__msg" role="status" aria-live="polite">
+                <p>{formStatusMessage}</p>
               </div>
-            </fieldset>
-          )}
+            )}
+            <div className="form-group">
+              <label className="form-label" htmlFor="tour-date">Date</label>
+              <input
+                className={`form-input${tourFormErrors.newDate ? ' is-invalid' : ''}`}
+                type="date"
+                id="tour-date"
+                required
+                value={newDate}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewDate(value);
+                  if (value) {
+                    setTourFormErrors((prev) => ({ ...prev, newDate: undefined }));
+                  }
+                }}
+                min={new Date().toISOString().split('T')[0]}
+                aria-invalid={Boolean(tourFormErrors.newDate)}
+                aria-describedby={tourFormErrors.newDate ? 'tour-date-error' : undefined}
+              />
+              {tourFormErrors.newDate && <p className="admin-field-error" id="tour-date-error">{tourFormErrors.newDate}</p>}
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="tour-start">Time Slot</label>
+              <select
+                className={`form-select${tourFormErrors.timeRange ? ' is-invalid' : ''}`}
+                id="tour-start"
+                value={`${newStart}|${newEnd}`}
+                onChange={(e) => {
+                  const [start, end] = e.target.value.split('|');
+                  setNewStart(start);
+                  setNewEnd(end);
+                  if (start && end) {
+                    setTourFormErrors((prev) => ({ ...prev, timeRange: undefined }));
+                  }
+                }}
+                aria-invalid={Boolean(tourFormErrors.timeRange)}
+                aria-describedby={tourFormErrors.timeRange ? 'tour-time-range-error' : undefined}
+              >
+                {sortedTimeSlotOptions.map((slot) => (
+                  <option key={`${slot.tourStart}-${slot.tourEnd}`} value={`${slot.tourStart}|${slot.tourEnd}`}>
+                    {fmtTime(slot.tourStart)} - {fmtTime(slot.tourEnd)}
+                  </option>
+                ))}
+              </select>
+              {tourFormErrors.timeRange && <p className="admin-field-error" id="tour-time-range-error">{tourFormErrors.timeRange}</p>}
+              <details className="table-details-help">
+                <summary>How to Customize Time Slots</summary>
+                <p>To customize the available time slot options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Tour Time Slots" collection.</p>
+              </details>
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="tour-status">Status</label>
+              <select className="form-select" id="tour-status" value={newStatus} onChange={(e) => setNewStatus(e.target.value as 'available' | 'blocked' | 'booked')}>
+                <option value="available">Available</option>
+                <option value="blocked">Blocked</option>
+                <option value="booked">Booked (phone/walk-in)</option>
+              </select>
+            </div>
+
+            {newStatus === 'booked' && (
+              <fieldset className="admin-manager__fieldset admin-manager__add-form-guest-fieldset">
+                <legend className="form-label">Guest Details</legend>
+                <div className="admin-manager__other-contacts-collection">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-guest-name">Name *</label>
+                    <input
+                      className={`form-input${tourFormErrors.guestName ? ' is-invalid' : ''}`}
+                      type="text"
+                      id="tour-guest-name"
+                      required
+                      value={newTour.name}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewTour((prev) => ({ ...prev, name: value }));
+                        if (value.trim()) {
+                          setTourFormErrors((prev) => ({ ...prev, guestName: undefined }));
+                        }
+                      }}
+                      aria-invalid={Boolean(tourFormErrors.guestName)}
+                      aria-describedby={tourFormErrors.guestName ? 'tour-guest-name-error' : undefined}
+                    />
+                    {tourFormErrors.guestName && <p className="admin-field-error" id="tour-guest-name-error">{tourFormErrors.guestName}</p>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-guest-email">Email *</label>
+                    <input
+                      className={`form-input${tourFormErrors.guestEmail ? ' is-invalid' : ''}`}
+                      type="email"
+                      id="tour-guest-email"
+                      required
+                      value={newTour.email}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewTour((prev) => ({ ...prev, email: value }));
+                        if (value.trim()) {
+                          setTourFormErrors((prev) => ({ ...prev, guestEmail: undefined }));
+                        }
+                      }}
+                      aria-invalid={Boolean(tourFormErrors.guestEmail)}
+                      aria-describedby={tourFormErrors.guestEmail ? 'tour-guest-email-error' : undefined}
+                    />
+                    {tourFormErrors.guestEmail && <p className="admin-field-error" id="tour-guest-email-error">{tourFormErrors.guestEmail}</p>}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-guest-phone">Phone</label>
+                    <input className="form-input" type="tel" id="tour-guest-phone" value={newTour.phone} onChange={(e) => setNewTour((prev) => ({ ...prev, phone: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-guest-party">Party Size</label>
+                    <input className="form-input" type="number" id="tour-guest-party" min={1} value={newTour.partySize} onChange={(e) => setNewTour((prev) => ({ ...prev, partySize: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="tour-guest-msg">Notes</label>
+                    <textarea className="form-input" id="tour-guest-msg" rows={3} value={newTour.message} onChange={(e) => setNewTour((prev) => ({ ...prev, message: e.target.value }))} />
+                  </div>
+                </div>
+              </fieldset>
+            )}
 
             <div className="form-group is-button">
               <button type="submit" className="btn btn--primary" disabled={adding}>
                 {adding
-                  ? (editingSlotId || isBookingExistingSelection ? 'Saving...' : 'Adding...')
+                  ? (editingSlotId || isUpdatingExistingSlot ? 'Saving...' : 'Adding...')
                   : (editingSlotId
                     ? 'Save Changes'
-                    : (isBookingExistingSelection ? 'Save Booking' : 'Add Slot'))}
+                    : (isUpdatingExistingSlot ? 'Save Changes' : 'Add Slot'))}
               </button>
               {editingSlotId && (
                 <button type="button" className="btn btn--secondary" onClick={cancelEditSlot} disabled={adding}>
@@ -1087,7 +1434,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       <section className="admin-manager__section">
         <details className="admin-manager__export">
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Tour Calendar</h2>
+            <h2 className="admin-manager__section-title">Manage Tour Calendar</h2>
           </summary>
           <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveCalendarSettings}>
             <fieldset className="admin-manager__fieldset">
@@ -1129,6 +1476,15 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                     {months} {months === 1 ? 'month' : 'months'}
                   </label>
                 ))}
+              </div>
+              <div>
+                <button className="btn btn--secondary btn--sm" onClick={runSeedSync} disabled={seeding || loading}>
+                  {seeding ? 'Syncing...' : 'Regenerate Future Slots'}
+                </button>
+                <details className="table-details-help">
+                  <summary>What is this?</summary>
+                  <p>This will add future tour slots based on the templates you have set up (see the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a>) and remove any future slots that no longer fit the templates. It will not modify any past or currently booked slots.</p>
+                </details>
               </div>
             </fieldset>
 
@@ -1226,38 +1582,11 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
         </details>
       </section>
 
-      <hr className="admin-manager__divider" />
-
       <section className="admin-manager__section">
-        <div className="admin-manager__section-header">
-          <h2 className="admin-manager__section-title">All Tour Slots</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '300px', alignItems: 'start' }}>
-            <div>
-              <button className="btn btn--secondary btn--sm" onClick={runSeedSync} disabled={seeding || loading}>
-                {seeding ? 'Syncing...' : 'Generate Future Slots'}
-              </button>
-              <details className="table-details-help">
-                <summary>What is this?</summary>
-                <p>This will add future tour slots based on the templates you have set up (see the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a>) and remove any future slots that no longer fit the templates. It will not modify any past or currently booked slots.</p>
-              </details>
-            </div>
-            <button className="btn btn--secondary btn--sm" onClick={fetchSlots} disabled={loading || seeding}>
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-
-        {lastSyncResult && (
-          <div className="admin-manager__msg" role="status" aria-live="polite">
-            <strong>Last Sync Result:</strong>{' '}
-            Added {lastSyncResult.insertedCount}, removed {lastSyncResult.deletedCount}, templates {lastSyncResult.seededTemplates},
-            window {lastSyncResult.windowStart} to {lastSyncResult.windowEnd},
-            ran {new Date(lastSyncResult.syncedAt).toLocaleString()}.
-          </div>
-        )}
-
         <details className="admin-manager__export">
-          <summary className="admin-manager__export-summary">Export Booked Tours</summary>
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">Export Booked Tours</h2>
+          </summary>
           <div className="admin-manager__export-controls">
             <div className="form-group">
               <label className="form-label" htmlFor="tour-exp-from">From date</label>
@@ -1283,197 +1612,8 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
             </div>
           </div>
         </details>
-
-        <div className="table-controls">
-          <input
-            className="form-input table-search"
-            type="search"
-            placeholder="Search tour slots..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            aria-label="Search tour slots"
-          />
-          <div className="table-status-filter-wrap">
-            <select
-              className="form-select table-status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilterValue)}
-              aria-label="Filter tour slots by status"
-            >
-              <option value="">All statuses</option>
-              <option value="available-visible">Available</option>
-              <option value="available-hidden">Available (hidden from visitors)</option>
-              <option value="booked">Booked</option>
-              <option value="blocked">Blocked</option>
-            </select>
-            <details className="table-details-help">
-              <summary>What does this mean?</summary>
-              <p><strong>Available:</strong> Guests can see and book this slot.</p>
-              <p><strong>Available (hidden from visitors):</strong> Slot exists but is currently hidden by holiday mode, booking buffer, or booking horizon rules.</p>
-              <p><strong>Booked:</strong> Already reserved by a guest.</p>
-              <p><strong>Blocked:</strong> Manually disabled and not bookable.</p>
-            </details>
-          </div>
-        </div>
-
-        <fieldset className="table-date-range" aria-label="Tour slots date range filters">
-          <legend className="form-label">Date range</legend>
-          <p className="table-date-range__help">Choose a quick range or set custom From/To dates. Leave both blank to show all dates.</p>
-
-          <div className="table-date-range__grid">
-            <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for tour slots">
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="tour-table-date-preset"
-                checked={tableDatePreset === 'week'}
-                onChange={() => applyTableDatePreset('week')}
-              />
-              This week
-            </label>
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="tour-table-date-preset"
-                checked={tableDatePreset === 'month'}
-                onChange={() => applyTableDatePreset('month')}
-              />
-              This month
-            </label>
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="tour-table-date-preset"
-                checked={tableDatePreset === 'year'}
-                onChange={() => applyTableDatePreset('year')}
-              />
-              This year
-            </label>
-          </div>
-
-          <div className="table-date-range__fields">
-            <div className="form-group">
-              <label className="form-label" htmlFor="tour-table-date-from">From date</label>
-              <input
-                id="tour-table-date-from"
-                className="form-input table-date-filter"
-                type="date"
-                value={tableFromDate}
-                max={tableToDate || undefined}
-                onChange={(e) => {
-                  setTableDatePreset('');
-                  setTableFromDate(e.target.value);
-                }}
-                aria-label="Filter tour slots from date"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="tour-table-date-to">To date</label>
-              <input
-                id="tour-table-date-to"
-                className="form-input table-date-filter"
-                type="date"
-                value={tableToDate}
-                min={tableFromDate || undefined}
-                onChange={(e) => {
-                  setTableDatePreset('');
-                  setTableToDate(e.target.value);
-                }}
-                aria-label="Filter tour slots to date"
-              />
-            </div>
-            
-          </div>
-          <div className="form-group table-date-range__clear-wrap">
-              <label className="form-label" htmlFor="tour-table-date-clear">Clear range</label>
-              <button
-                id="tour-table-date-clear"
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={clearTableDateRange}
-              >
-                Show all dates
-              </button>
-            </div>
-          </div>
-          
-        </fieldset>
-
-        {filteredTableSlots.length === 0 && !loading ? (
-          <p className="admin-manager__empty">No slots found. Add some above.</p>
-        ) : (
-          <>
-            <div className="admin-manager__table-wrap">
-              <table className="admin-manager__table">
-                <thead>
-                  {table.getHeaderGroups().map((group) => (
-                    <tr key={group.id}>
-                      {group.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                          data-name={header.column.id}
-                          className={header.column.getCanSort() ? 'sortable-col' : ''}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {header.column.getCanSort() && (
-                            <span className="sort-icon" aria-hidden="true">
-                              {header.column.getIsSorted() === 'asc' ? ' ▲' : header.column.getIsSorted() === 'desc' ? ' ▼' : ' ⇅'}
-                            </span>
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="admin-manager__empty">No tour slots match your filters.</td>
-                    </tr>
-                  ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className={`admin-row admin-row--${row.original.status}`}>
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="table-pagination">
-              <span className="table-pagination__info">
-                {totalFiltered === 0
-                  ? 'No results'
-                  : `Showing ${pageIndex * pageSize + 1}-${Math.min((pageIndex + 1) * pageSize, totalFiltered)} of ${totalFiltered}`}
-              </span>
-              <div className="table-pagination__controls">
-                <button className="admin-btn" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} aria-label="First page">
-                  «
-                </button>
-                <button className="admin-btn" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label="Previous page">
-                  ‹
-                </button>
-                <span className="table-pagination__page">Page {pageIndex + 1} of {pageCount || 1}</span>
-                <button className="admin-btn" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label="Next page">
-                  ›
-                </button>
-                <button className="admin-btn" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} aria-label="Last page">
-                  »
-                </button>
-              </div>
-              <select className="form-select table-pagination__size" value={pageSize} onChange={(e) => table.setPageSize(Number(e.target.value))} aria-label="Rows per page">
-                {[10, 20, 50, 100].map((size) => (
-                  <option key={size} value={size}>{size}/page</option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
       </section>
+
     </div>
   );
 }

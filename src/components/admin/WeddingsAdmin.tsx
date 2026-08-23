@@ -789,6 +789,15 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   };
 
   const updateWeddingStatus = async (wedding: Wedding, status: 'active' | 'cancelled') => {
+    const bride = wedding.bride.fullName || 'Unknown Bride';
+    const groom = wedding.groom.fullName || 'Unknown Groom';
+    const date = wedding.weddingDate || 'Unknown Date';
+    const confirmMessage = status === 'cancelled'
+      ? `Suspending this wedding (${bride}/${groom}: ${date}) as "${status}" will retain all present information - no data will be lost and it will still be accessible. Proceed?`
+      : `Do you want to reactivate this wedding (${bride}/${groom}: ${date})?`;
+
+    if (!confirm(confirmMessage)) return;
+
     const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/admin-weddings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(authHeader() as HeadersInit) },
@@ -812,7 +821,15 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       return;
     }
 
-    if (!confirm('Delete this wedding booking permanently?')) return;
+    const bride = weddings.find((w) => w._id === id)?.bride.fullName || 'Unknown Bride';
+    const groom = weddings.find((w) => w._id === id)?.groom.fullName || 'Unknown Groom';
+    const date = weddings.find((w) => w._id === id)?.weddingDate || 'Unknown Date';
+    const isCancelled = weddings.find((w) => w._id === id)?.status === 'cancelled';
+    const confirmMessage = isCancelled
+      ? `This wedding (${bride}/${groom}: ${date}) is currently suspended. Deleting it will permanently remove all information. Proceed to delete?`
+      : `If you wish to retain the information for this wedding (${bride}/${groom}: ${date}), use the "Suspend wedding" button instead. Proceed to delete this wedding booking permanently?`;
+
+    if (!confirm(confirmMessage)) return;
 
     try {
       console.log('Deleting wedding with ID:', id);
@@ -833,7 +850,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       let data: any = {};
       try {
         data = await res.json();
-      } catch {}
+      } catch { }
 
       if (!res.ok) {
         throw new Error(data.error || `Failed with status ${res.status}`);
@@ -1055,12 +1072,12 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       cell: (info) => money(Number(info.getValue())),
       sortingFn: 'alphanumeric',
     }),
-    columnHelper.accessor((row) => getWeddingTotals(row).netTotal, {
-      id: 'netCost',
-      header: 'Net Cost',
-      cell: (info) => money(Number(info.getValue())),
-      sortingFn: 'alphanumeric',
-    }),
+    // columnHelper.accessor((row) => getWeddingTotals(row).netTotal, {
+    //   id: 'netCost',
+    //   header: 'Net Cost',
+    //   cell: (info) => money(Number(info.getValue())),
+    //   sortingFn: 'alphanumeric',
+    // }),
     columnHelper.display({
       id: 'actions',
       header: 'Actions',
@@ -1069,23 +1086,23 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
         const wedding = info.row.original;
         return (
           <div className="admin-td-actions">
-            <button title="Edit Wedding" className="admin-btn admin-btn--warn" onClick={() => fillFormForEdit(wedding)}>
+            <button aria-label="Edit wedding" className="admin-btn admin-btn--warn" onClick={() => fillFormForEdit(wedding)}>
               {ICONS.Edit}
             </button>
-            <button title="Print Wedding" className="admin-btn admin-btn--muted" onClick={() => printWedding(wedding)}>
-              {ICONS.Print}
-            </button>
             {wedding.status === 'active' ? (
-              <button className="admin-btn admin-btn--muted" onClick={() => updateWeddingStatus(wedding, 'cancelled')}>
-                Cancel
+              <button aria-label="Suspend wedding" className="admin-btn admin-btn--muted" onClick={() => updateWeddingStatus(wedding, 'cancelled')}>
+                {ICONS.PauseOutlineRounded}
               </button>
             ) : (
-              <button className="admin-btn admin-btn--good" onClick={() => updateWeddingStatus(wedding, 'active')}>
-                Reactivate
+              <button aria-label="Reactivate wedding" className="admin-btn admin-btn--good" onClick={() => updateWeddingStatus(wedding, 'active')}>
+                {ICONS.Play}
               </button>
             )}
-            <button title="Delete Wedding" className="admin-btn admin-btn--danger" onClick={() => deleteWedding(wedding._id)}>
+            <button aria-label="Delete wedding" className="admin-btn admin-btn--danger" onClick={() => deleteWedding(wedding._id)}>
               {ICONS.Delete}
+            </button>
+            <button aria-label="Print wedding" className="admin-btn admin-btn--muted" onClick={() => printWedding(wedding)}>
+              {ICONS.Print}
             </button>
           </div>
         );
@@ -1136,9 +1153,14 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
           <h1 className="admin-manager__title">Weddings Manager</h1>
           <p className="admin-manager__subtitle">Create and manage wedding bookings, activities, and pricing.</p>
         </div>
-        <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
-          Log Out
-        </button>
+        <div>
+          <button className="btn btn--secondary btn--sm" onClick={fetchWeddings} disabled={loading} style={{ marginRight: 'var(--space-2)' }}>
+            {loading ? 'Loading...' : 'Refresh wedding database'}
+          </button>
+          <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
+            Log Out
+          </button>
+        </div>
       </div>
 
       <div className="admin-manager__msg-container" aria-live="polite">
@@ -1147,449 +1169,617 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       </div>
 
       <section className="admin-manager__section">
+        <details className="admin-manager__export">
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">Wedding Database</h2>
+          </summary>
+          <div className="admin-manager__section-inner">
+            <div className="table-controls">
+              <fieldset className="table-date-range">
+                <legend className="form-label">Filter Attributes</legend>
+                <label>
+                  Search Weddings
+                  <input
+                    className="form-input table-search"
+                    type="search"
+                    placeholder="Enter bride or groom name"
+                    value={globalFilter}
+                    onChange={(e) => setGlobalFilter(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Filter by Wedding Status
+                  <select className="form-select table-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
+              </fieldset>
+
+              <fieldset className="table-date-range" aria-label="Weddings date range filters">
+                <legend className="form-label">Filter Date range</legend>
+                <div className="table-date-range__grid">
+                  <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for weddings">
+                    <strong>Preset ranges:</strong>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="wedding-table-date-preset"
+                        checked={tableDatePreset === 'week'}
+                        onChange={() => applyTableDatePreset('week')}
+                      />
+                      This week
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="wedding-table-date-preset"
+                        checked={tableDatePreset === 'month'}
+                        onChange={() => applyTableDatePreset('month')}
+                      />
+                      This month
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="wedding-table-date-preset"
+                        checked={tableDatePreset === 'year'}
+                        onChange={() => applyTableDatePreset('year')}
+                      />
+                      This year
+                    </label>
+                    <label className="table-date-range__preset-option">
+                      <input
+                        type="radio"
+                        name="wedding-table-date-preset"
+                        checked={tableDatePreset === ''}
+                        onChange={() => clearTableDateRange()}
+                      />
+                      All time
+                    </label>
+                  </div>
+
+                  <div className="table-date-range__fields">
+                    <strong>Custom range:</strong>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="wedding-table-date-from">From date</label>
+                      <input
+                        id="wedding-table-date-from"
+                        className="form-input table-date-filter"
+                        type="date"
+                        value={tableFromDate}
+                        max={tableToDate || undefined}
+                        onChange={(e) => {
+                          setTableDatePreset('');
+                          setTableFromDate(e.target.value);
+                        }}
+                        aria-label="Filter weddings from date"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="wedding-table-date-to">To date</label>
+                      <input
+                        id="wedding-table-date-to"
+                        className="form-input table-date-filter"
+                        type="date"
+                        value={tableToDate}
+                        min={tableFromDate || undefined}
+                        onChange={(e) => {
+                          setTableDatePreset('');
+                          setTableToDate(e.target.value);
+                        }}
+                        aria-label="Filter weddings to date"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </fieldset>
+            </div>
+          </div>
+
+          {filteredTableWeddings.length === 0 && !loading ? (
+            <p className="admin-manager__empty">No weddings found. Add one above.</p>
+          ) : (
+            <>
+              <div className="admin-manager__table-wrap">
+                <table className="admin-manager__table">
+                  <thead>
+                    {table.getHeaderGroups().map((group) => (
+                      <tr key={group.id}>
+                        {group.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                            data-name={header.column.id}
+                            className={header.column.getCanSort() ? 'sortable-col' : ''}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.column.getCanSort() && (
+                              <span className="sort-icon" aria-hidden="true">
+                                {header.column.getIsSorted() === 'asc' ? ' ▲' : header.column.getIsSorted() === 'desc' ? ' ▼' : ' ⇅'}
+                              </span>
+                            )}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {table.getRowModel().rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={columns.length} className="admin-manager__empty">No weddings match your filters.</td>
+                      </tr>
+                    ) : (
+                      table.getRowModel().rows.map((row) => (
+                        <tr key={row.id} className={`admin-row admin-row--${row.original.status}`}>
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="table-pagination">
+                <span className="table-pagination__info">
+                  {totalFiltered === 0
+                    ? 'No results'
+                    : `Showing ${pageIndex * pageSize + 1}-${Math.min((pageIndex + 1) * pageSize, totalFiltered)} of ${totalFiltered}`}
+                </span>
+                <div className="table-pagination__controls">
+                  <button className="admin-btn" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} aria-label="First page">«</button>
+                  <button className="admin-btn" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label="Previous page">‹</button>
+                  <span className="table-pagination__page">Page {pageIndex + 1} of {pageCount || 1}</span>
+                  <button className="admin-btn" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label="Next page">›</button>
+                  <button className="admin-btn" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} aria-label="Last page">»</button>
+                </div>
+                <select className="form-select table-pagination__size" value={pageSize} onChange={(e) => table.setPageSize(Number(e.target.value))} aria-label="Rows per page">
+                  {[10, 20, 50, 100].map((size) => (
+                    <option key={size} value={size}>{size}/page</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </details>
+      </section>
+
+      <section className="admin-manager__section">
         <details className="admin-manager__export" ref={detailsRef}>
           <summary className="admin-manager__export-summary">
             <h2 className="admin-manager__section-title">{editingId ? 'Edit Existing Wedding' : 'Add New Wedding'}</h2>
           </summary>
           <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveWedding} noValidate>
-          <fieldset className="admin-manager__fieldset">
-            <legend>Bride</legend>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-bride-name">Full Name *</label>
-              <input
-                id="wedding-bride-name"
-                className={`form-input${weddingFormErrors.brideFullName ? ' is-invalid' : ''}`}
-                value={bride.fullName}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setBride((prev) => ({ ...prev, fullName: value }));
-                  if (value.trim()) {
-                    setWeddingFormErrors((prev) => ({ ...prev, brideFullName: undefined }));
-                  }
-                }}
-                required
-                aria-invalid={Boolean(weddingFormErrors.brideFullName)}
-                aria-describedby={weddingFormErrors.brideFullName ? 'wedding-bride-name-error' : undefined}
-              />
-              {weddingFormErrors.brideFullName && <p className="admin-field-error" id="wedding-bride-name-error">{weddingFormErrors.brideFullName}</p>}
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-bride-email">Email</label>
-              <input id="wedding-bride-email" className="form-input" type="email" value={bride.email} onChange={(e) => setBride((prev) => ({ ...prev, email: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-bride-phone">Phone</label>
-              <input id="wedding-bride-phone" className="form-input" value={bride.phone} onChange={(e) => setBride((prev) => ({ ...prev, phone: e.target.value }))} />
-            </div>
-          </fieldset>
-
-          <fieldset className="admin-manager__fieldset">
-            <legend>Groom</legend>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-groom-name">Full Name *</label>
-              <input
-                id="wedding-groom-name"
-                className={`form-input${weddingFormErrors.groomFullName ? ' is-invalid' : ''}`}
-                value={groom.fullName}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setGroom((prev) => ({ ...prev, fullName: value }));
-                  if (value.trim()) {
-                    setWeddingFormErrors((prev) => ({ ...prev, groomFullName: undefined }));
-                  }
-                }}
-                required
-                aria-invalid={Boolean(weddingFormErrors.groomFullName)}
-                aria-describedby={weddingFormErrors.groomFullName ? 'wedding-groom-name-error' : undefined}
-              />
-              {weddingFormErrors.groomFullName && <p className="admin-field-error" id="wedding-groom-name-error">{weddingFormErrors.groomFullName}</p>}
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-groom-email">Email</label>
-              <input id="wedding-groom-email" className="form-input" type="email" value={groom.email} onChange={(e) => setGroom((prev) => ({ ...prev, email: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-groom-phone">Phone</label>
-              <input id="wedding-groom-phone" className="form-input" value={groom.phone} onChange={(e) => setGroom((prev) => ({ ...prev, phone: e.target.value }))} />
-            </div>
-          </fieldset>
-
-          <fieldset className="admin-manager__fieldset admin-manager__fieldset--other-contacts">
-            <legend>Other Contacts</legend>
-            <button type="button" className="btn btn-secondary" onClick={addOtherContact}>{ICONS.Plus} Add Other Contact</button>
-            <div className="admin-manager__other-contacts-collection">
-              {otherContacts.map((contact, index) => (
-                <div key={index} className="is-addons">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-other-name-${index}`}>Full Name</label>
-                    <input
-                      id={`wedding-other-name-${index}`}
-                      className="form-input"
-                      value={contact.fullName ?? ''}
-                      onChange={(e) => updateOtherContact(index, 'fullName', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-other-role-${index}`}>Role</label>
-                    <input
-                      id={`wedding-other-role-${index}`}
-                      className="form-input"
-                      value={contact.role ?? ''}
-                      onChange={(e) => updateOtherContact(index, 'role', e.target.value)}
-                    />
-                    <p>e.g. parent, wedding planner, photographer</p>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-other-email-${index}`}>Email</label>
-                    <input
-                      id={`wedding-other-email-${index}`}
-                      className="form-input"
-                      type="email"
-                      value={contact.email ?? ''}
-                      onChange={(e) => updateOtherContact(index, 'email', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-other-phone-${index}`}>Phone</label>
-                    <input
-                      id={`wedding-other-phone-${index}`}
-                      className="form-input"
-                      value={contact.phone ?? ''}
-                      onChange={(e) => updateOtherContact(index, 'phone', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeOtherContact(index)}>
-                      {ICONS.Delete} Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-            </div>
-          </fieldset>
-
-          <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-dates">
-            <legend>Event Date(s)</legend>
-            <div className="admin-manager__other-contacts-collection">
+            <fieldset className="admin-manager__fieldset">
+              <legend>Bride</legend>
               <div className="form-group">
-                <label className="form-label" htmlFor="wedding-date">Wedding Date *</label>
+                <label className="form-label" htmlFor="wedding-bride-name">Full Name *</label>
                 <input
-                  id="wedding-date"
-                  className={`form-input${weddingFormErrors.weddingDate ? ' is-invalid' : ''}`}
-                  type="date"
-                  value={weddingDate}
+                  id="wedding-bride-name"
+                  className={`form-input${weddingFormErrors.brideFullName ? ' is-invalid' : ''}`}
+                  value={bride.fullName}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setWeddingDate(value);
-                    if (value) {
-                      setWeddingFormErrors((prev) => ({ ...prev, weddingDate: undefined }));
+                    setBride((prev) => ({ ...prev, fullName: value }));
+                    if (value.trim()) {
+                      setWeddingFormErrors((prev) => ({ ...prev, brideFullName: undefined }));
                     }
                   }}
                   required
-                  aria-invalid={Boolean(weddingFormErrors.weddingDate)}
-                  aria-describedby={weddingFormErrors.weddingDate ? 'wedding-date-error' : undefined}
+                  aria-invalid={Boolean(weddingFormErrors.brideFullName)}
+                  aria-describedby={weddingFormErrors.brideFullName ? 'wedding-bride-name-error' : undefined}
                 />
-                {weddingFormErrors.weddingDate && <p className="admin-field-error" id="wedding-date-error">{weddingFormErrors.weddingDate}</p>}
+                {weddingFormErrors.brideFullName && <p className="admin-field-error" id="wedding-bride-name-error">{weddingFormErrors.brideFullName}</p>}
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="wedding-time">Wedding Time</label>
-                <select
-                  id="wedding-time"
-                  className="form-select"
-                  value={weddingTime}
-                  onChange={(e) => setWeddingTime(e.target.value)}
-                >
-                  <option value="">Select time...</option>
-                  {weddingTimeOptions.map((timeValue) => (
-                    <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
-                  ))}
-                </select>
+                <label className="form-label" htmlFor="wedding-bride-email">Email</label>
+                <input id="wedding-bride-email" className="form-input" type="email" value={bride.email} onChange={(e) => setBride((prev) => ({ ...prev, email: e.target.value }))} />
               </div>
-            </div>
-            <button type="button" className="btn btn-secondary" onClick={addActivity}>{ICONS.Plus} Add Related Activity Date</button>
+              <div className="form-group">
+                <label className="form-label" htmlFor="wedding-bride-phone">Phone</label>
+                <input id="wedding-bride-phone" className="form-input" value={bride.phone} onChange={(e) => setBride((prev) => ({ ...prev, phone: e.target.value }))} />
+              </div>
+            </fieldset>
 
-            <div className="admin-manager__other-contacts-collection">
-              {activities.map((activity, index) => (
-                <div key={index} className="is-addons">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-activity-label-${index}`}>Label *</label>
-                    <input
-                      id={`wedding-activity-label-${index}`}
-                      className={`form-input${weddingFormErrors.activityLabels[index] ? ' is-invalid' : ''}`}
-                      value={activity.label}
-                      onChange={(e) => updateActivity(index, 'label', e.target.value)}
-                      placeholder="Ceremony, reception, photoshoot"
-                      aria-invalid={Boolean(weddingFormErrors.activityLabels[index])}
-                      aria-describedby={weddingFormErrors.activityLabels[index] ? `wedding-activity-label-error-${index}` : undefined}
-                    />
-                    {weddingFormErrors.activityLabels[index] && (
-                      <p className="admin-field-error" id={`wedding-activity-label-error-${index}`}>
-                        {weddingFormErrors.activityLabels[index]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-activity-date-${index}`}>Date *</label>
-                    <input
-                      id={`wedding-activity-date-${index}`}
-                      className={`form-input${weddingFormErrors.activityDates[index] ? ' is-invalid' : ''}`}
-                      type="date"
-                      value={activity.date}
-                      onChange={(e) => updateActivity(index, 'date', e.target.value)}
-                      aria-invalid={Boolean(weddingFormErrors.activityDates[index])}
-                      aria-describedby={weddingFormErrors.activityDates[index] ? `wedding-activity-date-error-${index}` : undefined}
-                    />
-                    {weddingFormErrors.activityDates[index] && (
-                      <p className="admin-field-error" id={`wedding-activity-date-error-${index}`}>
-                        {weddingFormErrors.activityDates[index]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-activity-time-${index}`}>Time</label>
-                    <select
-                      id={`wedding-activity-time-${index}`}
-                      className="form-select"
-                      value={activity.time ?? ''}
-                      onChange={(e) => updateActivity(index, 'time', e.target.value)}
-                    >
-                      <option value="">Select time...</option>
-                      {activity.time && !timeOptions.includes(activity.time) && (
-                        <option value={activity.time}>{to12HourTime(activity.time)}</option>
-                      )}
-                      {timeOptions.map((timeValue) => (
-                        <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeActivity(index)}>{ICONS.Delete} Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset className="admin-manager__fieldset">
+              <legend>Groom</legend>
+              <div className="form-group">
+                <label className="form-label" htmlFor="wedding-groom-name">Full Name *</label>
+                <input
+                  id="wedding-groom-name"
+                  className={`form-input${weddingFormErrors.groomFullName ? ' is-invalid' : ''}`}
+                  value={groom.fullName}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setGroom((prev) => ({ ...prev, fullName: value }));
+                    if (value.trim()) {
+                      setWeddingFormErrors((prev) => ({ ...prev, groomFullName: undefined }));
+                    }
+                  }}
+                  required
+                  aria-invalid={Boolean(weddingFormErrors.groomFullName)}
+                  aria-describedby={weddingFormErrors.groomFullName ? 'wedding-groom-name-error' : undefined}
+                />
+                {weddingFormErrors.groomFullName && <p className="admin-field-error" id="wedding-groom-name-error">{weddingFormErrors.groomFullName}</p>}
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="wedding-groom-email">Email</label>
+                <input id="wedding-groom-email" className="form-input" type="email" value={groom.email} onChange={(e) => setGroom((prev) => ({ ...prev, email: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="wedding-groom-phone">Phone</label>
+                <input id="wedding-groom-phone" className="form-input" value={groom.phone} onChange={(e) => setGroom((prev) => ({ ...prev, phone: e.target.value }))} />
+              </div>
+            </fieldset>
 
-          <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-pricing">
-            <legend>Pricing</legend>
-            <details className="table-details-help">
-              <summary>How to Customize Pricing</summary>
-              <p style={{marginBlockEnd: 'var(--space-5)'}}>To customize the available pricing options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Pricing" collection.</p>
-            </details>
-            <div className="admin-manager__pricing-collection">
-              <div>
-                <div className="admin-manager__actions-row">
-                  <div className="form-group checks-vertical">
-                    {orderedPricingEntries.map((entry) => (
-                      <label key={entry.id} className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedEntryIds.includes(entry.id)}
-                          onChange={() => toggleCollectionEntry(entry.id)}
-                        />
-                        <div>
-                          <span>{entry.name} </span>
-                          <span className={`is-${entry.value < 0 ? 'negative' : 'positive'}`}>{money(entry.value)}</span>
-                          {entry.perUnit && selectedEntryIds.includes(entry.id) && (
-                            <>
-                              {' '}x{' '}
-                              <input
-                                type="number"
-                                className="pricing-table__qty-input"
-                                min={1}
-                                max={entry.maxUnits}
-                                value={entryQuantities[entry.id] ?? 1}
-                                onChange={(e) => setEntryQty(entry.id, parseInt(e.target.value, 10), entry.maxUnits)}
-                                aria-label={`Quantity for ${entry.name}`}
-                                style={{ width: '72px', marginInlineStart: '4px' }}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </label>
-                    ))}
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--other-contacts">
+              <legend>Other Contacts</legend>
+              <button type="button" className="btn btn-secondary" onClick={addOtherContact}>{ICONS.Plus} Add Other Contact</button>
+              <div className="admin-manager__other-contacts-collection">
+                {otherContacts.map((contact, index) => (
+                  <div key={index} className="is-addons">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-other-name-${index}`}>Full Name</label>
+                      <input
+                        id={`wedding-other-name-${index}`}
+                        className="form-input"
+                        value={contact.fullName ?? ''}
+                        onChange={(e) => updateOtherContact(index, 'fullName', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-other-role-${index}`}>Role</label>
+                      <input
+                        id={`wedding-other-role-${index}`}
+                        className="form-input"
+                        value={contact.role ?? ''}
+                        onChange={(e) => updateOtherContact(index, 'role', e.target.value)}
+                      />
+                      <p>e.g. parent, wedding planner, photographer</p>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-other-email-${index}`}>Email</label>
+                      <input
+                        id={`wedding-other-email-${index}`}
+                        className="form-input"
+                        type="email"
+                        value={contact.email ?? ''}
+                        onChange={(e) => updateOtherContact(index, 'email', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-other-phone-${index}`}>Phone</label>
+                      <input
+                        id={`wedding-other-phone-${index}`}
+                        className="form-input"
+                        value={contact.phone ?? ''}
+                        onChange={(e) => updateOtherContact(index, 'phone', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeOtherContact(index)}>
+                        {ICONS.Delete} Remove
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ))}
 
+              </div>
+            </fieldset>
+
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-dates">
+              <legend>Event Date(s)</legend>
+              <div className="admin-manager__other-contacts-collection">
                 <div className="form-group">
-                  <button type="button" className="btn btn-secondary" onClick={addCustomPricing}>{ICONS.Plus} Add Other Pricing Entry</button>
+                  <label className="form-label" htmlFor="wedding-date">Wedding Date *</label>
+                  <input
+                    id="wedding-date"
+                    className={`form-input${weddingFormErrors.weddingDate ? ' is-invalid' : ''}`}
+                    type="date"
+                    value={weddingDate}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setWeddingDate(value);
+                      if (value) {
+                        setWeddingFormErrors((prev) => ({ ...prev, weddingDate: undefined }));
+                      }
+                    }}
+                    required
+                    aria-invalid={Boolean(weddingFormErrors.weddingDate)}
+                    aria-describedby={weddingFormErrors.weddingDate ? 'wedding-date-error' : undefined}
+                  />
+                  {weddingFormErrors.weddingDate && <p className="admin-field-error" id="wedding-date-error">{weddingFormErrors.weddingDate}</p>}
                 </div>
-              </div>
-              <div>
-                <table className="admin-manager__pricing-table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pricingItems.length === 0 && (
-                      <tr>
-                        <td colSpan={2}>No pricing items selected.</td>
-                      </tr>
-                    )}
-                    {pricingItems.map((item, index) => (
-                      <tr key={`${item.label}-${index}`}>
-                        <td>
-                          {item.label}{item.quantity > 1 ? ` x ${item.quantity}` : ''}
-                          {isReturnedLater(item.billingTreatment) && !isOmittedFromTotal(item.billingTreatment) ? ' (Refundable)' : ''}
-                        </td>
-                        <td className={`is-${item.value * item.quantity < 0 ? 'negative' : 'positive'}`}>{money(item.value * item.quantity)}</td>
-                      </tr>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="wedding-time">Wedding Time</label>
+                  <select
+                    id="wedding-time"
+                    className="form-select"
+                    value={weddingTime}
+                    onChange={(e) => setWeddingTime(e.target.value)}
+                  >
+                    <option value="">Select time...</option>
+                    {weddingTimeOptions.map((timeValue) => (
+                      <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
                     ))}
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th scope="row">Total Amount Due <br/><small>Including refundable items</small></th>
-                      <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(totalCost)}</td>
-                    </tr>
-                    <tr>
-                      <th scope="row">Net Cost <br/><small>After Refundable Amounts Are Returned</small></th>
-                      <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(netCostAfterRefund)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                  </select>
+                </div>
               </div>
-            </div>
-            <div className="admin-manager__other-contacts-collection">
-              {customPricing.map((entry, index) => (
-                <div key={index} className="is-addons">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-custom-label-${index}`}>Label *</label>
-                    <input id={`wedding-custom-label-${index}`} className="form-input" value={entry.label} onChange={(e) => updateCustomPricing(index, 'label', e.target.value)} />
+              <button type="button" className="btn btn-secondary" onClick={addActivity}>{ICONS.Plus} Add Related Activity Date</button>
+
+              <div className="admin-manager__other-contacts-collection">
+                {activities.map((activity, index) => (
+                  <div key={index} className="is-addons">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-activity-label-${index}`}>Label *</label>
+                      <input
+                        id={`wedding-activity-label-${index}`}
+                        className={`form-input${weddingFormErrors.activityLabels[index] ? ' is-invalid' : ''}`}
+                        value={activity.label}
+                        onChange={(e) => updateActivity(index, 'label', e.target.value)}
+                        placeholder="Ceremony, reception, photoshoot"
+                        aria-invalid={Boolean(weddingFormErrors.activityLabels[index])}
+                        aria-describedby={weddingFormErrors.activityLabels[index] ? `wedding-activity-label-error-${index}` : undefined}
+                      />
+                      {weddingFormErrors.activityLabels[index] && (
+                        <p className="admin-field-error" id={`wedding-activity-label-error-${index}`}>
+                          {weddingFormErrors.activityLabels[index]}
+                        </p>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-activity-date-${index}`}>Date *</label>
+                      <input
+                        id={`wedding-activity-date-${index}`}
+                        className={`form-input${weddingFormErrors.activityDates[index] ? ' is-invalid' : ''}`}
+                        type="date"
+                        value={activity.date}
+                        onChange={(e) => updateActivity(index, 'date', e.target.value)}
+                        aria-invalid={Boolean(weddingFormErrors.activityDates[index])}
+                        aria-describedby={weddingFormErrors.activityDates[index] ? `wedding-activity-date-error-${index}` : undefined}
+                      />
+                      {weddingFormErrors.activityDates[index] && (
+                        <p className="admin-field-error" id={`wedding-activity-date-error-${index}`}>
+                          {weddingFormErrors.activityDates[index]}
+                        </p>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-activity-time-${index}`}>Time</label>
+                      <select
+                        id={`wedding-activity-time-${index}`}
+                        className="form-select"
+                        value={activity.time ?? ''}
+                        onChange={(e) => updateActivity(index, 'time', e.target.value)}
+                      >
+                        <option value="">Select time...</option>
+                        {activity.time && !timeOptions.includes(activity.time) && (
+                          <option value={activity.time}>{to12HourTime(activity.time)}</option>
+                        )}
+                        {timeOptions.map((timeValue) => (
+                          <option key={timeValue} value={timeValue}>{to12HourTime(timeValue)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeActivity(index)}>{ICONS.Delete} Remove</button>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-custom-value-${index}`}>Value *</label>
-                    <input id={`wedding-custom-value-${index}`} className="form-input" type="number" step="0.01" value={entry.value} onChange={(e) => updateCustomPricing(index, 'value', e.target.value)} />
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-pricing">
+              <legend>Pricing</legend>
+              <details className="table-details-help">
+                <summary>How to Customize Pricing</summary>
+                <p style={{ marginBlockEnd: 'var(--space-5)' }}>To customize the available pricing options, edit via the CMS by logging in at <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> and navigating to the "Pricing" collection.</p>
+              </details>
+              <div className="admin-manager__pricing-collection">
+                <div>
+                  <div className="admin-manager__actions-row">
+                    <div className="form-group checks-vertical">
+                      {orderedPricingEntries.map((entry) => (
+                        <label key={entry.id} className="form-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={selectedEntryIds.includes(entry.id)}
+                            onChange={() => toggleCollectionEntry(entry.id)}
+                          />
+                          <div>
+                            <span>{entry.name} </span>
+                            <span className={`is-${entry.value < 0 ? 'negative' : 'positive'}`}>{money(entry.value)}</span>
+                            {entry.perUnit && selectedEntryIds.includes(entry.id) && (
+                              <>
+                                {' '}x{' '}
+                                <input
+                                  type="number"
+                                  className="pricing-table__qty-input"
+                                  min={1}
+                                  max={entry.maxUnits}
+                                  value={entryQuantities[entry.id] ?? 1}
+                                  onChange={(e) => setEntryQty(entry.id, parseInt(e.target.value, 10), entry.maxUnits)}
+                                  aria-label={`Quantity for ${entry.name}`}
+                                  style={{ width: '72px', marginInlineStart: '4px' }}
+                                />
+                              </>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
+
                   <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeCustomPricing(index)}>{ICONS.Delete} Remove</button>
+                    <button type="button" className="btn btn-secondary" onClick={addCustomPricing}>{ICONS.Plus} Add Other Pricing Entry</button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="admin-manager__fieldset admin-manager__fieldset--payments-received">
-            <legend>Payments Received</legend>
-            <button type="button" className="btn btn-secondary" onClick={addPaymentReceived}>{ICONS.Plus} Add Payment Received</button>
-
-            <div className="admin-manager__other-contacts-collection">
-              {paymentsReceived.map((payment, index) => (
-                <div key={index} className="is-addons">
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-payment-label-${index}`}>Label *</label>
-                    <input
-                      id={`wedding-payment-label-${index}`}
-                      className={`form-input${weddingFormErrors.paymentLabels[index] ? ' is-invalid' : ''}`}
-                      value={payment.label}
-                      onChange={(e) => updatePaymentReceived(index, 'label', e.target.value)}
-                      aria-invalid={Boolean(weddingFormErrors.paymentLabels[index])}
-                      aria-describedby={weddingFormErrors.paymentLabels[index] ? `wedding-payment-label-error-${index}` : undefined}
-                    />
-                    {weddingFormErrors.paymentLabels[index] && (
-                      <p className="admin-field-error" id={`wedding-payment-label-error-${index}`}>
-                        {weddingFormErrors.paymentLabels[index]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-payment-value-${index}`}>Value *</label>
-                    <input
-                      id={`wedding-payment-value-${index}`}
-                      className={`form-input${weddingFormErrors.paymentValues[index] ? ' is-invalid' : ''}`}
-                      type="number"
-                      step="0.01"
-                      value={payment.value}
-                      onChange={(e) => updatePaymentReceived(index, 'value', e.target.value)}
-                      aria-invalid={Boolean(weddingFormErrors.paymentValues[index])}
-                      aria-describedby={weddingFormErrors.paymentValues[index] ? `wedding-payment-value-error-${index}` : undefined}
-                    />
-                    {weddingFormErrors.paymentValues[index] && (
-                      <p className="admin-field-error" id={`wedding-payment-value-error-${index}`}>
-                        {weddingFormErrors.paymentValues[index]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor={`wedding-payment-date-${index}`}>Date Received</label>
-                    <input
-                      id={`wedding-payment-date-${index}`}
-                      className="form-input"
-                      type="date"
-                      value={payment.dateReceived}
-                      onChange={(e) => updatePaymentReceived(index, 'dateReceived', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <button type="button" className="admin-btn admin-btn--danger" onClick={() => removePaymentReceived(index)}>{ICONS.Delete} Remove</button>
-                  </div>
+                <div>
+                  <table className="admin-manager__pricing-table">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pricingItems.length === 0 && (
+                        <tr>
+                          <td colSpan={2}>No pricing items selected.</td>
+                        </tr>
+                      )}
+                      {pricingItems.map((item, index) => (
+                        <tr key={`${item.label}-${index}`}>
+                          <td>
+                            {item.label}{item.quantity > 1 ? ` x ${item.quantity}` : ''}
+                            {isReturnedLater(item.billingTreatment) && !isOmittedFromTotal(item.billingTreatment) ? ' (Refundable)' : ''}
+                          </td>
+                          <td className={`is-${item.value * item.quantity < 0 ? 'negative' : 'positive'}`}>{money(item.value * item.quantity)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th scope="row">Total Amount Due <br /><small>Including refundable items</small></th>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(totalCost)}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row">Net Cost <br /><small>After Refundable Amounts Are Returned</small></th>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(netCostAfterRefund)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
-              ))}
-            </div>
+              </div>
+              <div className="admin-manager__other-contacts-collection">
+                {customPricing.map((entry, index) => (
+                  <div key={index} className="is-addons">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-custom-label-${index}`}>Label *</label>
+                      <input id={`wedding-custom-label-${index}`} className="form-input" value={entry.label} onChange={(e) => updateCustomPricing(index, 'label', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-custom-value-${index}`}>Value *</label>
+                      <input id={`wedding-custom-value-${index}`} className="form-input" type="number" step="0.01" value={entry.value} onChange={(e) => updateCustomPricing(index, 'value', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => removeCustomPricing(index)}>{ICONS.Delete} Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
 
-            <table className="admin-manager__pricing-table admin-manager__payments-table">
-              <tbody>
-                <tr>
-                  <th scope="row">Payments Received</th>
-                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(totalPaymentsReceived)}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Balance Remaining</th>
-                  <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(balanceRemaining)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </fieldset>
-          <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-notes">
-            <legend>Details and Notes</legend>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-notes">Comments, questions, or special requests</label>
-              <textarea id="wedding-notes" className="form-input" value={notes} onChange={(e) => setNotes(e.target.value)} />
-            </div>
-          </fieldset>
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--payments-received">
+              <legend>Payments Received</legend>
+              <button type="button" className="btn btn-secondary" onClick={addPaymentReceived}>{ICONS.Plus} Add Payment Received</button>
 
-          <div className="admin-manager__actions-row">
-            <button className="btn btn--primary" type="submit" disabled={saving}>
-              {saving ? 'Saving...' : editingId ? 'Update Wedding' : 'Create Wedding'}
-            </button>
-            {editingId && (
-              <button
-                className="btn btn-secondary"
-                type="button"
-                onClick={() => {
-                  resetForm();
-                  detailsRef.current?.removeAttribute('open');
-                  detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-              >
-                Cancel Edit
+              <div className="admin-manager__other-contacts-collection">
+                {paymentsReceived.map((payment, index) => (
+                  <div key={index} className="is-addons">
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-payment-label-${index}`}>Label *</label>
+                      <input
+                        id={`wedding-payment-label-${index}`}
+                        className={`form-input${weddingFormErrors.paymentLabels[index] ? ' is-invalid' : ''}`}
+                        value={payment.label}
+                        onChange={(e) => updatePaymentReceived(index, 'label', e.target.value)}
+                        aria-invalid={Boolean(weddingFormErrors.paymentLabels[index])}
+                        aria-describedby={weddingFormErrors.paymentLabels[index] ? `wedding-payment-label-error-${index}` : undefined}
+                      />
+                      {weddingFormErrors.paymentLabels[index] && (
+                        <p className="admin-field-error" id={`wedding-payment-label-error-${index}`}>
+                          {weddingFormErrors.paymentLabels[index]}
+                        </p>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-payment-value-${index}`}>Value *</label>
+                      <input
+                        id={`wedding-payment-value-${index}`}
+                        className={`form-input${weddingFormErrors.paymentValues[index] ? ' is-invalid' : ''}`}
+                        type="number"
+                        step="0.01"
+                        value={payment.value}
+                        onChange={(e) => updatePaymentReceived(index, 'value', e.target.value)}
+                        aria-invalid={Boolean(weddingFormErrors.paymentValues[index])}
+                        aria-describedby={weddingFormErrors.paymentValues[index] ? `wedding-payment-value-error-${index}` : undefined}
+                      />
+                      {weddingFormErrors.paymentValues[index] && (
+                        <p className="admin-field-error" id={`wedding-payment-value-error-${index}`}>
+                          {weddingFormErrors.paymentValues[index]}
+                        </p>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`wedding-payment-date-${index}`}>Date Received</label>
+                      <input
+                        id={`wedding-payment-date-${index}`}
+                        className="form-input"
+                        type="date"
+                        value={payment.dateReceived}
+                        onChange={(e) => updatePaymentReceived(index, 'dateReceived', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <button type="button" className="admin-btn admin-btn--danger" onClick={() => removePaymentReceived(index)}>{ICONS.Delete} Remove</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <table className="admin-manager__pricing-table admin-manager__payments-table">
+                <tbody>
+                  <tr>
+                    <th scope="row">Payments Received</th>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(totalPaymentsReceived)}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Balance Remaining</th>
+                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{money(balanceRemaining)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </fieldset>
+            <fieldset className="admin-manager__fieldset admin-manager__fieldset--wedding-notes">
+              <legend>Details and Notes</legend>
+              <div className="form-group">
+                <label className="form-label" htmlFor="wedding-notes">Comments, questions, or special requests</label>
+                <textarea id="wedding-notes" className="form-input" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              </div>
+            </fieldset>
+
+            <div className="admin-manager__actions-row">
+              <button className="btn btn--primary" type="submit" disabled={saving}>
+                {saving ? 'Saving...' : editingId ? 'Update Wedding' : 'Create Wedding'}
               </button>
-            )}
-          </div>
-        </form>
+              {editingId && (
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    detailsRef.current?.removeAttribute('open');
+                    detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
         </details>
-
       </section>
 
-      <hr className="admin-manager__divider" />
-
       <section className="admin-manager__section">
-        <div className="admin-manager__section-header">
-          <h2 className="admin-manager__section-title">All Weddings</h2>
-          <div className="admin-manager__actions-row">
-            <button className="btn btn--secondary btn--sm" onClick={printAllWeddings} disabled={totalFiltered === 0}>
-              Print All
-            </button>
-            <button className="btn btn--secondary btn--sm" onClick={fetchWeddings} disabled={loading}>
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-
         <details className="admin-manager__export">
-          <summary className="admin-manager__export-summary">Export Weddings</summary>
+          <summary className="admin-manager__export-summary">
+            <h2 className="admin-manager__section-title">Export Weddings</h2>
+          </summary>
           <div className="admin-manager__export-controls">
             <div className="form-group">
               <label className="form-label" htmlFor="wedding-exp-from">From date</label>
@@ -1629,173 +1819,8 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
             </div>
           </div>
         </details>
-
-        <div className="table-controls">
-          <input
-            className="form-input table-search"
-            type="search"
-            placeholder="Search weddings..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            aria-label="Search weddings"
-          />
-          <select className="form-select table-status-filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter weddings by status">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-
-        <fieldset className="table-date-range" aria-label="Weddings date range filters">
-          <legend className="form-label">Date range</legend>
-          <p className="table-date-range__help">Choose a quick range or set custom From/To dates. Leave both blank to show all dates.</p>
-
-          <div className="table-date-range__grid">
-            <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for weddings">
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="wedding-table-date-preset"
-                checked={tableDatePreset === 'week'}
-                onChange={() => applyTableDatePreset('week')}
-              />
-              This week
-            </label>
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="wedding-table-date-preset"
-                checked={tableDatePreset === 'month'}
-                onChange={() => applyTableDatePreset('month')}
-              />
-              This month
-            </label>
-            <label className="table-date-range__preset-option">
-              <input
-                type="radio"
-                name="wedding-table-date-preset"
-                checked={tableDatePreset === 'year'}
-                onChange={() => applyTableDatePreset('year')}
-              />
-              This year
-            </label>
-          </div>
-
-          <div className="table-date-range__fields">
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-table-date-from">From date</label>
-              <input
-                id="wedding-table-date-from"
-                className="form-input table-date-filter"
-                type="date"
-                value={tableFromDate}
-                max={tableToDate || undefined}
-                onChange={(e) => {
-                  setTableDatePreset('');
-                  setTableFromDate(e.target.value);
-                }}
-                aria-label="Filter weddings from date"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label" htmlFor="wedding-table-date-to">To date</label>
-              <input
-                id="wedding-table-date-to"
-                className="form-input table-date-filter"
-                type="date"
-                value={tableToDate}
-                min={tableFromDate || undefined}
-                onChange={(e) => {
-                  setTableDatePreset('');
-                  setTableToDate(e.target.value);
-                }}
-                aria-label="Filter weddings to date"
-              />
-            </div>
-            
-          </div>
-          <div className="form-group table-date-range__clear-wrap">
-              <label className="form-label" htmlFor="wedding-table-date-clear">Clear range</label>
-              <button
-                id="wedding-table-date-clear"
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={clearTableDateRange}
-              >
-                Show all dates
-              </button>
-            </div>
-          </div>
-          
-        </fieldset>
-
-        {filteredTableWeddings.length === 0 && !loading ? (
-          <p className="admin-manager__empty">No weddings found. Add one above.</p>
-        ) : (
-          <>
-            <div className="admin-manager__table-wrap">
-              <table className="admin-manager__table">
-                <thead>
-                  {table.getHeaderGroups().map((group) => (
-                    <tr key={group.id}>
-                      {group.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
-                          data-name={header.column.id}
-                          className={header.column.getCanSort() ? 'sortable-col' : ''}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {header.column.getCanSort() && (
-                            <span className="sort-icon" aria-hidden="true">
-                              {header.column.getIsSorted() === 'asc' ? ' ▲' : header.column.getIsSorted() === 'desc' ? ' ▼' : ' ⇅'}
-                            </span>
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={columns.length} className="admin-manager__empty">No weddings match your filters.</td>
-                    </tr>
-                  ) : (
-                    table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className={`admin-row admin-row--${row.original.status}`}>
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="table-pagination">
-              <span className="table-pagination__info">
-                {totalFiltered === 0
-                  ? 'No results'
-                  : `Showing ${pageIndex * pageSize + 1}-${Math.min((pageIndex + 1) * pageSize, totalFiltered)} of ${totalFiltered}`}
-              </span>
-              <div className="table-pagination__controls">
-                <button className="admin-btn" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} aria-label="First page">«</button>
-                <button className="admin-btn" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label="Previous page">‹</button>
-                <span className="table-pagination__page">Page {pageIndex + 1} of {pageCount || 1}</span>
-                <button className="admin-btn" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label="Next page">›</button>
-                <button className="admin-btn" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()} aria-label="Last page">»</button>
-              </div>
-              <select className="form-select table-pagination__size" value={pageSize} onChange={(e) => table.setPageSize(Number(e.target.value))} aria-label="Rows per page">
-                {[10, 20, 50, 100].map((size) => (
-                  <option key={size} value={size}>{size}/page</option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
       </section>
+
     </div>
   );
 }
