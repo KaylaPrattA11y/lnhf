@@ -6,6 +6,8 @@ import {
   formatCalendarDateLabel,
   formatCalendarTimeLabel,
 } from '@lib/calendar-links';
+import { ICONS } from '@components/admin/icons';
+import getCalendarTourTitle from '@lib/getCalendarTourTitle';
 
 interface BookingModalProps {
   slot: { _id: string; date: string; startTime: string; endTime: string } | null;
@@ -107,7 +109,8 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         throw new Error(data.error || 'Booking failed');
       }
 
-      const calendarTitle = `Tour at Lower Notley Hall Farm${name ? ` with ${name}` : ''}`;
+      // Data for owner to auto-add Google Calendar entry to their calendar
+      const calendarTitle = getCalendarTourTitle(name);
       const calendarDescription = [
         `Guest: ${name}`,
         `Email: ${email}`,
@@ -152,9 +155,54 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
     } catch (err) {
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+    } finally {
+      // Add to Google Calendar via serverless function (non-critical)
+      try {
+        const res = await fetch(`${SITE_BASE_URL}/.netlify/functions/google-calendar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            summary: getCalendarTourTitle(name),
+            description: [
+              `Guest: ${name}`,
+              `Email: ${email}`,
+              phone ? `Phone: ${phone}` : '',
+              message ? `Notes: ${message}` : '',
+            ].filter(Boolean).join('\n'),
+            startDateTime: `${slot.date}T${slot.startTime}:00`,
+            endDateTime: `${slot.date}T${slot.endTime}:00`,
+            emails: [email],
+          }),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          console.error('Failed to add event to Google Calendar:', data?.error || 'Unknown error');
+        }
+      } catch(err) {
+        console.error('Error adding event to Google Calendar:', err);
+      }
     }
   }, [slot, onSuccess]);
   if (!slot) return null;
+
+  // Precompute the calendar links for the success state so they are available immediately after booking.
+  const googleCalendarUrl = buildGoogleCalendarUrl({
+    date: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    title: `Tour at Lower Notley Hall Farm`,
+    description: [
+      'Have questions or need to reschedule? Contact Jack and Cindy at (301) 769-2030 or email at cindy@lowernotleyhallfarm.com.',
+    ].filter(Boolean).join('\n'),
+  });
+  const icsDownloadUrl = buildIcsDownloadUrl({
+    title: `Tour at Lower Notley Hall Farm`,
+    date: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
+  }, PUBLIC_SITE_BASE_URL);
 
   return (
     <div
@@ -181,10 +229,31 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
             <div className="booking-modal__success-icon" aria-hidden="true">✓</div>
             <h2 className="booking-modal__success-title">You're Booked!</h2>
             <p>
-              Your tour is requested for <strong>{formatDate(slot.date)}</strong> at{' '}
+              Your tour is requested for <br/>
+              <strong>{formatDate(slot.date)}</strong> at{' '}
               <strong>{formatTime(slot.startTime)} – {formatTime(slot.endTime)}</strong>.
             </p>
             <p>We'll follow up at <strong>{form.email}</strong> to confirm. See you soon!</p>
+            <div>
+              <a
+                className="btn btn--sm btn--secondary"
+                href={googleCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginBottom: 'var(--space-2)' }}
+              >
+                {ICONS.GoogleCalendar}
+                &nbsp;Add to Google Calendar
+              </a>
+              <a 
+                className="btn btn--sm btn--secondary" 
+                href={icsDownloadUrl} 
+                style={{ marginBottom: 'var(--space-2)' }}
+              >
+                {ICONS.CalendarDownArrow}
+                &nbsp;Download Calendar file (.ics)
+              </a>
+            </div>
             <button className="btn btn--primary" onClick={onClose}>Done</button>
           </div>
         ) : status === 'apology' ? (

@@ -1,3 +1,4 @@
+import getCalendarTourTitle from "@lib/getCalendarTourTitle";
 import type { Handler } from "@netlify/functions";
 
 interface NetlifySubmissionPayload {
@@ -131,7 +132,7 @@ function getTourCalendarLinks(data: Record<string, string>, siteUrl: string, gue
     };
   }
 
-  const title = `Tour at Lower Notley Hall Farm${guestName ? ` with ${guestName}` : ''}`;
+  const title = getCalendarTourTitle(guestName);
   const description = [
     guestName ? `Guest: ${guestName}` : '',
     data.email ? `Email: ${data.email.trim()}` : '',

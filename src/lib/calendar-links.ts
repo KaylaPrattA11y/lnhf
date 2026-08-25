@@ -1,5 +1,5 @@
 const TOUR_TIME_ZONE = 'America/New_York';
-const DEFAULT_EVENT_TITLE = 'Tour at Lower Notley Hall Farm';
+const DEFAULT_EVENT_TITLE = 'LNHF Tour';
 const DEFAULT_EVENT_LOCATION = 'Lower Notley Hall Farm, 36290 Notley Manor Ln, Chaptico, MD 20621';
 
 export interface CalendarEventInput {

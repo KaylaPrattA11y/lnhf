@@ -289,6 +289,12 @@ blockquote {
     --border-radius: 0.5rem;
   }
 }
+.btn > svg {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  vertical-align: middle;
+}
 
 /* ============================================================
    Forms

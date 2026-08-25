@@ -28,6 +28,7 @@
         "npm:astro-seo@^1.1.0",
         "npm:astro-social-share@^2.2.0",
         "npm:astro@^7.0.3",
+        "npm:googleapis@176",
         "npm:netlify-identity-widget@^2.0.3",
         "npm:pg@^8.21.0",
         "npm:react-dom@^19.2.7",

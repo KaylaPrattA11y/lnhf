@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
 import { buildGoogleCalendarUrl, buildIcsDownloadUrl } from '../../lib/calendar-links';
+import getCalendarEventTitle from '../../lib/getCalendarTourTitle';
 import { ICONS } from './icons';
 
 const netlifyIdentity = window.netlifyIdentity!;
@@ -903,7 +904,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       enableSorting: false,
       cell: (info) => {
         const slot = info.row.original;
-        const calendarTitle = `Tour at Lower Notley Hall Farm${slot.tour?.name ? ` with ${slot.tour.name}` : ''}`;
+        const calendarTitle = getCalendarEventTitle(slot.tour?.name);
         const calendarDescription = [
           slot.tour?.name ? `Guest: ${slot.tour.name}` : '',
           slot.tour?.email ? `Email: ${slot.tour.email}` : '',
@@ -917,14 +918,14 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           title: calendarTitle,
           description: calendarDescription,
         });
-        const icsDownloadUrl = buildIcsDownloadUrl({
-          date: slot.date,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          title: calendarTitle,
-          description: calendarDescription,
-          filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
-        }, SITE_BASE_URL);
+        // const icsDownloadUrl = buildIcsDownloadUrl({
+        //   date: slot.date,
+        //   startTime: slot.startTime,
+        //   endTime: slot.endTime,
+        //   title: calendarTitle,
+        //   description: calendarDescription,
+        //   filename: `lnhf-tour-${slot.date}-${slot.startTime}`,
+        // }, SITE_BASE_URL);
 
         return (
           <div className="admin-td-actions">

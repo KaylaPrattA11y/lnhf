@@ -26,6 +26,7 @@
     "astro-icon": "^1.1.5",
     "astro-seo": "^1.1.0",
     "astro-social-share": "^2.2.0",
+    "googleapis": "^176.0.0",
     "netlify-identity-widget": "^2.0.3",
     "pg": "^8.21.0",
     "react": "^19.2.7",
