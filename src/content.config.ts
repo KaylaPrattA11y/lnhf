@@ -123,6 +123,16 @@ const testimonials = defineCollection({
   }),
 });
 
+const offerings = defineCollection({
+  loader: glob({ base: './src/content/offerings', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    status: statusSchema,
+    offering: z.string(),
+    photoGallery: z.array(z.union([z.string(), galleryItemSchema])).optional(),
+    sortOrder: z.number().optional().default(99),
+  }),
+});
+
 export const collections = {
   blog,
   carousel,
@@ -132,4 +142,5 @@ export const collections = {
   pricing,
   testimonials,
   tourTimeSlots,
+  offerings,
 };

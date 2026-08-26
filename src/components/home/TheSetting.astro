@@ -9,21 +9,21 @@ const spaces = [
     description:
       'Float down a beautiful grand staircase, wander through historic double parlors, and explore rooms that have witnessed generations of Maryland history since the 17th century.',
     photo: '/uploads/awaiting%20approval/manor-house-2.jpg',
-    link: '/about#manor-house',
+    link: '/offerings#19th-century-victorian-manor-house',
   },
   {
     name: 'The Reception Barn',
     description:
       'Built by the local Amish community, this spacious rustic board-and-batten barn sparkles with chandeliers and twinkling Edison lights just steps from the Wicomico River.',
     photo: ReceptionBarnImg.src,
-    link: '/about#reception-barn',
+    link: '/offerings#reception-barn',
   },
   {
     name: 'The Wicomico Waterfront',
     description:
       'Wide open skies, cool river breezes, unimaginable sunsets, and the calls of herons, osprey, and eagles — the river is the soul of every celebration at LNHF.',
     photo: WaterfrontImg.src,
-    link: '/about#waterfront',
+    link: '/offerings#stunning-waterfront',
   },
 ];
 ---
@@ -55,7 +55,7 @@ const spaces = [
           <div class="card__body">
             <h3 class="setting__card-title">{space.name}</h3>
             <p>{space.description}</p>
-            <a href={space.link} class="setting__card-link">
+            <a href={space.link} class="btn btn--primary">
               Learn more <span aria-hidden="true">→</span>
             </a>
           </div>
@@ -64,7 +64,7 @@ const spaces = [
     </div>
 
     <div class="setting__cta">
-      <a href="/about/" class="btn btn--secondary">Explore the Full Venue</a>
+      <a href="/offerings/" class="btn btn--secondary">Explore What We Offer</a>
     </div>
   </div>
 </section>

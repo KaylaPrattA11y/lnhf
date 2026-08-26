@@ -1,0 +1,132 @@
+---
+import { render } from 'astro:content';
+import { Image } from 'astro:assets';
+import BlogFigure from '@components/blog/BlogFigure.astro';
+import InteriorLayout from '@layouts/InteriorLayout.astro';
+import { getPublishedCollection } from '@lib/content-status';
+
+const offerings = await getPublishedCollection('offerings');
+const sorted = offerings.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
+---
+
+<InteriorLayout
+  title="Our Offerings"
+  description="Discover the various offerings available at Lower Notley Hall Farm."
+  eyebrow="Explore Our Offerings"
+  heroTitle="What We Offer"
+>
+  <p class="interior-hero__lead" slot="hero">
+    We offer a stunning variety of decor, amenities, and services to fulfill your wedding dreams.
+  </p>
+
+  <section class="section" aria-label="What we offer">
+    <div class="container offerings-container">
+      <div class="offerings-list" role="list">
+        {sorted.map(async entry => {
+          const { Content } = await render(entry);
+
+          return (
+            <div class="offerings-item" role="listitem" id={entry.id}>
+              <div class="offerings-item__heading">
+                <h2>{entry.data.offering}</h2>
+              </div>
+              <div class="offerings-item__content-wrapper">
+                {entry.data.photoGallery && entry.data.photoGallery?.length > 0 && (
+                <div class="offerings-item__gallery">
+                  {entry.data.photoGallery.map(item => (
+                    <img src={item.image} alt="" loading="lazy" decoding="async" class="offerings-item__image" />
+                  ))}
+                </div>
+                )}
+                <div class="offerings-item__content">
+                  <Content components={{ BlogFigure }} />
+                </div>
+              </div>
+              <hr class="divider" />
+            </div>
+          );
+        })}
+      </div>
+
+      <div class="offerings-footer-note">
+        <p>
+          <strong>Something missing from our offerings?</strong> <a href="/contact/">Contact Jack and Cindy</a> — we love
+          talking about what we can do to meet your needs.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</InteriorLayout>
+
+<style>
+  .container {
+    max-width: var(--container-2xl);
+    @container (width < 600px) {
+      --padding-x: 0;
+    }
+  }
+  .offerings-container {
+    @container (width < 600px) {
+      max-width: 840px;
+    }
+  }
+  .offerings-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-10);
+  }
+  .offerings-item__heading {
+    margin-block-end: var(--space-3);
+  }
+  .offerings-item {
+    text-align: center;
+  }
+  .offerings-item :global(li) {
+    text-align: left;
+    font-size: var(--text-lg);
+  }
+  .offerings-item :global(li::marker) {
+    color: var(--color-gold-dark);
+    content: '♦ ';
+  }
+  .offerings-item__gallery {
+    display: flex;
+    flex-wrap: wrap;
+    margin-block-end: var(--space-3);
+    gap: var(--space-1);
+    @container (width >= 600px) {
+      gap: var(--space-3);
+    }
+  }
+  .offerings-item__image {
+    overflow: hidden;
+    border-radius: 0.25rem;
+    object-fit: cover;
+    width: 100%;
+    flex: 40%;
+    aspect-ratio: 4 / 3;
+    corner-shape: bevel;
+    @container (width >= 600px) {
+       border-radius: 0.75rem;
+    }
+  }
+  .offerings-item__content {
+    margin-inline: auto;
+    padding-inline: var(--space-1);
+    max-inline-size: 60ch;
+  }
+  .offerings-footer-note {
+    background: var(--color-cream);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-6);
+    text-align: center;
+    font-size: var(--text-base);
+  }
+  .offerings-footer-note p:last-child {
+    margin-bottom: 0;
+  }
+  .offerings-footer-note a { color: var(--color-primary); font-weight: 700; }
+</style>

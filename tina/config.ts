@@ -25,6 +25,7 @@ const draftCollections: DraftCollection[] = [
   { name: 'testimonials', label: 'Testimonials', connectionField: 'testimonialsConnection' },
   { name: 'pricing', label: 'Pricing', connectionField: 'pricingConnection' },
   { name: 'tourTimeSlots', label: 'Tour Time Slots', connectionField: 'tourTimeSlotsConnection' },
+  { name: 'offerings', label: 'What We Offer', connectionField: 'offeringsConnection' },
 ];
 
 const buildDraftsQuery = (connectionField: string) => `#graphql
@@ -519,6 +520,41 @@ const statusField = {
   },
 };
 
+const blogFigureTemplate = {
+  name: 'BlogFigure',
+  label: 'Image with Caption',
+  fields: [
+    {
+      name: 'image',
+      label: 'Image',
+      type: 'image',
+      required: true,
+    },
+    {
+      name: 'caption',
+      label: 'Caption',
+      type: 'string',
+    },
+    {
+      name: 'float',
+      label: 'Float',
+      type: 'string',
+      required: true,
+      options: [
+        { label: 'Left', value: 'left' },
+        { label: 'Center', value: 'center' },
+        { label: 'Right', value: 'right' },
+      ],
+    },
+    {
+      name: 'alt',
+      label: 'Alt Text',
+      type: 'string',
+      description: 'Describe the image for screen readers. Leave blank only for decorative images.',
+    },
+  ],
+};
+
 export default defineConfig({
   branch: process.env.HEAD || process.env.BRANCH || "main",
   clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID,
@@ -626,40 +662,7 @@ export default defineConfig({
             type: 'rich-text',
             isBody: true,
             templates: [
-              {
-                name: 'BlogFigure',
-                label: 'Image with Caption',
-                fields: [
-                  {
-                    name: 'image',
-                    label: 'Image',
-                    type: 'image',
-                    required: true,
-                  },
-                  {
-                    name: 'caption',
-                    label: 'Caption',
-                    type: 'string',
-                  },
-                  {
-                    name: 'float',
-                    label: 'Float',
-                    type: 'string',
-                    required: true,
-                    options: [
-                      { label: 'Left', value: 'left' },
-                      { label: 'Center', value: 'center' },
-                      { label: 'Right', value: 'right' },
-                    ],
-                  },
-                  {
-                    name: 'alt',
-                    label: 'Alt Text',
-                    type: 'string',
-                    description: 'Describe the image for screen readers. Leave blank only for decorative images.',
-                  },
-                ],
-              },
+              blogFigureTemplate as any,
             ],
             description: 'The main content of the article. Supports text formatting, links, and embedded media.',
           },
@@ -1000,6 +1003,57 @@ export default defineConfig({
             },
           }
         ],
+      },
+      {
+        name: 'offerings',
+        label: 'What We Offer',
+        path: 'src/content/offerings',
+        format: 'mdx',
+        defaultItem: () => ({
+          status: 'draft',
+          sortOrder: 99,
+        }),
+        fields: [
+          statusField,
+          {
+            name: 'offering',
+            label: 'Offering',
+            type: 'string',
+            required: true,
+            isTitle: true,
+          },
+          {
+            name: 'body',
+            label: 'Body',
+            type: 'rich-text',
+            isBody: true,
+            templates: [
+              blogFigureTemplate as any,
+            ],
+            description: 'Describe the product or service. Supports text formatting, links, and embedded media.',
+          },
+          {
+            name: 'photoGallery',
+            label: 'Photo Gallery',
+            type: 'object',
+            list: true,
+            description: 'Attach photos related to this offering.',
+            ui: {
+              defaultItem: () => ({
+                pubDate: new Date().toISOString(),
+              }),
+            },
+            fields: galleryFields as any,
+          },
+          {
+            name: 'sortOrder',
+            label: 'Sort Order',
+            type: 'number',
+            ui: {
+              description: 'Lower numbers appear first. Default: 99.',
+            },
+          }
+        ]
       },
       {
         name: 'tourTimeSlots',

@@ -520,7 +520,7 @@ input {
 }
 
 [id] {
-  scroll-margin-top: var(--space-20);
+  scroll-margin-top: 175px;
 }
 
 /* ============================================================

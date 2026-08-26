@@ -149,6 +149,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
             A stately historic home that serves as your private retreat. Bridal suites, a groom's lounge,
             and gathering rooms are yours for the weekend. Modern amenities, period character.
           </p>
+          <a href="/offerings#19th-century-victorian-manor-house" aria-label="See the Manor House"></a>
         </article>
         <article class="space-card">
           <h3 class="space-card__title">The Reception Barn</h3>
@@ -156,6 +157,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
             Soaring timber ceilings, warm Edison lighting, and room for up to 150 guests create an
             atmosphere that's simultaneously rustic and refined. The dance floor awaits.
           </p>
+          <a href="/offerings#reception-barn" aria-label="See the Reception Barn"></a>
         </article>
         <article class="space-card">
           <h3 class="space-card__title">The Wicomico Waterfront</h3>
@@ -163,6 +165,7 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
             Your ceremony backdrop: the broad, shimmering Wicomico River. Exchange vows at the water's edge
             as the tide moves gently beneath a sky full of possibilities.
           </p>
+          <a href="/offerings#stunning-waterfront" aria-label="See the Wicomico Waterfront"></a>
         </article>
         <article class="space-card">
           <h3 class="space-card__title">The Grounds &amp; Gardens</h3>
@@ -170,7 +173,11 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
             Acres of manicured lawn, wildflower borders, and ancient oaks frame the estate. Every corner
             is a natural photo opportunity — no filter required.
           </p>
+          <a href="/offerings#the-grounds" aria-label="See the Grounds and Gardens"></a>
         </article>
+      </div>
+      <div class="spaces-cta">
+        <a href="/offerings/" class="btn btn--primary btn--lg" data-umami-event="Offerings Link Click" data-umami-event-location="About page">See All Offerings</a>
       </div>
     </div>
   </section>
@@ -292,6 +299,10 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
     gap: var(--space-6);
     grid-template-columns: 1fr;
   }
+  .spaces-cta {
+    text-align: center;
+    margin-top: var(--space-8);
+  }
   @media (min-width: 640px)  { .spaces-grid { grid-template-columns: 1fr 1fr; } }
   @media (min-width: 1024px) { .spaces-grid { grid-template-columns: repeat(4, 1fr); } }
   .space-card {
@@ -301,6 +312,12 @@ import notleyHallFarmManorHouse from '../assets/images/Notley-Hall-Farm-Manor-Ho
     padding: var(--space-6);
     box-shadow: var(--shadow-sm);
     transition: box-shadow var(--transition-base), transform var(--transition-base);
+    position: relative;
+  }
+  .space-card a {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
   }
   .space-card:hover {
     box-shadow: var(--shadow-lg);

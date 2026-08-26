@@ -290,8 +290,9 @@ export default function PricingTable({ entries }: PricingTableProps) {
 
       {/* Custom package note */}
       <div className="pricing-tool__note pricing-tool__note--cta">
+        <p>Curious about our offerings? <a href="/offerings/">Explore What We Offer</a>.</p>
         <p>
-          Can&rsquo;t find what you want?{' '}
+          Want something a little more tailored to your needs?{' '}
           <a href="/contact/">Contact Jack and Cindy</a>{' '}
           to create your custom package.
         </p>

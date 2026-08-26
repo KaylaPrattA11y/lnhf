@@ -118,7 +118,9 @@ if (heroSlides.length === 0) {
         <span class="hero__stat-label">Stars across 30+ reviews</span>
       </div>
     </div>
-
+    <div class="hero__cta">
+      <a href="/offerings/" class="btn btn--primary btn--lg">See what we offer</a>
+    </div>
     <div class="hero__location">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -388,7 +390,7 @@ if (heroSlides.length === 0) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    margin-bottom: 3.5rem;
+    margin-bottom: var(--space-4);
     animation: fadeUp 0.9s ease 0.3s both;
     @container main (width < 600px) {
       padding: 1rem;
@@ -443,6 +445,11 @@ if (heroSlides.length === 0) {
     font-weight: 500;
     font-size: 0.88rem;
     margin-bottom: 2px;
+  }
+
+  .hero__cta {
+    margin-block-end: var(--space-4);
+    animation: fadeUp 0.9s ease 0.45s both;
   }
 
   /* ── Animation ────────────────────────────────────── */
