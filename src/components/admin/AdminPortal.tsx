@@ -42,9 +42,11 @@ export default function AdminPortal() {
           <h1 className="admin-manager__title">Booking Manager</h1>
           <p className="admin-manager__subtitle">Choose which booking type you want to manage.</p>
         </div>
-        <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
-          Log Out
-        </button>
+        <div className="admin-manager__controls">
+          <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
+            Log Out
+          </button>
+        </div>
       </div>
 
       <section className="admin-manager__section">

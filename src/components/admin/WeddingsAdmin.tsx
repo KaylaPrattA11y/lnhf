@@ -1153,10 +1153,16 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
           <h1 className="admin-manager__title">Weddings Manager</h1>
           <p className="admin-manager__subtitle">Create and manage wedding bookings, activities, and pricing.</p>
         </div>
-        <div>
-          <button className="btn btn--secondary btn--sm" onClick={fetchWeddings} disabled={loading} style={{ marginRight: 'var(--space-2)' }}>
-            {loading ? 'Loading...' : 'Refresh wedding database'}
-          </button>
+        <div className="admin-manager__controls">
+          <div>
+            <button className="btn btn--primary btn--sm" onClick={fetchWeddings} disabled={loading} style={{ marginRight: 'var(--space-2)' }}>
+              {loading ? 'Loading...' : 'Refresh wedding database'}
+            </button>
+            <details className="table-details-help">
+              <summary>What does this do?</summary>
+              <p>This will refresh the <strong>Wedding Database</strong> table displayed below by fetching the latest wedding bookings from the server.</p>
+            </details>
+          </div>
           <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
             Log Out
           </button>

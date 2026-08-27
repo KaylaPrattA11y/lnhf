@@ -1050,10 +1050,30 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           <h1 className="admin-manager__title">Tours Manager</h1>
           <p className="admin-manager__subtitle">Add, update, search, export, and manage tour slots.</p>
         </div>
-        <div className="admin-manager__section-inner">
-          <button className="btn btn--secondary btn--sm" onClick={fetchSlots} disabled={loading || seeding} style={{ marginRight: '0.5rem' }}>
-            {loading ? 'Loading...' : 'Refresh Tour Database'}
-          </button>
+        <div className="admin-manager__controls">
+          <div>
+            <button className="btn btn--primary btn--sm" onClick={fetchSlots} disabled={loading || seeding}>
+              {loading ? 'Loading...' : 'Refresh Tour Database'}
+            </button>
+            <details className="table-details-help">
+              <summary>What does this do?</summary>
+              <p>This will refresh the <strong>Tour Database</strong> table displayed below by fetching the latest tour slots from the server.</p>
+            </details>
+          </div>
+          <div>
+            <button className="btn btn--primary btn--sm" onClick={runSeedSync} disabled={seeding || loading}>
+              {seeding ? 'Syncing...' : 'Regenerate Tour Slots'}
+            </button>
+            <details className="table-details-help">
+              <summary>What does this do?</summary>
+              <p>This will add/remove tour slots based on the "Tour Time Slots" templates you have set up.</p>
+              <ul>
+                <li>It will not modify or remove any past or currently booked slots.</li>
+                <li>Please allow some time for the changes to take effect.</li>
+              </ul>
+              <p><em>See the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a> to make changes.</em></p>
+            </details>
+          </div>
           <button className="btn btn--secondary btn--sm" onClick={() => netlifyIdentity.logout()}>
             Log Out
           </button>
@@ -1071,7 +1091,6 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
             <h2 className="admin-manager__section-title">Tour Database</h2>
           </summary>
           <div className="admin-manager__section-inner">
-
             {lastSyncResult && (
               <div className="admin-manager__msg" role="status" aria-live="polite">
                 <strong>Last Sync Result:</strong>{' '}
@@ -1477,15 +1496,6 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                     {months} {months === 1 ? 'month' : 'months'}
                   </label>
                 ))}
-              </div>
-              <div>
-                <button className="btn btn--secondary btn--sm" onClick={runSeedSync} disabled={seeding || loading}>
-                  {seeding ? 'Syncing...' : 'Regenerate Future Slots'}
-                </button>
-                <details className="table-details-help">
-                  <summary>What is this?</summary>
-                  <p>This will add future tour slots based on the templates you have set up (see the "Tour Time Slots" collection in <a href={`${import.meta.env.SITE}admin/`} target="_blank" rel="noopener noreferrer">the admin panel</a>) and remove any future slots that no longer fit the templates. It will not modify any past or currently booked slots.</p>
-                </details>
               </div>
             </fieldset>
 

@@ -38,12 +38,14 @@
 }
 
 .admin-manager__topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
   margin-bottom: var(--space-8);
   gap: var(--space-4);
+  @container (width > 800px) {
+    grid-template-columns: 1fr 1.5fr;
+    align-items: start;
+    justify-content: space-between;
+  }
 }
 
 .admin-manager__topbar > * {
@@ -376,7 +378,7 @@
   font-size: var(--text-sm);
 }
 
-.table-details-help p {
+.table-details-help :where(p,li) {
   margin: 0.25rem 0;
   color: var(--color-text-muted);
 }
@@ -499,6 +501,20 @@
 
 .admin-manager__section-inner {
   padding: var(--space-4);
+}
+
+.admin-manager__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 200px));
+  align-items: start;
+  gap: var(--space-2);
+  @container (width >= 800px) {
+    justify-content: end;
+  }
+}
+
+.admin-manager__controls button {
+  inline-size: 100%;
 }
 
 .admin-manager__export-summary::-webkit-details-marker {
