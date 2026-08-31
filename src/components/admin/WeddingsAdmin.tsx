@@ -15,7 +15,8 @@ import {
 import BackToPortal from './BackToPortal';
 import { comparePricingEntries } from '../../lib/pricing-order';
 import { ICONS } from './icons';
-
+import ExportOptions, { type ExportFormat } from './ExportOptions';
+import DateRangeFieldset from './DateRangeFieldset';
 const to12HourTime = (time24: string) => {
   const [hourStr, minute] = time24.split(':');
   let hour = Number(hourStr);
@@ -277,7 +278,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
   });
 
   const [globalFilter, setGlobalFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [tableDatePreset, setTableDatePreset] = useState<TableDatePreset>('year');
   const [tableFromDate, setTableFromDate] = useState(defaultTableRange.fromDate);
   const [tableToDate, setTableToDate] = useState(defaultTableRange.toDate);
@@ -287,7 +288,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
   const [exportFrom, setExportFrom] = useState('');
   const [exportTo, setExportTo] = useState('');
-  const [exportFmt, setExportFmt] = useState<'csv' | 'xlsx' | 'ods'>('csv');
+  const [exportFmt, setExportFmt] = useState<ExportFormat>('csv');
   const [exporting, setExporting] = useState(false);
 
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -1039,7 +1040,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
 
       const dateStamp = new Date().toISOString().split('T')[0];
       const filename = `lnhf-weddings-${dateStamp}.${exportFmt}`;
-      const bookType = exportFmt === 'csv' ? 'csv' : exportFmt === 'ods' ? 'ods' : 'xlsx';
+      const bookType = exportFmt;
       XLSX.writeFile(wb, filename, { bookType });
     } finally {
       setExporting(false);
@@ -1177,7 +1178,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       <section className="admin-manager__section">
         <details className="admin-manager__export">
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Wedding Database</h2>
+            <h2 className="admin-manager__section-title">Wedding Database <small>- View, add, and delete wedding bookings</small></h2>
           </summary>
           <div className="admin-manager__section-inner">
             <div className="table-controls">
@@ -1203,85 +1204,16 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
                 </label>
               </fieldset>
 
-              <fieldset className="table-date-range" aria-label="Weddings date range filters">
-                <legend className="form-label">Filter Date range</legend>
-                <div className="table-date-range__grid">
-                  <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for weddings">
-                    <strong>Preset ranges:</strong>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="wedding-table-date-preset"
-                        checked={tableDatePreset === 'week'}
-                        onChange={() => applyTableDatePreset('week')}
-                      />
-                      This week
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="wedding-table-date-preset"
-                        checked={tableDatePreset === 'month'}
-                        onChange={() => applyTableDatePreset('month')}
-                      />
-                      This month
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="wedding-table-date-preset"
-                        checked={tableDatePreset === 'year'}
-                        onChange={() => applyTableDatePreset('year')}
-                      />
-                      This year
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="wedding-table-date-preset"
-                        checked={tableDatePreset === ''}
-                        onChange={() => clearTableDateRange()}
-                      />
-                      All time
-                    </label>
-                  </div>
-
-                  <div className="table-date-range__fields">
-                    <strong>Custom range:</strong>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="wedding-table-date-from">From date</label>
-                      <input
-                        id="wedding-table-date-from"
-                        className="form-input table-date-filter"
-                        type="date"
-                        value={tableFromDate}
-                        max={tableToDate || undefined}
-                        onChange={(e) => {
-                          setTableDatePreset('');
-                          setTableFromDate(e.target.value);
-                        }}
-                        aria-label="Filter weddings from date"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="wedding-table-date-to">To date</label>
-                      <input
-                        id="wedding-table-date-to"
-                        className="form-input table-date-filter"
-                        type="date"
-                        value={tableToDate}
-                        min={tableFromDate || undefined}
-                        onChange={(e) => {
-                          setTableDatePreset('');
-                          setTableToDate(e.target.value);
-                        }}
-                        aria-label="Filter weddings to date"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-              </fieldset>
+              <DateRangeFieldset
+                tableDatePreset={tableDatePreset}
+                applyTableDatePreset={applyTableDatePreset}
+                clearTableDateRange={clearTableDateRange}
+                tableFromDate={tableFromDate}
+                tableToDate={tableToDate}
+                setTableDatePreset={setTableDatePreset}
+                setTableFromDate={setTableFromDate}
+                setTableToDate={setTableToDate}
+              />
             </div>
           </div>
 
@@ -1357,7 +1289,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       <section className="admin-manager__section">
         <details className="admin-manager__export" ref={detailsRef}>
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">{editingId ? 'Edit Existing Wedding' : 'Add New Wedding'}</h2>
+            <h2 className="admin-manager__section-title">{editingId ? 'Edit Existing Wedding' : 'Add New Wedding'} <small>- Fill out the details for a wedding booking and add to database</small></h2>
           </summary>
           <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveWedding} noValidate>
             <fieldset className="admin-manager__fieldset">
@@ -1784,7 +1716,7 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
       <section className="admin-manager__section">
         <details className="admin-manager__export">
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Export Weddings</h2>
+            <h2 className="admin-manager__section-title">Export Weddings <small>- Download wedding bookings as a spreadsheet</small></h2>
           </summary>
           <div className="admin-manager__export-controls">
             <div className="form-group">
@@ -1811,10 +1743,8 @@ export default function WeddingsAdmin({ pricingEntries }: WeddingsAdminProps) {
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="wedding-export-format">Format</label>
-              <select id="wedding-export-format" className="form-select" value={exportFmt} onChange={(e) => setExportFmt(e.target.value as 'csv' | 'xlsx' | 'ods')}>
-                <option value="csv">CSV (.csv)</option>
-                <option value="xlsx">Excel (.xlsx)</option>
-                <option value="ods">OpenDocument (.ods)</option>
+              <select id="wedding-export-format" className="form-select" value={exportFmt} onChange={(e) => setExportFmt(e.target.value as ExportFormat)}>
+                <ExportOptions />
               </select>
             </div>
             <div className="form-group is-button">

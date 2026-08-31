@@ -65,20 +65,28 @@ p {
 }
 p:last-child:not(:only-child) { margin-bottom: 0; }
 
-a {
+button.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+:where(a, .btn-link) {
   color: var(--color-river-deep);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 a:is([href^="mailto:"], [href^="tel:"]) { word-break: break-word; }
-a:hover { color: var(--color-river); }
+:where(a, .btn-link) :hover { color: var(--color-river); }
 
-a:focus-visible {
+:where(a, .btn-link) :focus-visible {
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
 
-main a {
+main :where(a, .btn-link) {
   text-decoration: underline;
 }
 

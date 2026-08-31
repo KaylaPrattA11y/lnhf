@@ -1,5 +1,5 @@
 import type { Handler, HandlerContext } from '@netlify/functions';
-import { getDb } from './utils/db';
+import { getDb, type TourSlot } from './utils/db';
 import { isAuthenticated } from './utils/auth';
 import {
   getTourCalendarSettings,
@@ -7,6 +7,7 @@ import {
   isSlotBeyondBookingHorizon,
   isSlotInsideBuffer,
   isSlotInsideHolidayRange,
+  type TourCalendarSettings,
 } from './utils/tour-calendar';
 
 /**
@@ -41,7 +42,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
       ? await getDb().sql`
           SELECT
             id                AS "_id",
-            date,
+            date::text        AS date,
             start_time        AS "startTime",
             end_time          AS "endTime",
             status,
@@ -60,7 +61,7 @@ export const handler: Handler = async (event, context: HandlerContext) => {
       : await getDb().sql`
           SELECT
             id                AS "_id",
-            date,
+            date::text        AS date,
             start_time        AS "startTime",
             end_time          AS "endTime",
             status,
@@ -76,40 +77,54 @@ export const handler: Handler = async (event, context: HandlerContext) => {
           ORDER BY date, start_time
         `;
 
-    const now = new Date();
-    const transformedSlots = slots.map((slot) => {
-      const visitorBlockedByHoliday = slot.status === 'available' && isSlotInsideHolidayRange(slot.date, slot.startTime, settings);
-      const visitorBlockedByBuffer = slot.status === 'available' && !visitorBlockedByHoliday && isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now);
-      const visitorBlockedByHorizon =
-        slot.status === 'available' &&
-        !visitorBlockedByHoliday &&
-        !visitorBlockedByBuffer &&
-        isSlotBeyondBookingHorizon(slot.date, slot.startTime, settings.bookingHorizonMonths, now);
+    function toSlotDateTime(date: string | Date, startTime: string): Date {
+      const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
+      return new Date(`${dateStr}T${startTime}`);
+    }
 
-      return {
-        ...slot,
-        visitorVisibility: slot.status !== 'available'
-          ? 'not_applicable'
-          : visitorBlockedByHoliday
-            ? 'holiday_mode'
-            : visitorBlockedByBuffer
-              ? 'booking_buffer'
-              : visitorBlockedByHorizon
-                ? 'booking_horizon'
-              : 'visible',
-        visitorVisibilityDetail: slot.status !== 'available'
-          ? null
-          : visitorBlockedByHoliday
-            ? (calendarDisabledIndefinitely
-              ? 'Hidden from visitors: Holiday Mode is disabling the calendar indefinitely.'
-              : 'Hidden from visitors: This slot falls inside the configured Holiday Mode date range.')
-            : visitorBlockedByBuffer
-              ? `Hidden from visitors: Inside the ${settings.bookingBufferHours}-hour Booking Buffer.`
-              : visitorBlockedByHorizon
-                ? `Hidden from visitors: Outside the ${settings.bookingHorizonMonths}-month booking horizon.`
-              : 'Visible to visitors for online booking.',
-      };
-    });
+    const now = new Date();
+
+    function getVisitorVisibility(slot: TourSlot, settings: TourCalendarSettings, now: Date, calendarDisabledIndefinitely: boolean) {
+      if (slot.status !== 'available') {
+        return { visitorVisibility: 'not_applicable', visitorVisibilityDetail: null };
+      }
+
+      const checks = [
+        {
+          condition: toSlotDateTime(slot.date, slot.startTime) < now,
+          visibility: 'past_date',
+          detail: 'Hidden from visitors: This tour slot is in the past.',
+        },
+        {
+          condition: isSlotInsideHolidayRange(slot.date, slot.startTime, settings),
+          visibility: 'holiday_mode',
+          detail: calendarDisabledIndefinitely
+            ? 'Hidden from visitors: Holiday Mode is disabling the calendar indefinitely.'
+            : 'Hidden from visitors: This tour slot falls inside the configured Holiday Mode date range.',
+        },
+        {
+          condition: isSlotInsideBuffer(slot.date, slot.startTime, settings.bookingBufferHours, now),
+          visibility: 'booking_buffer',
+          detail: `Hidden from visitors: This tour slot is inside the ${settings.bookingBufferHours}-hour Booking Buffer.`,
+        },
+        {
+          condition: isSlotBeyondBookingHorizon(slot.date, slot.startTime, settings.bookingHorizonMonths, now),
+          visibility: 'booking_horizon',
+          detail: `Hidden from visitors: This tour slot is outside the ${settings.bookingHorizonMonths}-month Booking Horizon.`,
+        },
+      ];
+
+      const matched = checks.find((check) => check.condition);
+
+      return matched
+        ? { visitorVisibility: matched.visibility, visitorVisibilityDetail: matched.detail }
+        : { visitorVisibility: 'visible', visitorVisibilityDetail: 'Visible to visitors for online booking.' };
+    }
+
+    const transformedSlots = slots.map((slot) => ({
+      ...slot,
+      ...getVisitorVisibility(slot as TourSlot, settings, now, calendarDisabledIndefinitely),
+    }));
 
     return { statusCode: 200, headers, body: JSON.stringify(transformedSlots) };
   } catch (err) {

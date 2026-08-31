@@ -132,6 +132,11 @@
   margin: 0;
 }
 
+.admin-manager__section-title small {
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+}
+
 .admin-field-error {
   margin: var(--space-1) 0 0;
   color: #b91c1c;
@@ -300,6 +305,11 @@
 .admin-badge--visitor-limited {
   background: #fefce8;
   color: #854d0e;
+}
+
+.admin-badge--visitor-muted {
+  background: #f1f5f9;
+  color: #334155;
 }
 
 .admin-td-actions {

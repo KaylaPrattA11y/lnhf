@@ -12,9 +12,11 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import BackToPortal from './BackToPortal';
-import { buildGoogleCalendarUrl, buildIcsDownloadUrl } from '../../lib/calendar-links';
+import { buildGoogleCalendarUrl } from '../../lib/calendar-links';
 import getCalendarEventTitle from '../../lib/getCalendarTourTitle';
 import { ICONS } from './icons';
+import ExportOptions, { type ExportFormat } from './ExportOptions';
+import DateRangeFieldset from './DateRangeFieldset';
 
 const netlifyIdentity = window.netlifyIdentity!;
 const SITE_BASE_URL = import.meta.env.DEV ? '' : import.meta.env.SITE.replace(/\/$/, '');
@@ -25,7 +27,7 @@ interface TourSlot {
   startTime: string;
   endTime: string;
   status: 'available' | 'booked' | 'blocked';
-  visitorVisibility?: 'visible' | 'holiday_mode' | 'booking_buffer' | 'booking_horizon' | 'not_applicable';
+  visitorVisibility?: 'visible' | 'holiday_mode' | 'booking_buffer' | 'booking_horizon' | 'past_date' | 'not_applicable';
   visitorVisibilityDetail?: string | null;
   tour?: {
     name: string;
@@ -75,7 +77,7 @@ const DEFAULT_TIME_SLOT_OPTIONS: TourTimeSlotOption[] = [
 ];
 
 type TableDatePreset = '' | 'week' | 'month' | 'year';
-type StatusFilterValue = '' | 'available-visible' | 'available-hidden' | 'booked' | 'blocked';
+type StatusFilterValue = '' | 'available' | 'hidden' | 'booked' | 'blocked';
 
 function toDateTimeLocalValue(isoValue: string | null) {
   if (!isoValue) return '';
@@ -198,7 +200,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
   const [exportFrom, setExportFrom] = useState('');
   const [exportTo, setExportTo] = useState('');
-  const [exportFmt, setExportFmt] = useState<'csv' | 'xlsx' | 'ods'>('csv');
+  const [exportFmt, setExportFmt] = useState<ExportFormat>('csv');
   const [exporting, setExporting] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SeedSyncResult | null>(null);
@@ -320,6 +322,17 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
     });
     setTourFormErrors({});
   }, [newDate, newStart, newStatus, selectedExistingSlot, editingSlotId]);
+
+  const openDetailsElement = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const controls = e.currentTarget.getAttribute('aria-controls');
+    const detailsEl = controls ? document.getElementById(controls) as HTMLDetailsElement | null : null;
+
+    if (detailsEl) {
+      detailsEl.open = true;
+      detailsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const applyTableDatePreset = (preset: Exclude<TableDatePreset, ''>) => {
     const range = getDateRangeForPreset(preset);
@@ -761,7 +774,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
 
       const dateStamp = new Date().toISOString().split('T')[0];
       const filename = `lnhf-tours-${dateStamp}.${exportFmt}`;
-      const bookType = exportFmt === 'csv' ? 'csv' : exportFmt === 'ods' ? 'ods' : 'xlsx';
+      const bookType = exportFmt;
       XLSX.writeFile(wb, filename, { bookType });
     } catch (err) {
       flash(`Error: ${err instanceof Error ? err.message : 'Unable to export tours right now.'}`);
@@ -839,19 +852,37 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       header: 'Status',
       cell: (info) => {
         const slot = info.row.original;
+        const visibilityBadgeText = {
+          "holiday_mode": "Holiday Mode",
+          "booking_buffer": "Booking Buffer",
+          "booking_horizon": "Booking Horizon",
+          "past_date": "Date Passed",
+          "visible": "Visible to Guests",
+          "not_applicable": "Not Applicable",
+        };
+        const isHiddenFromVisitors =
+          info.getValue() === 'available' &&
+          slot.visitorVisibility &&
+          !['visible', 'not_applicable'].includes(slot.visitorVisibility);
 
         return (
           <>
-            <div style={{ display: 'grid', justifyItems: 'start', gridTemplateColumns: 'repeat(auto-fit, minmax(50px, max-content))', gap: '0.35rem' }}>
-              <span className={`admin-badge admin-badge--${info.getValue()}`}>{info.getValue()}</span>
-              {slot.status === 'available' && slot.visitorVisibility === 'holiday_mode' && (
-                <span className="admin-badge admin-badge--visitor-hidden">Hidden</span>
-              )}
-              {slot.status === 'available' && slot.visitorVisibility === 'booking_buffer' && (
-                <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
-              )}
-              {slot.status === 'available' && slot.visitorVisibility === 'booking_horizon' && (
-                <span className="admin-badge admin-badge--visitor-limited">Hidden</span>
+            <div
+              style={{
+                display: 'grid',
+                justifyItems: 'start',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(50px, max-content))',
+                gap: '0.35rem',
+              }}
+            >
+              {isHiddenFromVisitors ? (
+                <span className="admin-badge admin-badge--visitor-muted">
+                  {slot.visitorVisibility && visibilityBadgeText[slot.visitorVisibility]}
+                </span>
+              ) : (
+                <span className={`admin-badge admin-badge--${info.getValue()}`}>
+                  {info.getValue()}
+                </span>
               )}
             </div>
             {slot.visitorVisibilityDetail && (
@@ -868,11 +899,12 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
           slot.status === 'available' &&
           (slot.visitorVisibility === 'holiday_mode' ||
             slot.visitorVisibility === 'booking_buffer' ||
+            slot.visitorVisibility === 'past_date' || 
             slot.visitorVisibility === 'booking_horizon');
 
         if (!filterValue) return true;
-        if (filterValue === 'available-visible') return slot.status === 'available' && !isGuestHidden;
-        if (filterValue === 'available-hidden') return slot.status === 'available' && isGuestHidden;
+        if (filterValue === 'available') return slot.status === 'available' && !isGuestHidden;
+        if (filterValue === 'hidden') return slot.status === 'available' && isGuestHidden;
         if (filterValue === 'booked') return slot.status === 'booked';
         if (filterValue === 'blocked') return slot.status === 'blocked';
 
@@ -1088,7 +1120,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       <section className="admin-manager__section">
         <details className="admin-manager__export" ref={addTourSlotDetailsRef}>
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Tour Database</h2>
+            <h2 className="admin-manager__section-title">Tour Database <small>- View, add, clear, and delete tour slots</small></h2>
           </summary>
           <div className="admin-manager__section-inner">
             {lastSyncResult && (
@@ -1123,102 +1155,34 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
                       onChange={(e) => setStatusFilter(e.target.value as StatusFilterValue)}
                     >
                       <option value="">All statuses</option>
-                      <option value="available-visible">Available</option>
-                      <option value="available-hidden">Available (hidden from visitors)</option>
+                      <option value="available">Available</option>
+                      <option value="hidden">Hidden</option>
                       <option value="booked">Booked</option>
                       <option value="blocked">Blocked</option>
                     </select>
                   </label>
                   <details className="table-details-help">
                     <summary>What does each Tour Slot Status mean?</summary>
-                    <p><strong>Available:</strong> Guests can see and book this slot.</p>
-                    <p><strong>Available (hidden from visitors):</strong> Slot exists but is currently hidden by holiday mode, booking buffer, or booking horizon rules.</p>
-                    <p><strong>Booked:</strong> Already reserved by a guest.</p>
-                    <p><strong>Blocked:</strong> Manually disabled and not bookable.</p>
+                    <ul>
+                      <li><strong>Available:</strong> Guests can see and book this slot.</li>
+                      <li><strong>Hidden:</strong> Slot exists but is currently hidden due to the date having passed, by Holiday Mode, Booking Buffer, or Booking Horizon rules. These settings can be modified under the <button type="button" aria-controls="manage-tour-calendar" onClick={openDetailsElement} className="btn-link">Manage Tour Calendar</button> panel.</li>
+                      <li><strong>Booked:</strong> Already reserved by a guest.</li>
+                      <li><strong>Blocked:</strong> Manually disabled and not bookable by guests.</li>
+                    </ul>
                   </details>
                 </div>
               </fieldset>
 
-              <fieldset className="table-date-range" aria-label="Tour slots date range filters">
-                <legend className="form-label">Filter Date Range</legend>
-                <div className="table-date-range__grid">
-                  <div className="table-date-range__presets" role="radiogroup" aria-label="Quick date ranges for tour slots">
-                    <strong>Preset ranges:</strong>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="tour-table-date-preset"
-                        checked={tableDatePreset === 'week'}
-                        onChange={() => applyTableDatePreset('week')}
-                      />
-                      This week
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="tour-table-date-preset"
-                        checked={tableDatePreset === 'month'}
-                        onChange={() => applyTableDatePreset('month')}
-                      />
-                      This month
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="tour-table-date-preset"
-                        checked={tableDatePreset === 'year'}
-                        onChange={() => applyTableDatePreset('year')}
-                      />
-                      This year
-                    </label>
-                    <label className="table-date-range__preset-option">
-                      <input
-                        type="radio"
-                        name="tour-table-date-preset"
-                        checked={tableDatePreset === ''}
-                        onChange={() => clearTableDateRange()}
-                      />
-                      All time
-                    </label>
-                  </div>
-
-                  <div className="table-date-range__fields">
-                    <strong>Custom range:</strong>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="tour-table-date-from">From date</label>
-                      <input
-                        id="tour-table-date-from"
-                        className="form-input table-date-filter"
-                        type="date"
-                        value={tableFromDate}
-                        max={tableToDate || undefined}
-                        onChange={(e) => {
-                          setTableDatePreset('');
-                          setTableFromDate(e.target.value);
-                        }}
-                        aria-label="Filter tour slots from date"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="tour-table-date-to">To date</label>
-                      <input
-                        id="tour-table-date-to"
-                        className="form-input table-date-filter"
-                        type="date"
-                        value={tableToDate}
-                        min={tableFromDate || undefined}
-                        onChange={(e) => {
-                          setTableDatePreset('');
-                          setTableToDate(e.target.value);
-                        }}
-                        aria-label="Filter tour slots to date"
-                      />
-                    </div>
-
-                  </div>
-                </div>
-
-              </fieldset>
+              <DateRangeFieldset 
+                tableDatePreset={tableDatePreset}
+                applyTableDatePreset={applyTableDatePreset}
+                clearTableDateRange={clearTableDateRange}
+                tableFromDate={tableFromDate}
+                tableToDate={tableToDate}
+                setTableDatePreset={setTableDatePreset}
+                setTableFromDate={setTableFromDate}
+                setTableToDate={setTableToDate}
+              />
 
             </div>
 
@@ -1303,7 +1267,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       <section className="admin-manager__section">
         <details className="admin-manager__export" ref={addTourSlotDetailsRef}>
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit an Existing Booked Slot' : 'Manage a Tour Slot'}</h2>
+            <h2 className="admin-manager__section-title">{editingSlotId ? 'Edit an Existing Booked Slot' : 'Manage a Tour Slot'} <small>- Add, block, book/unbook individual tour slots</small></h2>
           </summary>
           <p className="admin-manager__subtitle">
             Use this form to manage tour slots by adding custom slots, removing existing slots, and directly booking slots to any chosen date and time slot. Choose <strong>Available</strong>/<strong>Blocked</strong> to create a slot for your guests, or choose <strong>Booked (phone/walk-in)</strong> to save guest details to an existing slot (same date/time) or create a booked slot if none exists.
@@ -1452,9 +1416,9 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       </section>
 
       <section className="admin-manager__section">
-        <details className="admin-manager__export">
+        <details className="admin-manager__export" id="manage-tour-calendar">
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Manage Tour Calendar</h2>
+            <h2 className="admin-manager__section-title">Manage Tour Calendar <small>- Configure booking windows, future slot generation, and holiday settings</small></h2>
           </summary>
           <form className="admin-manager__grid" style={{ padding: 'var(--space-4)' }} onSubmit={saveCalendarSettings}>
             <fieldset className="admin-manager__fieldset">
@@ -1596,7 +1560,7 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
       <section className="admin-manager__section">
         <details className="admin-manager__export">
           <summary className="admin-manager__export-summary">
-            <h2 className="admin-manager__section-title">Export Booked Tours</h2>
+            <h2 className="admin-manager__section-title">Export Booked Tours <small>- Download booked tour slots as a spreadsheet</small></h2>
           </summary>
           <div className="admin-manager__export-controls">
             <div className="form-group">
@@ -1609,10 +1573,8 @@ export default function ToursAdmin({ timeSlotOptions }: { timeSlotOptions?: Tour
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="tour-exp-fmt">Format</label>
-              <select className="form-select" id="tour-exp-fmt" value={exportFmt} onChange={(e) => setExportFmt(e.target.value as 'csv' | 'xlsx' | 'ods')}>
-                <option value="csv">CSV (.csv)</option>
-                <option value="xlsx">Excel (.xlsx)</option>
-                <option value="ods">OpenDocument (.ods)</option>
+              <select className="form-select" id="tour-exp-fmt" value={exportFmt} onChange={(e) => setExportFmt(e.target.value as ExportFormat)}>
+                <ExportOptions />
               </select>
             </div>
             <div className="form-group">
