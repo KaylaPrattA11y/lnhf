@@ -358,8 +358,8 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
                     <option value="1">Just browsing</option>
                     <option value="25">Under 25</option>
                     <option value="50">25 – 50</option>
-                    <option value="100">50 – 100</option>
-                    <option value="150">100 – 150</option>
+                    <option value="75">50 – 75</option>
+                    <option value="100">75 – 100</option>
                   </select>
                 </div>
 
