@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getVisitorId } from '@lib/umami';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 import {
   buildGoogleCalendarUrl,
   buildIcsDownloadUrl,
@@ -192,13 +193,13 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
     date: slot.date,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    title: `Tour at Lower Notley Hall Farm`,
+    title: `Tour at ${VENUE.NAME}`,
     description: [
       `Have questions or need to reschedule? Contact ${CONTACT.NAME} at ${CONTACT.PHONE}.`,
     ].filter(Boolean).join('\n'),
   });
   const icsDownloadUrl = buildIcsDownloadUrl({
-    title: `Tour at Lower Notley Hall Farm`,
+    title: `Tour at ${VENUE.NAME}`,
     date: slot.date,
     startTime: slot.startTime,
     endTime: slot.endTime,

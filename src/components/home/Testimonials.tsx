@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import VENUE from '@data/venue';
 
 interface Testimonial {
   testimonial: string;
@@ -39,7 +40,7 @@ export default function Testimonials({ testimonials }: { testimonials: Testimoni
             {t.photo && (
               <img
                 src={t.photo}
-                alt={`Photo of ${t.names.split(',')[0].trim()}${t.names.includes(',') ? ' and others' : ''}, who provided a testimonial about their experience at Lower Notley Hall Farm.`}
+                alt={`Photo of ${t.names.split(',')[0].trim()}${t.names.includes(',') ? ' and others' : ''}, who provided a testimonial about their experience at ${VENUE.NAME}.`}
                 className="testimonials__photo"
                 width={175}
                 height={125}

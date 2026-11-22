@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Handler } from '@netlify/functions';
+import VENUE from '@data/venue';
+import CONTACT from '@data/contact';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
@@ -64,9 +66,9 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  const title = sanitize(query.title, 'Tour at Lower Notley Hall Farm', 160);
+  const title = sanitize(query.title, `Tour at ${VENUE.NAME}`, 160);
   const description = sanitize(query.description, '', 500);
-  const location = sanitize(query.location, 'Lower Notley Hall Farm, 36290 Notley Manor Ln, Chaptico, MD 20621', 200);
+  const location = sanitize(query.location, `${VENUE.NAME}, ${CONTACT.ADDRESS.STREET}, ${CONTACT.ADDRESS.CITY}, ${CONTACT.ADDRESS.STATE} ${CONTACT.ADDRESS.ZIP}`, 200);
   const uidSeed = `${date}|${startTime}|${endTime}|${title}|${location}`;
   const uid = `${createHash('sha1').update(uidSeed).digest('hex')}@lowernotleyhallfarm.com`;
   const nowStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
@@ -74,7 +76,7 @@ export const handler: Handler = async (event) => {
   const eventLines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Lower Notley Hall Farm//Tour Booking//EN',
+    `PRODID:-//${VENUE.NAME}//Tour Booking//EN`,
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

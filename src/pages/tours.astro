@@ -5,6 +5,7 @@ import Footer from '@components/layout/Footer.astro';
 import BookingCalendar from '@components/booking/BookingCalendar';
 import { getPublishedCollection } from '@lib/content-status';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
   .map((entry) => ({
@@ -16,7 +17,7 @@ const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
 
 <BaseLayout
   title="Book a Private Tour"
-  description="Schedule a Sunday tour of Lower Notley Hall Farm. Slots are available on Sundays - choose a time and book directly online."
+  description={`Schedule a Sunday tour of ${VENUE.NAME}. Slots are available on Sundays - choose a time and book directly online.`}
 >
   <Nav slot="nav" />
 

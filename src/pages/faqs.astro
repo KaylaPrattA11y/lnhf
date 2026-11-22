@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import { getPublishedCollection } from '@lib/content-status';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 const faqEntries = await getPublishedCollection('faqs');
 const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
@@ -10,7 +11,7 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
 
 <InteriorLayout
   title="Frequently Asked Questions"
-  description="Answers to the most common questions about booking, pricing, policies, and amenities at Lower Notley Hall Farm."
+  description={`Answers to the most common questions about booking, pricing, policies, and amenities at ${VENUE.NAME}.`}
   eyebrow="Need Answers?"
   heroTitle="Frequently Asked Questions"
 >

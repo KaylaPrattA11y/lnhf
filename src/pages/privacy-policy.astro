@@ -2,11 +2,12 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
+import VENUE from '@data/venue';
 ---
 
 <BaseLayout
-  title="Wedding Pricing"
-  description="Transparent wedding pricing for Lower Notley Hall Farm. Use our interactive estimator to build your package."
+  title="Privacy Policy"
+  description={`Privacy policy for ${VENUE.NAME}. Learn how we collect, use, and protect your personal information.`}
 >
   <Nav slot="nav" />
   <section class="vendors-hero section section--sm" aria-label="Privacy policy">
@@ -23,7 +24,7 @@ import Footer from '@components/layout/Footer.astro';
     <section class="section bg-arabesque" aria-label="Privacy policy">
       <div class="container vendors-container">
       <p>
-        Lower Notley Hall Farm LLC. operates the lowernotleyhallfarm.com website,
+        ${VENUE.LEGAL} operates the lowernotleyhallfarm.com website,
         which provides “a means to plan events and request quotes for said events”,
         which shall be referred to as “Service” from here on.
       </p><p>

@@ -2,6 +2,7 @@
 // TheSetting.astro
 import USP from '@data/usp';
 import VISTAS from '@data/vistas';
+import VENUE from '@data/venue';
 
 const spaces = [
   {
@@ -32,7 +33,7 @@ const spaces = [
       <h2 class="section-header__title" id="setting-title">The Setting</h2>
       <hr class="divider" aria-hidden="true" />
       <p class="section-header__subtitle">
-        Lower Notley Hall Farm is an award-winning, family-owned historic waterfront wedding venue located in Southern Maryland just {USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT} {USP.DC_DISTANCE_MILES.DESC}.
+        {VENUE.NAME} is an award-winning, family-owned historic waterfront wedding venue located in Southern Maryland just {USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT} {USP.DC_DISTANCE_MILES.DESC}.
       </p>
     </div>
 

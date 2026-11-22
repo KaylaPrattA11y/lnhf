@@ -3,11 +3,12 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 ---
 
 <BaseLayout
   title="Message Sent — Thank You!"
-  description="Thank you for contacting Lower Notley Hall Farm. We'll be in touch soon."
+  description={`Thank you for contacting ${VENUE.NAME}. We'll be in touch soon.`}
 >
   <Nav slot="nav" />
 
@@ -16,7 +17,7 @@ import CONTACT from '@data/contact';
       <div class="success-icon" aria-hidden="true">✓</div>
       <h1 class="success-title">Message Received!</h1>
       <p class="success-text">
-        Thank you for reaching out to Lower Notley Hall Farm. We'll review your message and get
+        Thank you for reaching out to {VENUE.NAME}. We'll review your message and get
         back to you as soon as possible.
       </p>
       <p class="success-text">

@@ -7,6 +7,7 @@ import Logo from '@assets/images/logo.svg';
 import USP from '@data/usp';
 import CONTACT from '@data/contact';
 import VISTAS from '@data/vistas';
+import VENUE from '@data/venue';
 
 const images = await getPublishedCollection('gallery');
 const latestImages = images
@@ -17,12 +18,12 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
 
 <InteriorLayout
   title="About the Venue"
-  description="Discover the history, grounds, and unique character of Lower Notley Hall Farm — a historic waterfront estate in Chaptico, Southern Maryland."
-  eyebrow="Chaptico, Maryland"
+  description={`Discover the history, grounds, and unique character of ${VENUE.NAME} — a historic waterfront estate in ${CONTACT.ADDRESS.CITY}, Southern Maryland.`}
+  eyebrow={`${CONTACT.ADDRESS.CITY}, Maryland`}
   heroTitle="A Venue With a Story"
 >
   <p class="interior-hero__lead" slot="hero">
-    Set on the shores of the Wicomico River in Southern Maryland, Lower Notley Hall Farm is a place
+    Set on the shores of the Wicomico River in Southern Maryland, {VENUE.NAME} is a place
     where history breathes through every timber and every view. It's {USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT} {USP.DC_DISTANCE_MILES.DESC} —
     yet a world away.
   </p>
@@ -35,7 +36,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
         <h2 class="about-split__title" id="location-title">Southern Maryland's Hidden Gem</h2>
         <hr class="divider" aria-hidden="true" />
         <p>
-          Tucked away in Chaptico, MD, our estate borders the tidal Wicomico River — offering panoramic
+          Tucked away in {CONTACT.ADDRESS.CITY}, {CONTACT.ADDRESS.STATE}, our estate borders the tidal Wicomico River — offering panoramic
           water views that transform with every season. We're surrounded by rolling farmland and a
           thriving Amish community that has kept the pace of life gentle and unhurried.
         </p>
@@ -45,16 +46,16 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
         </p>
         <div class="about-split__facts">
           <div class="about-fact">
-            <strong class="about-fact__num">50 mi</strong>
-            <span class="about-fact__label">South of Washington, DC</span>
+            <strong class="about-fact__num">{USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT}</strong>
+            <span class="about-fact__label">{USP.DC_DISTANCE_MILES.DESC}</span>
           </div>
           <div class="about-fact">
-            <strong class="about-fact__num">150</strong>
-            <span class="about-fact__label">Guests accommodated</span>
+            <strong class="about-fact__num">{USP.GUESTS_ACCOMMODATED.VALUE}</strong>
+            <span class="about-fact__label">{USP.GUESTS_ACCOMMODATED.DESC}</span>
           </div>
           <div class="about-fact">
-            <strong class="about-fact__num">5 acres</strong>
-            <span class="about-fact__label">Of private waterfront grounds</span>
+            <strong class="about-fact__num">{USP.ACREAGE.VALUE} {USP.ACREAGE.UNIT}</strong>
+            <span class="about-fact__label">{USP.ACREAGE.DESC}</span>
           </div>
         </div>
       </div>
@@ -96,7 +97,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
         <div class="about-split__img-wrap">
           <Image
             src="/uploads/awaiting%20approval/manor-house-2.jpg"
-            alt="The historic manor house on Lower Notley Hall Farm"
+            alt={`The historic manor house on ${VENUE.NAME}`}
             class="about-split__img"
             width="600"
             height="450"
@@ -111,7 +112,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
   <section class="section bg-arabesque" aria-labelledby="crest-title">
     <div class="container about-crest">
       <div class="about-crest__logo-wrap" aria-hidden="true">
-        <Logo xlink:title="Lower Notley Hall Farm crest" class="about-crest__logo" />
+        <Logo xlink:title={`${VENUE.NAME} crest`} class="about-crest__logo" />
       </div>
       <div class="about-crest__content">
         <span class="section-header__eyebrow">Our Crest</span>
@@ -130,7 +131,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
           </li>
         </ul>
         <p>
-          Together they embody Lower Notley Hall Farm: a place that honors the past while welcoming
+          Together they embody {VENUE.NAME}: a place that honors the past while welcoming
           the future.
         </p>
       </div>

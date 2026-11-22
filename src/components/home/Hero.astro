@@ -6,6 +6,7 @@ import receptionBarnInteriorRiverside from '@assets/images/reception-barn-interi
 import aerialReceptionBarn from '@assets/images/aerial-reception-barn.jpg';
 import USP from '@data/usp';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 interface HeroSlide {
   image: string;
@@ -26,13 +27,13 @@ if (heroSlides.length === 0) {
   heroSlides.push({
     image: aerialReceptionBarn.src,
     title: 'Barn aerial view',
-    caption: 'Aerial view of the barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery.',
+    caption: `Aerial view of the barn at ${VENUE.NAME}, next to the Wicomico River and surrounded by lush greenery.`,
   });
 }
 
 ---
 
-<section class="hero" aria-label="Welcome to Lower Notley Hall Farm">
+<section class="hero" aria-label={`Welcome to ${VENUE.NAME}`}>
 
   <!-- LEFT — dark photo panel -->
   <div class="hero__left">
@@ -96,7 +97,7 @@ if (heroSlides.length === 0) {
     <div class="hero-img-wrapper">
       <Image
         src={receptionBarnInteriorRiverside}
-        alt="Interior view of the barn at Lower Notley Hall Farm, with riverside views and elegant decor."
+        alt={`Interior view of the barn at ${VENUE.NAME}, with riverside views and elegant decor.`}
         width="1400"
         height="933"
         loading="eager"

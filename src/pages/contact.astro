@@ -1,11 +1,12 @@
 ---
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 ---
 
 <InteriorLayout
   title="Contact Us"
-  description="Get in touch with Lower Notley Hall Farm. We'd love to answer your questions and help plan your wedding or special event."
+  description={`Get in touch with ${VENUE.NAME}. We'd love to answer your questions and help plan your wedding or special event.`}
   eyebrow="We'd Love to Hear from You"
   heroTitle="Get in Touch"
 >
@@ -20,7 +21,7 @@ import CONTACT from '@data/contact';
 
       <!-- Contact info panel -->
       <aside class="contact-info" aria-label="Contact details">
-        <h2 class="contact-info__title">Lower Notley Hall Farm</h2>
+        <h2 class="contact-info__title">{VENUE.NAME}</h2>
         <ul class="contact-info__list">
           <li class="contact-info__item">
             <svg class="contact-info__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -58,7 +59,7 @@ import CONTACT from '@data/contact';
             <div>
               <strong>Facebook</strong><br />
               <a href="https://www.facebook.com/Lower-Notley-Hall-Farm-Wedding-Venue-1629580437060850" target="_blank" rel="noopener noreferrer">
-                Lower Notley Hall Farm
+                {VENUE.NAME}
               </a>
             </div>
           </li>

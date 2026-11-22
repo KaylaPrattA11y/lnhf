@@ -1,5 +1,7 @@
 import getCalendarTourTitle from "@lib/getCalendarTourTitle";
 import type { Handler } from "@netlify/functions";
+import VENUE from "@data/venue";
+import CONTACT from "@data/contact";
 
 interface NetlifySubmissionPayload {
   payload: {
@@ -18,7 +20,7 @@ interface EmailTemplateParameters {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
 const TOUR_TIME_ZONE = 'America/New_York';
-const TOUR_LOCATION = 'Lower Notley Hall Farm, 36290 Notley Manor Ln, Chaptico, MD 20621';
+const TOUR_LOCATION = `${VENUE.NAME}, ${CONTACT.ADDRESS.STREET}, ${CONTACT.ADDRESS.CITY}, ${CONTACT.ADDRESS.STATE} ${CONTACT.ADDRESS.ZIP}`;
 
 type KnownFormName = 'tour-booking' | 'contact';
 
@@ -29,7 +31,7 @@ const EMAIL_TEMPLATE_BY_FORM: Record<KnownFormName, string> = {
 
 const EMAIL_SUBJECT_BY_FORM: Record<KnownFormName, string> = {
   contact: 'We received your message',
-  'tour-booking': 'Your Lower Notley Hall Farm tour was booked',
+  'tour-booking': `Your ${VENUE.NAME} tour was booked`,
 };
 
 function getSiteUrl(event: Parameters<Handler>[0]) {

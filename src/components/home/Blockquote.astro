@@ -2,13 +2,14 @@
 // Blockquote.astro
 import { Image } from 'astro:assets';
 import aerialLnhf from '../../assets/images/aerial-lnhf.jpg';
+import VENUE from '@data/venue';
 ---
 
 <section class="blockquote-section section section--dark" aria-label="About the venue">
   <div class="hero-img-wrapper">
     <Image
       src={aerialLnhf}
-      alt="Aerial view of the barn at Lower Notley Hall Farm, next to the Wicomico River and surrounded by lush greenery."
+      alt={`Aerial view of the barn at ${VENUE.NAME}, next to the Wicomico River and surrounded by lush greenery.`}
       width="1400"
       height="933"
       loading="eager"
@@ -23,7 +24,7 @@ import aerialLnhf from '../../assets/images/aerial-lnhf.jpg';
       </p>
       <footer class="venue-quote__footer">
         <hr class="divider" aria-hidden="true" />
-        <cite>Lower Notley Hall Farm</cite>
+        <cite>{VENUE.NAME}</cite>
       </footer>
     </blockquote>
   </div>

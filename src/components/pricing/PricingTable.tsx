@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NOTES } from '../../data/pricing';
 import { comparePricingEntries } from '../../lib/pricing-order';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 interface PricingTableEntry {
   id: string;
@@ -120,7 +121,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Lower Notley Hall Farm - Custom Estimate</title>
+          <title>${VENUE.NAME} - Custom Estimate</title>
           <style>
             body { font-family: Arial, Helvetica, sans-serif; margin: 24px; color: #1f2937; }
             .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -135,9 +136,9 @@ export default function PricingTable({ entries }: PricingTableProps) {
         </head>
         <body>
           <div class="header">
-            <img src="${window.location.origin}/images/logo.svg" alt="Lower Notley Hall Farm" />
+            <img src="${window.location.origin}/images/logo.svg" alt="${VENUE.NAME}" />
             <div>
-              <div class="header-title">Lower Notley Hall Farm: Southern Maryland Waterfront Weddings</div>
+              <div class="header-title">${VENUE.NAME}: ${VENUE.TAGLINE}</div>
               <div class="header-subtitle">Custom Estimate</div>
             </div>
           </div>
@@ -184,7 +185,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
     if (!canShareEstimate) return;
 
     const lines = [
-      'Lower Notley Hall Farm: Southern Maryland Waterfront Weddings',
+      `${VENUE.NAME}: ${VENUE.TAGLINE}`,
       'Custom Estimate',
       '',
       ...selectedLineItems.map((item) => `- ${item.name}${item.quantity > 1 ? ` x ${item.quantity}` : ''}: ${fmt(item.total)}`),
@@ -195,7 +196,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
 
     try {
       await navigator.share({
-        title: 'Lower Notley Hall Farm: Custom Estimate',
+        title: `${VENUE.NAME}: Custom Estimate`,
         text: lines.join('\n'),
       });
     } catch (error) {
@@ -211,7 +212,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
       <div className="pricing-tool__table-wrap">
         <table className="pricing-table" aria-label="Wedding pricing estimator">
           <caption>
-            Check and uncheck the features below to estimate the cost of your event at Lower Notley Hall Farm.
+            Check and uncheck the features below to estimate the cost of your event at ${VENUE.NAME}.
           </caption>
           <thead>
             <tr>

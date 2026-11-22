@@ -3,6 +3,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 import PricingTable from '@components/pricing/PricingTable';
 import { getPublishedCollection } from '@lib/content-status';
 import { comparePricingEntries } from '@lib/pricing-order';
+import VENUE from '@data/venue';
 
 const rawEntries = await getPublishedCollection('pricing');
 const entries = rawEntries
@@ -23,7 +24,7 @@ const entries = rawEntries
 
 <InteriorLayout
   title="Wedding Pricing"
-  description="Transparent wedding pricing for Lower Notley Hall Farm. Use our interactive estimator to build your package."
+  description={`Transparent wedding pricing for ${VENUE.NAME}. Use our interactive estimator to build your package.`}
   eyebrow="Transparent Pricing"
   heroTitle="Wedding Package Estimator"
   heroMaxWidth="760px"

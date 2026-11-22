@@ -8,6 +8,7 @@ import { getPublishedCollection } from '@lib/content-status';
 import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
 import type { SortablePricingEntry } from '../lib/pricing-order';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 export interface BaseLayoutProps {
   title: string;
@@ -27,7 +28,7 @@ export interface BaseLayoutProps {
   };
 }
 
-const defaultTitle = 'Lower Notley Hall Farm';
+const defaultTitle = VENUE.NAME;
 const defaultDescription = 'A charming waterfront wedding venue in Southern Maryland, offering rustic elegance and picturesque views for your special day.';
 
 const { 
@@ -199,7 +200,7 @@ const pricingCookieName = `lnhf_pricing_seen_${pricingCookieVersion}`;
         meta: [
           {
             name: "keywords",
-            content: "Lower Notley Hall Farm, wedding venue, waterfront weddings, barn weddings, outdoor ceremonies, wedding packages, wedding pricing, wedding estimator, farm weddings, countryside weddings"
+            content: `${VENUE.NAME}, wedding venue, waterfront weddings, barn weddings, outdoor ceremonies, wedding packages, wedding pricing, wedding estimator, farm weddings, countryside weddings`
           }
         ]
       }}

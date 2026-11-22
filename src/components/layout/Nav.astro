@@ -1,18 +1,19 @@
 ---
 // Nav.astro
 const currentPath = Astro.url.pathname;
+import VENUE from '@data/venue';
 console.log('Current path:', currentPath);
 ---
 
 <header class="nav" role="banner" id="nav">
   <div class="nav--container container">
-    <a href="/" class="nav--logo" aria-label="Lower Notley Hall Farm — Home">
+    <a href="/" class="nav--logo" aria-label={`${VENUE.NAME} — Home`}>
       <div class="nav--logo-svg">
         <img src="/images/logo.svg" alt="" aria-hidden="true" class="nav--logo-lg" />
         <img src="/images/cropped-favicon-270x270.png" alt="" aria-hidden="true" class="nav--logo-sm" />
       </div>
       <span class="nav--logo-text">
-        <span class="nav--logo-name">Lower Notley Hall Farm</span>
+        <span class="nav--logo-name">{VENUE.NAME}</span>
         <span class="nav--logo-tagline"><span>Southern Maryland</span> Waterfront Weddings</span>
       </span>
     </a>

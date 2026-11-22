@@ -6,6 +6,7 @@ import Footer from '@components/layout/Footer.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
 import BlogFigure from '@components/blog/BlogFigure.astro';
 import { getPublishedCollection } from '@lib/content-status';
+import VENUE from "@data/venue";
 
 export async function getStaticPaths() {
   const posts = await getPublishedCollection('blog');
@@ -61,7 +62,7 @@ const galleryImages = normalizedGallery
 
 <BlogLayout
   title={post.data.title}
-  description={post.data.excerpt ?? `Read about ${post.data.title} on the Lower Notley Hall Farm blog.`}
+  description={post.data.excerpt ?? `Read about ${post.data.title} on the ${VENUE.NAME} blog.`}
   date={post.data.pubDate}
   author={post.data.author}
   featuredImage={post.data.featuredImage}

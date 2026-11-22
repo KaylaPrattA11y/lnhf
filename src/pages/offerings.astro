@@ -5,6 +5,7 @@ import BlogFigure from '@components/blog/BlogFigure.astro';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import { getPublishedCollection } from '@lib/content-status';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 const offerings = await getPublishedCollection('offerings');
 const sorted = offerings.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
@@ -12,7 +13,7 @@ const sorted = offerings.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortO
 
 <InteriorLayout
   title="Our Offerings"
-  description="Discover the various offerings available at Lower Notley Hall Farm."
+  description={`Discover the various offerings available at ${VENUE.NAME}.`}
   eyebrow="Explore Our Offerings"
   heroTitle="What We Offer"
 >

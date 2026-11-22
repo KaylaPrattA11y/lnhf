@@ -12,6 +12,7 @@ import TourForm from '@components/home/TourForm.astro';
 import { getPublishedCollection } from '@lib/content-status';
 import USP from '@data/usp';
 import CONTACT from '@data/contact';
+import VENUE from '@data/venue';
 
 const testimonials = await getPublishedCollection('testimonials');
 // filter to homepage only, then sort by sortOrder (default to 99 if not set) so that entries without a sortOrder appear at the end
@@ -21,11 +22,11 @@ const sortedTestimonials = testimonials
   .map(t => ({ id: t.id, ...t.data }));
 
 const description =
-  `Lower Notley Hall Farm is a historic Southern Maryland waterfront wedding venue in ${CONTACT.ADDRESS.CITY}, ${CONTACT.ADDRESS.STATE}—${USP.DC_DISTANCE_MILES.VALUE} ${USP.DC_DISTANCE_MILES.UNIT} from Washington, DC. Manor house, barn, and Wicomico River views for up to ${USP.GUESTS_ACCOMMODATED.VALUE} ${USP.GUESTS_ACCOMMODATED.UNIT}.`;
+  `${VENUE.NAME} is a historic Southern Maryland waterfront wedding venue in ${CONTACT.ADDRESS.CITY}, ${CONTACT.ADDRESS.STATE}—${USP.DC_DISTANCE_MILES.VALUE} ${USP.DC_DISTANCE_MILES.UNIT} from Washington, DC. Manor house, barn, and Wicomico River views for up to ${USP.GUESTS_ACCOMMODATED.VALUE} ${USP.GUESTS_ACCOMMODATED.UNIT}.`;
 ---
 
 <BaseLayout
-  title="Southern Maryland Waterfront Weddings"
+  title={VENUE.TAGLINE}
   description={description}
   ogImage="/uploads/aerial-barn-party.jpg"
   ogImageSquare="/uploads/aerial-barn-party.jpg"
