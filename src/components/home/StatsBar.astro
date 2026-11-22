@@ -1,9 +1,11 @@
 ---
+import USP from '../../data/usp';
+
 // StatsBar.astro
 const stats = [
-  { value: '50 miles', label: 'South of Washington, DC' },
-  { value: 'Up to 100', label: 'Guests Accommodated' },
-  { value: 'Top 3', label: 'Southern MD Venue — BusinessRate 2026 ★' },
+  { value: `${USP.DC_DISTANCE_MILES.VALUE} ${USP.DC_DISTANCE_MILES.UNIT}`, label: USP.DC_DISTANCE_MILES.DESC },
+  { value: `Up to ${USP.GUESTS_ACCOMMODATED.VALUE}`, label: USP.GUESTS_ACCOMMODATED.DESC },
+  { value: `Top ${USP.BUSINESSRATE_RANKING.VALUE} ${USP.BUSINESSRATE_RANKING.UNIT}`, label: USP.BUSINESSRATE_RANKING.DESC },
 ];
 ---
 

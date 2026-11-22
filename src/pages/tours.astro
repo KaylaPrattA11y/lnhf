@@ -4,6 +4,7 @@ import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
 import BookingCalendar from '@components/booking/BookingCalendar';
 import { getPublishedCollection } from '@lib/content-status';
+import CONTACT from '@data/contact';
 
 const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
   .map((entry) => ({
@@ -76,7 +77,7 @@ const tourTimeSlots = (await getPublishedCollection('tourTimeSlots'))
       <p class="booking-help__text">
         Having trouble booking?{' '}
         <a href="/contact/">Send us a message</a> or call{' '}
-        <a href="tel:3017692030">(301) 769-2030</a>.
+        <a href={`tel:${CONTACT.TEL}`}>{CONTACT.PHONE}</a>.
       </p>
     </div>
   </section>

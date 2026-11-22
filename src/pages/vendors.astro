@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import { getPublishedCollection } from '@lib/content-status';
+import CONTACT from '@data/contact';
 
 const vendors = await getPublishedCollection('vendors');
 const vendorsWithContent = await Promise.all(
@@ -73,7 +74,7 @@ const vendorsGrouped = normalizedVendors
   <p class="interior-hero__lead" slot="hero">
     We've built relationships with exceptional vendors who know our property, share our values,
     and will make your wedding day extraordinary. For our most current recommendations,
-    please <a href="/contact/">contact Jack and Cindy</a> directly.
+    please <a href="/contact/">contact {CONTACT.NAME}</a> directly.
   </p>
 
   <section class="section bg-arabesque" aria-label="Vendor list">

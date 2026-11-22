@@ -62,14 +62,14 @@
           color="#000000"
         >
           <p>36290 Notley Manor Ln, Chaptico, MD 20621</p>
-          <p>(301) 769-2030</p>
+          <p>(301) 861-8428</p>
         </mj-text>
       </mj-column>
     </mj-section>
     <mj-section css-class="panel">
       <mj-column>
         <mj-text font-size="20px" color="#b5924c" font-family="'Jost', Helvetica, Arial, sans-serif">{{ name }}, thank you for contacting Lower Notley Hall Farm.</mj-text>
-        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">Jack and Cynthia will get back to you as soon as possible.</mj-text>
+        <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">Linsey will get back to you as soon as possible.</mj-text>
         <mj-text font-size="16px" font-weight="300" color="#000000" font-family="'Jost', Helvetica, Arial, sans-serif">In the meantime, feel free to explore our website and <a href="https://lowernotleyhallfarm.com/about/">learn more about our farm</a> and the <a href="https://lowernotleyhallfarm.com/tours/">tours</a> we offer.</mj-text>
       </mj-column>
     </mj-section>

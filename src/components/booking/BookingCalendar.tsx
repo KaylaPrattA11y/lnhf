@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import CONTACT from '@data/contact';
 import BookingModal from './BookingModal';
 
 interface Slot {
@@ -166,7 +167,7 @@ export default function BookingCalendar({ timeSlotOptions }: { timeSlotOptions?:
 
       {isCalendarFullyDisabled && (
         <div className="booking-cal__error" role="alert">
-          Online tour booking is currently paused. Please use the <a href="/contact">contact page</a> to reach Jack and Cindy.
+          Online tour booking is currently paused. Please use the <a href="/contact">contact page</a> to reach ${CONTACT.NAME}.
         </div>
       )}
 

@@ -4,6 +4,10 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 import LightboxGallery from '@components/about/LightboxGallery';
 import { getPublishedCollection } from '@lib/content-status';
 import Logo from '@assets/images/logo.svg';
+import USP from '@data/usp';
+import CONTACT from '@data/contact';
+import VISTAS from '@data/vistas';
+
 const images = await getPublishedCollection('gallery');
 const latestImages = images
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
@@ -19,7 +23,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
 >
   <p class="interior-hero__lead" slot="hero">
     Set on the shores of the Wicomico River in Southern Maryland, Lower Notley Hall Farm is a place
-    where history breathes through every timber and every view. It's 50 miles from Washington, DC —
+    where history breathes through every timber and every view. It's {USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT} {USP.DC_DISTANCE_MILES.DESC} —
     yet a world away.
   </p>
 
@@ -45,7 +49,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
             <span class="about-fact__label">South of Washington, DC</span>
           </div>
           <div class="about-fact">
-            <strong class="about-fact__num">100</strong>
+            <strong class="about-fact__num">150</strong>
             <span class="about-fact__label">Guests accommodated</span>
           </div>
           <div class="about-fact">
@@ -143,34 +147,32 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
       </div>
       <div class="spaces-grid">
         <article class="space-card">
-          <h3 class="space-card__title">The Manor House</h3>
+          <h3 class="space-card__title">{VISTAS.HOUSE.NAME}</h3>
           <p class="space-card__desc">
-            A stately historic home with a spacious hallway leading the wedding party to their ceremony held on the banks of the Wicomico River.
+            {VISTAS.HOUSE.DESC.ABOUT}
           </p>
-          <a href="/offerings#19th-century-victorian-manor-house" aria-label="See the Manor House"></a>
+          <a href="/offerings#19th-century-victorian-manor-house" aria-label={`See ${VISTAS.HOUSE.NAME}`}></a>
         </article>
         <article class="space-card">
-          <h3 class="space-card__title">The Cocktail Hour Barn Deck</h3>
+          <h3 class="space-card__title">{VISTAS.BARN.NAME}</h3>
           <p class="space-card__desc">
-            A twenty by forty foot wooden deck with bistro tables for your guests during the cocktail hour.
+            {VISTAS.BARN.DESC.ABOUT}
           </p>
-          <a href="/offerings#cocktail-hour-barn-deck" aria-label="See the Cocktail Hour Barn Deck"></a>
+          <a href="/offerings#cocktail-hour-barn-deck" aria-label={`See ${VISTAS.BARN.NAME}`}></a>
         </article>
         <article class="space-card">
-          <h3 class="space-card__title">The Wicomico Waterfront</h3>
+          <h3 class="space-card__title">{VISTAS.WATERFRONT.NAME}</h3>
           <p class="space-card__desc">
-            Your ceremony backdrop: the broad, shimmering Wicomico River. Exchange vows at the water's edge
-            as the tide moves gently beneath a sky full of possibilities.
+            {VISTAS.WATERFRONT.DESC.ABOUT}
           </p>
-          <a href="/offerings#stunning-waterfront" aria-label="See the Wicomico Waterfront"></a>
+          <a href="/offerings#stunning-waterfront" aria-label={`See ${VISTAS.WATERFRONT.NAME}`}></a>
         </article>
         <article class="space-card">
-          <h3 class="space-card__title">The Grounds &amp; Gardens</h3>
+          <h3 class="space-card__title">{VISTAS.GROUNDS.NAME}</h3>
           <p class="space-card__desc">
-            Acres of manicured lawn, wildflower borders, and ancient oaks frame the estate. Every corner
-            is a natural photo opportunity — no filter required.
+            {VISTAS.GROUNDS.DESC.ABOUT}
           </p>
-          <a href="/offerings#the-grounds" aria-label="See the Grounds and Gardens"></a>
+          <a href="/offerings#the-grounds" aria-label={`See ${VISTAS.GROUNDS.NAME}`}></a>
         </article>
       </div>
       <div class="spaces-cta">
@@ -200,7 +202,7 @@ import aerialReceptionBarn from '../assets/images/aerial-reception-barn.jpg';
   <section class="section about-cta bg-quatrefoils" aria-labelledby="about-cta-title">
     <div class="container about-cta__inner">
       <h2 class="about-cta__title" id="about-cta-title">Ready to See It in Person?</h2>
-      <p class="about-cta__sub">Schedule a private Sunday tour with Jack and Cindy.</p>
+      <p class="about-cta__sub">Schedule a private Sunday tour with {CONTACT.NAME}.</p>
       <div class="about-cta__btns">
         <a href="/tours/" class="btn btn--primary btn--lg" data-umami-event="Tour Link Click" data-umami-event-location="About page">Book a Tour</a>
         <a href="/pricing/" class="btn btn--primary btn--lg" data-umami-event="Pricing Link Click" data-umami-event-location="About page">See Pricing</a>

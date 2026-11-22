@@ -2,6 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Nav from '@components/layout/Nav.astro';
 import Footer from '@components/layout/Footer.astro';
+import CONTACT from '@data/contact';
 ---
 
 <BaseLayout
@@ -20,7 +21,7 @@ import Footer from '@components/layout/Footer.astro';
       </p>
       <p class="success-text">
         In the meantime, feel free to browse our site or give us a call at{' '}
-        <a href="tel:3017692030">(301) 769-2030</a>.
+        <a href={`tel:${CONTACT.TEL}`}>{CONTACT.PHONE}</a>.
       </p>
       <div class="success-actions">
         <a href="/" class="btn btn--primary">Back to Home</a>

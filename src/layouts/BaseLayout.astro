@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { getPublishedCollection } from '@lib/content-status';
 import { SEO, type Props as SEOProps, type TwitterCardType } from 'astro-seo';
 import type { SortablePricingEntry } from '../lib/pricing-order';
+import CONTACT from '@data/contact';
 
 export interface BaseLayoutProps {
   title: string;
@@ -114,14 +115,14 @@ const organizationSchema: Record<string, unknown> = {
   description,
   ...(websiteUrl ? { url: websiteUrl } : {}),
   ...(logoUrl ? { image: logoUrl } : {}),
-  telephone: "(301) 769-2030",
+  telephone: CONTACT.PHONE,
   priceRange: "$$",
   address: {
     "@type": "PostalAddress",
-    streetAddress: "236290 Notley Manor Ln",
-    addressLocality: "Chaptico",
-    addressRegion: "MD",
-    postalCode: "20621",
+    streetAddress: CONTACT.ADDRESS.STREET,
+    addressLocality: CONTACT.ADDRESS.CITY,
+    addressRegion: CONTACT.ADDRESS.STATE,
+    postalCode: CONTACT.ADDRESS.ZIP,
     addressCountry: "US",
   },
   geo: {

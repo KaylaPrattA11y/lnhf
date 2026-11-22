@@ -1,5 +1,6 @@
 ---
 import InteriorLayout from '@layouts/InteriorLayout.astro';
+import CONTACT from '@data/contact';
 ---
 
 <InteriorLayout
@@ -37,7 +38,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
             </svg>
             <div>
               <strong>Phone</strong><br />
-              <a href="tel:3017692030">(301) 769-2030</a>
+              <a href={`tel:${CONTACT.TEL}`}>{CONTACT.PHONE}</a>
             </div>
           </li>
           <li class="contact-info__item">
@@ -176,6 +177,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
 
 <script>
   import { getVisitorId } from '@lib/umami';
+  import CONTACT from '@data/contact';
 
   const form = document.getElementById('contact-form') as HTMLFormElement | null;
   
@@ -207,7 +209,7 @@ import InteriorLayout from '@layouts/InteriorLayout.astro';
       },
     ];
 
-    const generalErrorMessage = "Sorry, there was an error sending your message. Please try again or give us a call at (301) 769-2030.";
+    const generalErrorMessage = `Sorry, there was an error sending your message. Please try again or give us a call at ${CONTACT.PHONE}.`;
 
     const showError = (field: typeof fields[number], msg: string) => {
       field.errorEl.textContent = msg;

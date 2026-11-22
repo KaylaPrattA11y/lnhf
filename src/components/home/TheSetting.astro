@@ -1,28 +1,25 @@
 ---
 // TheSetting.astro
-import CocktailHourDeckImg from '@assets/images/cocktail-hour-deck-night.jpg';
-import WaterfrontImg from '@assets/images/couple-waterfront-wedding.jpg';
+import USP from '@data/usp';
+import VISTAS from '@data/vistas';
 
 const spaces = [
   {
-    name: 'The Manor House',
-    description:
-      'Float down a beautiful grand staircase that has witnessed generations of Maryland history since the 19th century.',
-    photo: '/uploads/awaiting%20approval/manor-house-2.jpg',
+    name: VISTAS.HOUSE.NAME,
+    description: VISTAS.HOUSE.DESC.HOME,
+    photo: VISTAS.HOUSE.IMG.src,
     link: '/offerings#19th-century-victorian-manor-house',
   },
   {
-    name: 'The Cocktail Hour Deck',
-    description:
-      'Built by the local Amish community, this spacious deck sparkles with chandeliers and is just steps from the Wicomico River.',
-    photo: CocktailHourDeckImg.src,
+    name: VISTAS.BARN.NAME,
+    description: VISTAS.BARN.DESC.HOME,
+    photo: VISTAS.BARN.IMG.src,
     link: '/offerings#cocktail-hour-barn-deck',
   },
   {
-    name: 'The Wicomico Waterfront',
-    description:
-      'Wide open skies, cool river breezes, unimaginable sunsets, and the calls of herons, osprey, and eagles — the river is the soul of every celebration at LNHF.',
-    photo: WaterfrontImg.src,
+    name: VISTAS.WATERFRONT.NAME,
+    description: VISTAS.WATERFRONT.DESC.HOME,
+    photo: VISTAS.WATERFRONT.IMG.src,
     link: '/offerings#stunning-waterfront',
   },
 ];
@@ -35,7 +32,7 @@ const spaces = [
       <h2 class="section-header__title" id="setting-title">The Setting</h2>
       <hr class="divider" aria-hidden="true" />
       <p class="section-header__subtitle">
-        Lower Notley Hall Farm is an award-winning, family-owned historic waterfront wedding venue located in Southern Maryland just 50 miles south of Washington, DC.
+        Lower Notley Hall Farm is an award-winning, family-owned historic waterfront wedding venue located in Southern Maryland just {USP.DC_DISTANCE_MILES.VALUE} {USP.DC_DISTANCE_MILES.UNIT} {USP.DC_DISTANCE_MILES.DESC}.
       </p>
     </div>
 

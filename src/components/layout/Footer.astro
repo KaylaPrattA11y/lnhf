@@ -1,5 +1,6 @@
 ---
 // Footer.astro
+import CONTACT from '@data/contact';
 const currentYear = new Date().getFullYear();
 import Waves from '../Waves.astro';
 ---
@@ -27,9 +28,9 @@ import Waves from '../Waves.astro';
         <div>
           <h3 class="footer__heading">Lower Notley Hall Farm</h3>
           <address>
-            <p>36290 Notley Manor Ln<br />Chaptico, MD 20621</p>
+            <p>{CONTACT.ADDRESS.STREET}<br />{CONTACT.ADDRESS.CITY}, {CONTACT.ADDRESS.STATE} {CONTACT.ADDRESS.ZIP}</p>
             <p>
-              <a href="tel:3017692030">(301) 769-2030</a><br />
+              <a href={`tel:${CONTACT.TEL}`}>{CONTACT.PHONE}</a><br />
               <a href="https://goo.gl/maps/VqxhArtwqqGCk9bE9" target="_blank" rel="noopener noreferrer">
                 Get Directions
               </a>

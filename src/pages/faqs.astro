@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import { getPublishedCollection } from '@lib/content-status';
+import CONTACT from '@data/contact';
 
 const faqEntries = await getPublishedCollection('faqs');
 const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
@@ -15,7 +16,7 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
 >
   <p class="interior-hero__lead" slot="hero">
     We've collected the questions we hear most often. Don't see yours? We're happy to help —
-    <a href="/contact/">reach out any time</a> or call <a href="tel:3017692030">(301) 769-2030</a>.
+    <a href="/contact/">reach out any time</a> or call <a href={`tel:${CONTACT.TEL}`}>{CONTACT.PHONE}</a>.
   </p>
 
   <section class="section bg-arabesque" aria-label="FAQ accordion">
@@ -57,8 +58,7 @@ const sorted = faqEntries.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sort
 
       <div class="faqs-footer-note">
         <p>
-          <strong>Still have questions?</strong> <a href="/contact/">Contact Jack and Cindy</a> — we love
-          talking about the farm and what we can do for you.
+          <strong>Still have questions?</strong> <a href="/contact/">Contact {CONTACT.NAME}</a> — let's talk about the farm and what we can do for you.
         </p>
       </div>
     </div>

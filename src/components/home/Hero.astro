@@ -4,6 +4,8 @@ import { Image } from 'astro:assets';
 import { getPublishedCollection } from '@lib/content-status';
 import receptionBarnInteriorRiverside from '@assets/images/reception-barn-interior-riverside.jpg';
 import aerialReceptionBarn from '@assets/images/aerial-reception-barn.jpg';
+import USP from '@data/usp';
+import CONTACT from '@data/contact';
 
 interface HeroSlide {
   image: string;
@@ -102,20 +104,20 @@ if (heroSlides.length === 0) {
     </div>
     <div class="hero__stat-grid">
       <div class="hero__stat">
-        <span class="hero__stat-number">50</span>
-        <span class="hero__stat-label">Miles south of Washington, DC</span>
+        <span class="hero__stat-number">{USP.DC_DISTANCE_MILES.VALUE}</span>
+        <span class="hero__stat-label">{USP.DC_DISTANCE_MILES.DESC}</span>
       </div>
       <div class="hero__stat">
-        <span class="hero__stat-number">~100</span>
-        <span class="hero__stat-label">Guest capacity</span>
+        <span class="hero__stat-number">{USP.GUESTS_ACCOMMODATED.VALUE}</span>
+        <span class="hero__stat-label">{USP.GUESTS_ACCOMMODATED.DESC}</span>
       </div>
       <div class="hero__stat">
-        <span class="hero__stat-number">1</span>
-        <span class="hero__stat-label">Wedding at a time — yours</span>
+        <span class="hero__stat-number">{USP.CONCURRENT_WEDDINGS.VALUE}</span>
+        <span class="hero__stat-label">{USP.CONCURRENT_WEDDINGS.DESC}</span>
       </div>
       <div class="hero__stat">
-        <span class="hero__stat-number">★ 5</span>
-        <span class="hero__stat-label">Stars across 50+ reviews</span>
+        <span class="hero__stat-number">{USP.AVERAGE_REVIEW_STARS.VALUE} ★</span>
+        <span class="hero__stat-label">{USP.AVERAGE_REVIEW_STARS.DESC}</span>
       </div>
     </div>
     <div class="hero__cta">
@@ -127,8 +129,8 @@ if (heroSlides.length === 0) {
         <circle cx="12" cy="9" r="2.5"/>
       </svg>
       <div>
-        <strong>36290 Notley Manor Lane, Chaptico MD</strong>
-        15 miles west of Leonardtown · (301) 769-2030
+        <strong>{CONTACT.ADDRESS.STREET}, {CONTACT.ADDRESS.CITY} {CONTACT.ADDRESS.STATE}</strong>
+        15 miles west of Leonardtown · {CONTACT.PHONE}
       </div>
     </div>
   </div>

@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions';
+import CONTACT from '@data/contact';
 import { getDb } from './utils/db';
 import {
   getTourCalendarSettings,
@@ -98,7 +99,7 @@ export const handler: Handler = async (event) => {
         statusCode: 409,
         headers,
         body: JSON.stringify({
-          error: 'Tour booking is temporarily unavailable right now. Please contact Jack and Cindy on the contact page.',
+          error: `Tour booking is temporarily unavailable right now. Please contact ${CONTACT.NAME} on the contact page.`,
           code: 'HOLIDAY_MODE_ACTIVE',
         }),
       };

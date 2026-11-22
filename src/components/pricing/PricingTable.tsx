@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { NOTES } from '../../data/pricing';
 import { comparePricingEntries } from '../../lib/pricing-order';
+import CONTACT from '@data/contact';
 
 interface PricingTableEntry {
   id: string;
@@ -293,7 +294,7 @@ export default function PricingTable({ entries }: PricingTableProps) {
         <p>Curious about our offerings? <a href="/offerings/">Explore What We Offer</a>.</p>
         <p>
           Want something a little more tailored to your needs?{' '}
-          <a href="/contact/">Contact Jack and Cindy</a>{' '}
+          <a href="/contact/">Contact {CONTACT.NAME}</a>{' '}
           to create your custom package.
         </p>
       </div>

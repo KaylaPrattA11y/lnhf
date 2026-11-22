@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getVisitorId } from '@lib/umami';
+import CONTACT from '@data/contact';
 import {
   buildGoogleCalendarUrl,
   buildIcsDownloadUrl,
@@ -94,7 +95,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
         if (data?.code === 'BOOKING_WINDOW_ELAPSED' || data?.code === 'HOLIDAY_MODE_ACTIVE') {
           setStatus('apology');
           setApologyMsg(
-            `We're sorry, this tour time is no longer available for online booking. Please contact Jack and Cindy on the contact page and they will help you directly.${bookingBufferHours ? ` (Current booking window: ${bookingBufferHours} hours.)` : ''}`,
+            `We're sorry, this tour time is no longer available for online booking. Please contact ${CONTACT.NAME} on the contact page and they will help you directly.${bookingBufferHours ? ` (Current booking window: ${bookingBufferHours} hours.)` : ''}`,
           );
           return;
         }
@@ -193,7 +194,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
     endTime: slot.endTime,
     title: `Tour at Lower Notley Hall Farm`,
     description: [
-      'Have questions or need to reschedule? Contact Jack and Cindy at (301) 769-2030 or email at cindy@lowernotleyhallfarm.com.',
+      `Have questions or need to reschedule? Contact ${CONTACT.NAME} at ${CONTACT.PHONE}.`,
     ].filter(Boolean).join('\n'),
   });
   const icsDownloadUrl = buildIcsDownloadUrl({
@@ -262,7 +263,7 @@ export default function BookingModal({ slot, onClose, onSuccess, bookingBufferHo
             <h2 className="booking-modal__success-title">We're Sorry</h2>
             <p>{apologyMsg}</p>
             <p>
-              Please visit <a href="/contact/">/contact/</a> to reach Jack and Cindy.
+              Please visit <a href="/contact/">/contact/</a> to reach {CONTACT.NAME}.
             </p>
             <button className="btn btn--primary" onClick={onClose}>Done</button>
           </div>

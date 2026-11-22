@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import BlogFigure from '@components/blog/BlogFigure.astro';
 import InteriorLayout from '@layouts/InteriorLayout.astro';
 import { getPublishedCollection } from '@lib/content-status';
+import CONTACT from '@data/contact';
 
 const offerings = await getPublishedCollection('offerings');
 const sorted = offerings.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortOrder ?? 99));
@@ -50,7 +51,7 @@ const sorted = offerings.sort((a, b) => (a.data.sortOrder ?? 99) - (b.data.sortO
 
       <div class="offerings-footer-note">
         <p>
-          <strong>Something missing from our offerings?</strong> <a href="/contact/">Contact Jack and Cindy</a> — we love
+          <strong>Something missing from our offerings?</strong> <a href="/contact/">Contact {CONTACT.NAME}</a> — we love
           talking about what we can do to meet your needs.
         </p>
       </div>
